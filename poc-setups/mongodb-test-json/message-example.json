@@ -1,0 +1,20 @@
+{
+  "Id": "e17f07a3-2802-4922-88c8-3daf95915667",
+  "Name": "MailReceived",
+  "Datum": "2022-10-17T15:31:51.338Z",
+  "Typ": "technical",
+  "Severity": "Information",
+  "Title": "Mail received",
+  "Description": "Start of processing for 1234567890",
+  "Tags": {
+    "from": "mail@from.me",
+    "to": "input@mail.net",
+    "date": "2022-10-10T12:00:02.000Z",
+    "subject": "Start of processing for 1234567890",
+    "s3-filename": "456g3vl8k5d6m30est3dl61a1bll86glndrufm88",
+    "mail-id": "B3F21120-595B-44A6-D235-E4CF4E735D7D"
+  },
+  "Source": "input.mail.inbox",
+  "Attachments": {
+  }
+}
