@@ -49,7 +49,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tag: ["6.0.12","6.1.10","6.2.9","7.0.8","7.1.6","7.2.4","7.3.2"]
+        tag: ["6.0.13","6.1.10","6.2.9","7.0.8","7.1.6","7.2.4","7.3.3"]
         test_list : [
                       "🚀 connect/connect-mapr-sink",
                     ]
@@ -78,8 +78,6 @@ jobs:
       - name: Build and Test
         run: bash scripts/run-tests.sh "${{ matrix.test_list }}" "${{ matrix.tag }}"
         env:
-          DISABLE_KSQLDB: "yes"
-          DISABLE_CONTROL_CENTER: "yes"
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID}}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
           AWS_ACCOUNT_WITH_ASSUME_ROLE_AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCOUNT_WITH_ASSUME_ROLE_AWS_ACCESS_KEY_ID}}
