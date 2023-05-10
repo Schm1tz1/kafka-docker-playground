@@ -1,15 +1,25 @@
 name: playground
-help: 🧠 CLI for Kafka Docker Playground 🐳
-version: 1.0.3
+version: 1.0.0
 dependencies:
-  docker: 👉 Check documentation https://tinyurl.com/4rpcmpjj
+- docker
+help: |-
+  🧠 CLI for Kafka Docker Playground 🐳
 
+  👉 Check documentation https://kafka-docker-playground.io/#/cli
+filters:
+- docker_running
 commands:
 
 ### private commands for completion
 - name: get-connector-list
   help: Return some completion for connector list
   private: true
+
+- name: get-kafka-region-list
+  help: Return some completion for confluent cloud kafka cluster region list
+  private: true
+  dependencies:
+  - confluent
 
 - name: get-topic-list
   help: Return some completion for topic list
@@ -27,18 +37,54 @@ commands:
     required: false
   - long: --sink-only
     required: false
+  - long: --ccloud-only
+    required: false
+
+- name: get-zip-or-jar-with-fzf
+  help: Return some completion for zip or jar list
+  private: true
+  args:
+  - name: cur
+    required: false
+    help: correspond to completion $cur
+  flags:
+  - long: --type
+    required: false
+    arg: type
+    allowed: [zip, jar]
+
+- name: get-schema-with-fzf
+  help: Return some completion for schema files
+  private: true
+  args:
+  - name: cur
+    required: false
+    help: correspond to completion $cur
+
+- name: bashly-reload
+  private: true
+  dependencies:
+  - bashly
 
 - name: run
   group: Run
-  environment_variables:
-  - name: EDITOR 
-    help: 🔖 Editor to use to open the example file.
+  catch_all:
+    label: arguments
+    help: |-
+      Arguments to use by example script
+
+      Most of examples support to get required options either by using arguments or environment variables.
+      
+      Example with Zendesk:
+
+      playground run -f zendesk-source<tab> <ZENDESK_URL> <ZENDESK_USERNAME> <ZENDESK_PASSWORD>
+    required: false
   dependencies:
   - fzf
   help: |-
-    🚀  Run example.
+    🕹️ Run any example, except for Confluent Cloud (in this case use run-ccloud command)
     
-    👉 Check documentation https://tinyurl.com/yx3vbwu5
+    👉 Check documentation https://tinyurl.com/xxx
 
   flags:
   - long: --file
@@ -49,85 +95,358 @@ commands:
     completions:
       - $(playground get-examples-list-with-fzf "$cur")
     help: |-
-      Example file to run.
-      It must be absolute full path. 
+      🔖 Example file to run
 
-      🎓 Tip: use <tab> completion to trigger fzf completion.
+      ❕ It must be absolute full path
+
+      🎓 Tip: use <tab> completion to trigger fzf completion
   - long: --open
     short: -o
-    help: Opening example file with text editor set with EDITOR environment variable (default is code).
-  - long: --tag
+    help: 📖 Opening example file with text editor set with config.ini (default is code)
+  - &tag
+    long: --tag
     arg: tag
     required: false
-    help: CP version to use
-  - long: --connector-tag
+    validate: minimal_cp_version
+    help: |-
+      🎯 Confluent Platform (CP) version to use
+
+      Must be greater or equal to 5.0.0
+  - &connector-tag
+    long: --connector-tag
     arg: connector_tag
     required: false
-    help: Connector version to use
+    help: |- 
+      🔗 Connector version to use
+
+      By default, for each connector, the latest available version on Confluent Hub is used
     conflicts: [--connector-zip]
-  - long: --connector-zip
+  - &connector-zip
+    long: --connector-zip
     arg: connector_zip
     required: false
-    validate: file_exists
-    help: Connector zip to use
+    validate: file_exists_with_trick
+    completions:
+      - $(playground get-zip-or-jar-with-fzf --type zip "$cur")
     conflicts: [--connector-tag]
-  - long: --connector-jar
+    help: |- 
+      🤐 Connector zip to use
+
+      ❕ It must be absolute full path
+
+      🎓 Tip: use <tab> completion to trigger fzf completion 
+              use folder_zip_or_jar (default: ~/Downloads) in config.ini file to configure where to search the files (current folder is always used)
+
+  - &connector-jar
+    long: --connector-jar
     arg: connector_jar
-    validate: file_exists
     required: false
-    help: Connector jar to use
-  - long: --disable-ksqldb
+    validate: file_exists_with_trick
+    completions:
+      - $(playground get-zip-or-jar-with-fzf --type jar "$cur")
+    help: |-
+      ♨️ Connector jar to use
+
+      ❕ It must be absolute full path
+
+      🎓 Tip: use <tab> completion to trigger fzf completion 
+              use folder_zip_or_jar (default: ~/Downloads) in config.ini file to configure where to search the files (current folder is always used)
+
+  - &enable-ksqldb
+    long: --enable-ksqldb
     required: false
-    help: Disable ksqlDB
-  - long: --disable-control-center
+    help: |-
+      🚀 Enable ksqlDB
+
+      By default, ksqldb-server and ksqldb-cli containers are not started for every test
+  - &enable-control-center
+    long: --enable-control-center
     required: false
-    help: Disable Control Center
-  - long: --enable-conduktor
+    help: |-
+      💠 Enable Control Center
+
+      By default, control-center container is not started for every test
+
+      Control Center is reachable at http://127.0.0.1:9021
+  - &enable-conduktor
+    long: --enable-conduktor
     required: false
-    help: Enable Conduktor
-  - long: --enable-multiple-brokers
+    help: |- 
+      🐺 Enable Conduktor Platform
+
+      By default, Conduktor Platform container is not started for every test
+
+      Conduktor is reachable at http://127.0.0.1:8080/console (admin/admin)
+  - &enable-multiple-brokers
+    long: --enable-multiple-brokers
     required: false
-    help: Enable Multiple brokers
-  - long: --enable-multiple-connect-workers
+    help: |- 
+      3️⃣ Enable multiple brokers
+
+      By default, there is only one broker node enabled
+  - &enable-multiple-connect-workers
+    long: --enable-multiple-connect-workers
     required: false
-    help: Enable Multiple Connect Workers
-  - long: --enable-jmx-grafana
+    help: |-
+      🥉 Enable multiple connect node
+
+      By default, there is only one connect node enabled
+
+      It only works when plaintext environment is used
+  - &enable-jmx-grafana
+    long: --enable-jmx-grafana
     required: false
     help: |-
       Enable Grafana, Prometheus and Pyroscope
 
       📊 Grafana is reachable at http://127.0.0.1:3000
-      🛡️  Prometheus is reachable at http://127.0.0.1:9090
+      🛡️ Prometheus is reachable at http://127.0.0.1:9090
       📛 Pyroscope is reachable at http://127.0.0.1:4040
-  - long: --enable-kcat
+  - &enable-kcat
+    long: --enable-kcat
     required: false
-    help: Enable kcat
-  - long: --enable-sr-maven-plugin-app
+    help: |-
+      🐈‍⬛ Enable kcat
+
+      You can use it with:
+
+      $ docker exec kcat kcat -b broker:9092 -L
+  - &enable-sr-maven-plugin-app
+    long: --enable-sr-maven-plugin-app
     required: false
-    help: Enable Schema Registry Maven plugin App
+    help: |- 
+      🔰 Enable Schema Registry Maven plugin App
+  - &enable-sql-datagen
+    long: --enable-sql-datagen
+    required: false
+    help: |-
+      🌪️ Enable SQL Datagen injection
+
+      This only works for Oracle, MySql, Postgres and Microsoft Sql Server source connector examples with JDBC and Debezium
+  examples:
+  - playground run -f zendesk-source<tab> --tag 7.2.1 --enable-control-center <ZENDESK_URL> <ZENDESK_USERNAME> <ZENDESK_PASSWORD>
+  - playground run -f jdbc<tab> --connector-tag 10.6.0 --enable-jmx-grafana --open
 
 - name: re-run
   group: Run
-  environment_variables:
-  - name: EDITOR 
-    help: 🔖 Editor to use to open the example file.
   help: |-
-    🛸  Re-run last example.
+    ⚡ Simply re-run last example you ran with <playground run> or <playground run-ccloud>
+  catch_all:
+    label: arguments
+    help: |-
+      Arguments to use by example script
+
+      Most of examples support to get required options either by using arguments or environment variables.
+      
+      Example with Zendesk:
+
+      playground run -f zendesk-source<tab> <ZENDESK_URL> <ZENDESK_USERNAME> <ZENDESK_PASSWORD>
+    required: false
+  dependencies:
+  - fzf
+  flags:
+    - *tag
+    - *connector-tag
+    - *connector-zip
+    - *connector-jar
+    - *enable-ksqldb
+    - *enable-control-center
+    - *enable-conduktor
+    - *enable-multiple-brokers
+    - *enable-multiple-connect-workers
+    - *enable-jmx-grafana
+    - *enable-kcat
+    - *enable-sr-maven-plugin-app
+    - *enable-sql-datagen
+  examples:
+  - playground re-run
+  - playground re-run --tag=6.2.1
+
+- name: run-ccloud
+  group: Run
+  catch_all:
+    label: arguments
+    help: |-
+      Arguments to use by example script
+
+      Most of examples support to get required options either by using arguments or environment variables.
+      
+      Example with Zendesk:
+
+      playground run -f zendesk-source<tab> <ZENDESK_URL> <ZENDESK_USERNAME> <ZENDESK_PASSWORD>
+    required: false
+  dependencies:
+  - fzf
+  - confluent
+  help: |-
+    ⛅ Run any Confluent Cloud (ccloud) example
+
+    All you have to do is to be already logged in with confluent CLI.
+
+    By default, a new Confluent Cloud environment with a Cluster will be created.
+
+    You can configure the new cluster by setting:
+
+    --cluster-cloud (or CLUSTER_CLOUD environment variable)
+    --cluster-region (or CLUSTER_REGION environment variable)
+    --cluster-environment (or ENVIRONMENT environment variable)
+
+    In case you want to use your own existing cluster, you need to setup, in addition to previous ones:
+
+    --cluster-name (or CLUSTER_NAME environment variable)
+    --cluster-creds (or CLUSTER_CREDS environment variable)
+    --cluster-schema-registry-creds (or SCHEMA_REGISTRY_CREDS environment variable)
     
+    👉 Check documentation https://tinyurl.com/xxx
+  flags:
+    - long: --file
+      short: -f
+      required: true
+      validate: file_exists_with_trick
+      arg: file
+      completions:
+        - $(playground get-examples-list-with-fzf --ccloud-only "$cur")
+      help: |-
+        🔖 Example file to run
+
+        ❕ It must be absolute full path
+
+        🎓 Tip: use <tab> completion to trigger fzf completion
+    - long: --open
+      short: -o
+      help: 📖 Opening example file with text editor set with config.ini (default is code)
+    - *tag
+    - *connector-tag
+    - *connector-zip
+    - *connector-jar
+    - *enable-control-center
+    - *enable-conduktor
+    - *enable-kcat
+    - &cluster-cloud
+      long: --cluster-cloud
+      required: false
+      default: aws
+      arg: cluster-cloud
+      allowed: [aws, gcp, azure]
+      help: |-
+        🌤 The cloud provider: aws, gcp or azure. Default is aws
+
+        🎓 Tip: you can also use CLUSTER_CLOUD environment variable
+    - &cluster-region
+      long: --cluster-region
+      required: false
+      default: eu-west-2
+      arg: cluster-region
+      completions:
+        - $(playground get-kafka-region-list)
+      help: |-
+        🗺 The Cloud region. 
+        
+        🎓 Tip: you can also use CLUSTER_REGION environment variable
+    - &cluster-environment
+      long: --cluster-environment
+      required: false
+      arg: cluster-environment
+      validate: not_empty
+      help: |-
+        🌐 The environment id where want your new cluster (example: env-xxxxx)
+
+        ℹ️ Optional, if not set, new environment will be created
+
+        🎓 Tip: you can also use ENVIRONMENT environment variable
+    - &cluster-name
+      long: --cluster-name
+      required: false
+      validate: not_empty
+      arg: cluster-name
+      help: |-
+        🎰 The cluster name. 
+        
+        ❣️ Only required if you want to use your own existing cluster
+
+        🎓 Tip: you can also use CLUSTER_NAME environment variable
+    - &cluster-creds
+      long: --cluster-creds
+      required: false
+      validate: not_empty
+      arg: cluster-creds
+      help: |-
+        🔒 The Kafka api key and secret to use, it should be separated with semi-colon (example: <API_KEY>:<API_KEY_SECRET>)
+
+        ❣️ Only required if you want to use your own existing cluster
+
+        🎓 Tip: you can also use CLUSTER_CREDS environment variable
+    - &luster-schema-registry-creds
+      long: --cluster-schema-registry-creds
+      required: false
+      validate: not_empty
+      arg: cluster-schema-registry-creds
+      help: |-
+        🔒 The Schema Registry api key and secret to use, it should be separated with semi-colon (example: <SR_API_KEY>:<SR_API_KEY_SECRET>)
+
+        ℹ️ Optional, if not set, new credentials will be created
+
+        ❣️ Only required if you want to use your own existing cluster
+        
+        🎓 Tip: you can also use SCHEMA_REGISTRY_CREDS environment variable
+  examples:
+  - playground run-ccloud mqtt<tab> --cluster-cloud aws --cluster-region eu-west-3 --enable-control-center --connector-tag 1.2.3
+
+- name: open
+  group: Run
+  dependencies:
+  - fzf
+  help: |-
+    👐 Simply open last example you ran with <playground run> or <playground run-ccloud>
+
+- name: stop
+  group: Run
+  help: |-
+    🛑 Stop currently running example
+
 - name: bootstrap-reproduction-model
   environment_variables:
   - name: OUTPUT_FOLDER 
-    help: 📁 Output folder where to generate bootstrapped files.
+    help: 📁 Output folder where to generate bootstrapped files
     default: reproduction-models
   group: Bootstrap
   dependencies:
   - fzf
   help: |-
-    🛠  Bootstrap reproduction model.
+    🛠  Bootstrap reproduction model
     
-    👉 Check documentation https://tinyurl.com/bdfs25my
+    👉 Check documentation https://tinyurl.com/xxx
+  catch_all:
+    label: arguments
+    help: |-
+      Arguments to use by example script
 
+      Most of examples support to get required options either by using arguments or environment variables.
+      
+      Example with Zendesk:
+
+      playground run -f zendesk-source<tab> <ZENDESK_URL> <ZENDESK_USERNAME> <ZENDESK_PASSWORD>
+    required: false
   flags:
+  - *tag
+  - *connector-tag
+  - *connector-zip
+  - *connector-jar
+  - *enable-ksqldb
+  - *enable-control-center
+  - *enable-conduktor
+  - *enable-multiple-brokers
+  - *enable-multiple-connect-workers
+  - *enable-jmx-grafana
+  - *enable-kcat
+  - *enable-sr-maven-plugin-app
+  - *enable-sql-datagen
+  - *cluster-region
+  - *cluster-environment
+  - *cluster-name
+  - *cluster-creds
+  - *luster-schema-registry-creds
+
   - long: --file
     short: -f
     required: true
@@ -136,10 +455,11 @@ commands:
     completions:
       - $(playground get-examples-list-with-fzf --without-repro "$cur")
     help: |-
-      Example file to use as basis.
-      It must be absolute full path. 
+      🔖 Example file to use as basis
+      
+      ❕ It must be absolute full path
 
-      🎓 Tip: use <tab> completion to trigger fzf completion.
+      🎓 Tip: use <tab> completion to trigger fzf completion
 
   - long: --description
     short: -d
@@ -147,7 +467,7 @@ commands:
     validate: not_empty
     arg: description
     help: |-
-      Description.
+      💭 Description for the reproduction model
 
   - long: --producer
     short: -p
@@ -163,10 +483,11 @@ commands:
       - json-schema
       - json-schema-with-key
     help: |-
-      Java producer type to use. 
-      One of avro, avro-with-key, protobuf, protobuf-with-key, json-schema, json-schema-with-key.
+      ♨️ Java producer type to use
+      
+      One of avro, avro-with-key, protobuf, protobuf-with-key, json-schema, json-schema-with-key
 
-      Note: 'with-key' will also produce key with selected converter, otherwise LongConverter is used.
+      🎓 Tip: 'with-key' will also produce key with selected converter, otherwise LongConverter is used
 
   - long: --nb-producers
     short: -n
@@ -174,11 +495,39 @@ commands:
     validate: integer
     default: ""
     help: |-
-      Number of java producers to generate.
+      2️⃣ Number of java producers to generate
+
+  - long: --producer-schema-key
+    arg: producer_schema
+    required: false
+    validate: file_exists_with_trick
+    completions:
+      - $(playground get-schema-with-fzf "$cur")
+    help: |-
+      🔰 Schema file to use for the key
+
+      ❕ It must be absolute full path
+
+      🎓 Tip: use <tab> completion to trigger fzf completion 
+              use folder_producer_schema (default: ~/Downloads) in config.ini file to configure where to search the files
+
+  - long: --producer-schema-value
+    arg: producer_schema
+    required: false
+    validate: file_exists_with_trick
+    completions:
+      - $(playground get-schema-with-fzf "$cur")
+    help: |-
+      🔰 Schema file to use for the value
+
+      ❕ It must be absolute full path
+
+      🎓 Tip: use <tab> completion to trigger fzf completion 
+              use folder_producer_schema (default: ~/Downloads) in config.ini file to configure where to search the files
 
   - long: --custom-smt
     help: |-
-      Add a custom SMT (no-op).
+      ⚙️ Add a custom SMT (which is a no-op)
 
   - long: --pipeline
     required: false
@@ -188,14 +537,15 @@ commands:
     completions:
       - $(playground get-examples-list-with-fzf --without-repro --sink-only "$cur")
     help: |-
-      Sink example file to use for creating a pipeline.
-      It must be absolute full path. 
+      🔖 Sink example file to use for creating a pipeline
+      
+      ❕ It must be absolute full path. 
 
-      🎓 Tip: use <tab> completion to trigger fzf completion.
+      🎓 Tip: use <tab> completion to trigger fzf completion
 
   examples:
   - playground bootstrap-reproduction-model -f hdfs2<tab> -d "simple test"
-  - playground bootstrap-reproduction-model -f /full/path/hdfs2-sink.sh -d "testing with avro producer" --producer avro
+  - playground bootstrap-reproduction-model -f /full/path/hdfs2-sink.sh -d "testing with avro producer" --producer avro --producer-schema-value myschema<tab>
   - playground bootstrap-reproduction-model -f hdfs2<tab> -d "testing with 2 protobuf producers" --producer protobuf --nb-producers 2
   - playground bootstrap-reproduction-model -f hdfs2<tab> -d "testing custom smt" --custom-smt
   - playground bootstrap-reproduction-model -f debeziumpostgres<tab> -d "create pipeline" --pipeline jdbcsink<tab>
@@ -203,9 +553,9 @@ commands:
 - name: get-properties
   group: Kafka
   help: |-
-    📝 Get properties file from a container.
+    📝 Get properties file from a container
     
-    👉 Check documentation https://tinyurl.com/4vj7tm2b
+    👉 Check documentation https://tinyurl.com/xxx
 
   flags:
   - &container
@@ -217,7 +567,7 @@ commands:
     completions:
       - $(docker ps --format '{{.Names}}')
     help: |-
-      Container name.
+      🐳 Container name
 
   examples:
   - playground get-properties
@@ -228,10 +578,16 @@ commands:
   group: Kafka
   filters:
   - not_mdc_environment
+  - schema_registry_running
   help: |-
-    🔰 Get all schemas versions for all subjects.
+    🔰 Get all schemas versions for all subjects
     
     👉 Check documentation xxxx
+  flags:
+    - long: --open
+      short: -o
+      help: |- 
+        🔖 Save output to a file and open with text editor set with config.ini (default is code)
 
   examples:
   - playground get-all-schemas
@@ -239,9 +595,9 @@ commands:
 - name: enable-remote-debugging
   group: Debug
   help: |-
-    ✨ Enable java remote debugging for container.
+    ✨ Enable java remote debugging for container
     
-    👉 Check documentation https://tinyurl.com/bdz843d4
+    👉 Check documentation https://tinyurl.com/xxx
   flags:
     - *container
   examples:
@@ -252,13 +608,14 @@ commands:
 - name: log-level
   group: Debug
   help: |-
-    🧬 Set log level for any package.
+    🧬 Set log level for any package
 
-    👉 Check documentation https://tinyurl.com/yc78tr8a
-
+    👉 Check documentation https://tinyurl.com/xxx
+  filters:
+  - connect_running
   commands:
   - name: get
-    help: Get log levels.
+    help: Get log levels
     flags:
     - long: --package
       short: -p
@@ -266,10 +623,10 @@ commands:
       validate: not_empty
       arg: package
       help: |-
-        Package name.
+        Package name
 
   - name: set
-    help: Set log level for specific logger.
+    help: Set log level for specific logger
     flags:
     - long: --package
       short: -p
@@ -277,14 +634,15 @@ commands:
       validate: not_empty
       arg: package
       help: |-
-        Package name.
+        📦 Package name
 
     - long: --level
       short: -l
-      help: Log level.
       arg: level
       allowed: [INFO, WARN, DEBUG, TRACE]
       required: true
+      help: |-
+        ❕Log level
 
   examples:
   - playground log-level get
@@ -295,10 +653,11 @@ commands:
 - name: get-jmx-metrics
   group: Kafka
   help: |-
-    🔢 Get JMX metrics from a component.
+    🔢 Get JMX metrics from a component
     
-    👉 Check documentation https://tinyurl.com/yc2myws9
-
+    👉 Check documentation https://tinyurl.com/xxx
+  dependencies:
+  - java
   flags:
   - long: --component
     short: -c
@@ -307,14 +666,14 @@ commands:
     arg: component
     allowed: [zookeeper, broker, connect, schema-registry]
     help: |-
-      Component name.
+      Component name
 
   - long: --domain
     short: -d
     required: false
     arg: domain
     help: |-
-      Domain name.
+      Domain name
 
   examples:
   - playground get-jmx-metrics --component connect
@@ -325,51 +684,54 @@ commands:
   expose: true
   group: Container
   help: |-
-    🐳 Container commands.
+    🐳 Container commands
   commands:
 
     - name: recreate
       group: Container
       help: |-
-        💫 Recreate container(s).
+        💫 Recreate container(s)
         
-        👉 Check documentation https://tinyurl.com/3rhjxfbs
+        👉 Check documentation https://tinyurl.com/xxx
 
     - name: get-ip-addresses
       group: Container
       help: |-
-        🖥️  Get IP address of running containers.
+        🖥️  Get ip address of running containers
       examples:
       - playground get-ip-address-container
 
     - name: kill-all
       group: Container
       help: |-
-        💀 Kill all containers.
+        💀 Kill all containers
 
     - name: logs
       group: Container
       help: |-
-        🕵️  Tail and follow container logs.
+        🕵️  Tail and follow container logs
 
       flags:
       - *container
       - long: --open
         short: -o
-        help: Save output to a file and open with text editor set with EDITOR environment variable (default is code).
+        help: |- 
+          🔖 Save output to a file and open with text editor set with config.ini (default is code)
         conflicts: [--wait-for-log]
       - long: --wait-for-log
         short: -w
         arg: log
         validate: not_empty
-        help: Wait until log appears.
+        help: |- 
+          😴 Wait until log appears
         conflicts: [--open]
       - long: --max-wait
         short: -m
         arg: max_wait
         validate: integer
         default: "600"
-        help: Max time in seconds to wait when using --wait-for-log (default 600s).
+        help: |- 
+          ⏳ Max time in seconds to wait when using --wait-for-log (default 600s)
         conflicts: [--open]
 
       examples:
@@ -379,7 +741,7 @@ commands:
     - name: ssh
       group: Container
       help: |-
-        🚀 SSH into container.
+        🛬 SSH into container
 
       flags:
       - *container
@@ -395,7 +757,7 @@ commands:
           - ksh
           - zsh
         help: |-
-          Shell to use (default is bash).
+          💾 Shell to use (default is bash)
 
       examples:
       - playground ssh -c connect
@@ -405,21 +767,21 @@ commands:
     - name: exec
       group: Container
       help: |-
-        🪄  Execute command in a container.
+        🪄  Execute command in a container
 
       flags:
       - *container
 
       - long: --command
-        short: -d
         required: true
         validate: not_empty
         arg: command
         help: |-
-          Command to execute.
+          📲 Command to execute
 
       - long: --root
-        help: Run command as root.
+        help: |-
+          👑 Run command as root
 
       - long: --shell
         default: "bash"
@@ -430,7 +792,7 @@ commands:
           - ksh
           - zsh
         help: |-
-          Shell to use (default is bash).
+          💾 Shell to use (default is bash)
 
       examples:
       - playground exec -c connect -d "date"
@@ -440,7 +802,7 @@ commands:
     - name: restart
       group: Container
       help: |-
-        🔁 Restart a container.
+        🔁 Restart a container
 
       flags:
       - *container
@@ -448,7 +810,7 @@ commands:
     - name: pause
       group: Container
       help: |-
-        ⏸️  Pause a container.
+        ⏸️  Pause a container
 
       flags:
       - *container
@@ -456,7 +818,7 @@ commands:
     - name: resume
       group: Container
       help: |-
-        ⏯️  Resume a container.
+        ⏯️  Resume a container
 
       flags:
       - *container
@@ -464,7 +826,7 @@ commands:
     - name: kill
       group: Container
       help: |-
-        🔫 Kill a container.
+        🔫 Kill a container
 
       flags:
       - *container
@@ -475,13 +837,13 @@ commands:
   filters:
   - not_mdc_environment
   help: |-
-    📁 Topic commands.
+    🗳 Topic commands
   commands:
 
     - name: get-number-records
       group: Topic
       help: |-
-        💯 Get number of records in a topic.
+        💯 Get number of records in a topic
       flags:
       - &topic
         long: --topic
@@ -491,47 +853,54 @@ commands:
         completions:
           - $(playground get-topic-list)
         help: |-
-          Topic name.
+          🗳 Topic name
       examples:
       - playground get-number-records --topic a-topic
       - playground get-number-records -t a-topic
 
-    - name: display-connect-offsets
-      group: Topic
-      help: |-
-        🔺 Display content of connect offsets topic.
-
     - name: display-consumer-offsets
       group: Topic
       help: |-
-        🔻 Display content of __consumer_offsets topic.
+        📭 Display content of __consumer_offsets topic
 
     - name: describe
       group: Topic
       help: |-
-        🔎 Describe topic.
+        🔬 Describe topic
       flags:
       - *topic
 
     - name: consume
+      filters:
+      - schema_registry_running
       group: Topic
       help: |-
-        ↘️ Consumer topic(s) from current running examples
+        📥 Consume topic from beginning
+      flags:
+      - *topic
+      - long: --max-messages
+        arg: max-messages
+        validate: integer
+        required: false
+        default: ""
+        help: |-
+          Max number of messages to consume
 
 - name: connector
   expose: true
   group: Connector
   filters:
   - not_mdc_environment
+  - connect_running
   help: |-
-    🔗 Connector commands.
+    🔗 Connector commands
 
   commands:
   - name: status
-    help: ℹ️  Show status of all connectors.
+    help: 🧩 Show status of all connectors
 
   - name: plugins
-    help: 🔖 Show all plugins installed.
+    help: 🎨 Show all plugins installed
 
   - name: pause
     help: ⏸️  Pause connector
@@ -544,10 +913,12 @@ commands:
       completions:
         - $(playground get-connector-list)
       help: |-
-        Connector name.
+        🔗 Connector name
+
+        🎓 Tip: If not specified, the command will apply to all connectors
 
   - name: versions
-    help:  🧞 Get current version used in example and latest available
+    help:  🧞 Get current version used in example
     flags:
     - *connector
 
@@ -573,12 +944,12 @@ commands:
 
   - name: log-level
     help: |-
-      🧬 Set connect log level.
+      🧬 Set connect log level
     flags:
     - *connector
     - long: --level
       short: -l
-      help: Log level.
+      help: Log level
       arg: level
       allowed: [INFO, WARN, DEBUG, TRACE]
       required: true

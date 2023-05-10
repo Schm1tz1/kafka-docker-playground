@@ -117,6 +117,7 @@ services:
     hostname: connect-us
     container_name: connect-us
     ports:
+      - "28083:8083"
       - "5005:5005"
     depends_on:
       - zookeeper-us
@@ -154,6 +155,8 @@ services:
       # # With JDK9+, need to specify address=*:5005, see https://www.baeldung.com/java-application-remote-debugging#from-java9
       # JAVA_DEBUG_OPTS: '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:5005'
       CONNECT_CONNECTOR_CLIENT_CONFIG_OVERRIDE_POLICY: All
+    volumes:
+      - ../../confluent-hub:/usr/share/confluent-hub-components
 
   connect-europe:
     build:
@@ -165,6 +168,7 @@ services:
     hostname: connect-europe
     container_name: connect-europe
     ports:
+      - "18083:8083"
       - "5006:5005"
     depends_on:
       - zookeeper-europe
@@ -202,7 +206,9 @@ services:
       # # With JDK9+, need to specify address=*:5005, see https://www.baeldung.com/java-application-remote-debugging#from-java9
       # JAVA_DEBUG_OPTS: '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:5005'
       CONNECT_CONNECTOR_CLIENT_CONFIG_OVERRIDE_POLICY: All
-
+    volumes:
+      - ../../confluent-hub:/usr/share/confluent-hub-components
+      
   schema-registry-europe:
     image: confluentinc/cp-schema-registry:${TAG}
     hostname: schema-registry-europe

@@ -20,19 +20,24 @@ keytool -import -v -trustcacerts -alias endeca-ca -file cert.cer -keystore trust
 
 # https://docs.docker.com/compose/profiles/
 profile_control_center_command=""
-if [ -z "$DISABLE_CONTROL_CENTER" ]
+if [ -z "$ENABLE_CONTROL_CENTER" ]
 then
-  profile_control_center_command="--profile control-center"
-else
   log "🛑 control-center is disabled"
+else
+  log "💠 control-center is enabled"
+  log "Use http://localhost:9021 (superUser/Yoku5678) to login"
+  profile_control_center_command="--profile control-center"
 fi
 
 profile_ksqldb_command=""
-if [ -z "$DISABLE_KSQLDB" ]
+if [ -z "$ENABLE_KSQLDB" ]
 then
-  profile_ksqldb_command="--profile ksqldb"
-else
   log "🛑 ksqldb is disabled"
+else
+  log "🚀 ksqldb is enabled"
+  log "🔧 You can use ksqlDB with CLI using:"
+  log "docker exec -i ksqldb-cli ksql http://ksqldb-server:8088"
+  profile_ksqldb_command="--profile ksqldb"
 fi
 
 ../../environment/rbac-sasl-plain/stop.sh $@
@@ -70,7 +75,7 @@ docker exec -i tools bash -c "/tmp/helper/create-role-bindings.sh"
 
 docker-compose -f ../../environment/plaintext/docker-compose.yml -f ../../environment/rbac-sasl-plain/docker-compose.yml -f "${PWD}/docker-compose.rbac-with-azure-ad.yml" ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d
 log "📝 To see the actual properties file, use cli command playground get-properties -c <container>"
-command="source ../../scripts/utils.sh && docker-compose -f ../../environment/plaintext/docker-compose.yml -f ../../environment/rbac-sasl-plain/docker-compose.yml -f ${PWD}/docker-compose.rbac-with-azure-ad.yml ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d"
+command="source ${DIR}/../../scripts/utils.sh && docker-compose -f ${DIR}/../../environment/plaintext/docker-compose.yml -f ${DIR}/../../environment/rbac-sasl-plain/docker-compose.yml -f ${PWD}/docker-compose.rbac-with-azure-ad.yml ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d"
 echo "$command" > /tmp/playground-command
 log "✨ If you modify a docker-compose file and want to re-create the container(s), run cli command playground container recreate"
 
@@ -79,10 +84,6 @@ log "✨ If you modify a docker-compose file and want to re-create the container
 
 display_jmx_info
 
-if [ -z "$DISABLE_CONTROL_CENTER" ]
-then
-  log "Control Center is reachable at http://127.0.0.1:9021, use superUser/Yoku5678 to login"
-fi
 #############
 
 log "Add the FQDN of LDAP server to openldap (just in order to use ldapsearch) /etc/hosts"

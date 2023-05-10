@@ -18,14 +18,14 @@ Note: The first time you'll run the script, it will build (using this [project](
 
 ## Performance testing
 
-You can set environment variable `ORACLE_DATAGEN` before running the example and it will use a Java based datagen tool:
+You can set environment variable `SQL_DATAGEN` before running the example and it will use a Java based datagen tool:
 
 Example:
 
 ```
 DURATION=10
 log "Injecting data for $DURATION minutes"
-docker exec -d oracle-datagen bash -c "java ${JAVA_OPTS} -jar oracle-datagen-1.0-SNAPSHOT-jar-with-dependencies.jar --host oracle --username C##MYUSER --password mypassword --sidOrServerName sid --sidOrServerNameVal ORCLCDB --maxPoolSize 10 --durationTimeMin $DURATION"
+docker exec -d sql-datagen bash -c "java ${JAVA_OPTS} -jar sql-datagen-1.0-SNAPSHOT-jar-with-dependencies.jar --host oracle --username C##MYUSER --password mypassword --sidOrServerName sid --sidOrServerNameVal ORCLCDB --maxPoolSize 10 --durationTimeMin $DURATION"
 ```
 
 You can increase thoughtput with `maxPoolSize`.
@@ -35,25 +35,25 @@ You can increase thoughtput with `maxPoolSize`.
 Without SSL:
 
 ```
-$ ./oracle21.sh
+$ playground run -f oracle21<tab>
 ```
 
 with SSL encryption:
 
 ```
-$ ./oracle21-ssl.sh
+$ playground run -f oracle21-ssl<tab>
 ```
 
 with SSL encryption + Mutual TLS (case #3 in this [document](https://www.oracle.com/technetwork/database/enterprise-edition/wp-oracle-jdbc-thin-ssl-130128.pdf)):
 
 ```
-$ ./oracle21-mtls.sh
+$ playground run -f oracle21-mtls<tab>
 ```
 
 with SSL encryption + Mutual TLS + DB authentication (case #4 in this [document](https://www.oracle.com/technetwork/database/enterprise-edition/wp-oracle-jdbc-thin-ssl-130128.pdf):
 
 ```
-$ ./oracle21-mtls-db-auth.sh
+$ playground run -f oracle21-mtls-db-auth<tab>
 ```
 
 N.B: this is the [best resource](https://www.oracle.com/technetwork/topics/wp-oracle-jdbc-thin-ssl-130128.pdf) I found for Oracle DB and SSL.

@@ -5,6 +5,7 @@ flag_tag=""
 if [ "$tag" != "" ]
 then
     flag_tag="--tag $tag"
+    export TAG=$tag
 fi
 
 IGNORE_CHECK_FOR_DOCKER_COMPOSE=true
@@ -218,7 +219,7 @@ do
         log "🚀 Executing $script in dir $dir"
         log "####################################################"
         SECONDS=0
-        retry playground run -f "$PWD/$script" $flag_tag --skip-editor --disable-control-center --disable-ksqldb
+        retry playground run -f "$PWD/$script" $flag_tag
         ret=$?
         ELAPSED="took: $((($SECONDS / 60) % 60))min $(($SECONDS % 60))sec"
         let ELAPSED_TOTAL+=$SECONDS

@@ -22,14 +22,14 @@ Note: The first time you'll run the script, it will build (using this [project](
 The connector is configured with `"redo.log.row.fetch.size":1` for demo purpose only. 
 If you're planning to inject more data, it is recommended to increase the value.
 
-You can set environment variable `ORACLE_DATAGEN` before running the example and it will use a Java based datagen tool:
+You can set environment variable `SQL_DATAGEN` before running the example and it will use a Java based datagen tool:
 
 Example:
 
 ```
 DURATION=10
 log "Injecting data for $DURATION minutes"
-docker exec -d oracle-datagen bash -c "java ${JAVA_OPTS} -jar oracle-datagen-1.0-SNAPSHOT-jar-with-dependencies.jar --host oracle --username C##MYUSER --password mypassword --sidOrServerName sid --sidOrServerNameVal ORCLCDB --maxPoolSize 10 --durationTimeMin $DURATION"
+docker exec -d sql-datagen bash -c "java ${JAVA_OPTS} -jar sql-datagen-1.0-SNAPSHOT-jar-with-dependencies.jar --host oracle --username C##MYUSER --password mypassword --sidOrServerName sid --sidOrServerNameVal ORCLCDB --maxPoolSize 10 --durationTimeMin $DURATION"
 ```
 
 You can increase thoughtput with `maxPoolSize`.
@@ -39,43 +39,43 @@ You can increase thoughtput with `maxPoolSize`.
 Without SSL:
 
 ```
-$ ./cdc-oracle18-cdb-table.sh
+$ playground run -f cdc-oracle18-cdb-table<tab>
 ```
 
 or
 
 ```
-$ ./cdc-oracle18-pdb-table.sh
+$ playground run -f cdc-oracle18-pdb-table<tab>
 ```
 
 with SSL encryption:
 
 ```
-$ ./cdc-oracle18-cdb-table-ssl.sh
+$ playground run -f cdc-oracle18-cdb-table-ssl<tab>
 ```
 
 or
 
 ```
-$ ./cdc-oracle18-pdb-table-ssl.sh
+$ playground run -f cdc-oracle18-pdb-table-ssl<tab>
 ```
 
 with SSL encryption + Mutual TLS (case #3 in this [document](https://www.oracle.com/technetwork/database/enterprise-edition/wp-oracle-jdbc-thin-ssl-130128.pdf)):
 
 ```
-$ ./cdc-oracle18-cdb-table-mtls.sh
+$ playground run -f cdc-oracle18-cdb-table-mtls<tab>
 ```
 
 or
 
 ```
-$ ./cdc-oracle18-pdb-table-mtls.sh
+$ playground run -f cdc-oracle18-pdb-table-mtls<tab>
 ```
 
 with SSL encryption + Mutual TLS + DB authentication (case #4 in this [document](https://www.oracle.com/technetwork/database/enterprise-edition/wp-oracle-jdbc-thin-ssl-130128.pdf):
 
 ```
-$ ./cdc-oracle18-cdb-table-mtls-db-auth.sh
+$ playground run -f cdc-oracle18-cdb-table-mtls-db-auth<tab>
 ```
 
 N.B: `./cdc-oracle18-pdb-table-mtls-db-auth.sh` does not work, see [Oracle CDC: mTLS with DB authentication cannot work with PDB](https://github.com/vdesabou/kafka-docker-playground/issues/833)

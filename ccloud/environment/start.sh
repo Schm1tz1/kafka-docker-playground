@@ -26,11 +26,13 @@ set -e
 
 # https://docs.docker.com/compose/profiles/
 profile_control_center_command=""
-if [ -z "$DISABLE_CONTROL_CENTER" ]
+if [ -z "$ENABLE_CONTROL_CENTER" ]
 then
-  profile_control_center_command="--profile control-center"
-else
   log "🛑 control-center is disabled"
+else
+  log "💠 control-center is enabled"
+  log "Use http://localhost:9021 to login"
+  profile_control_center_command="--profile control-center"
 fi
 
 if [ -z "$ENABLE_CONDUKTOR" ]
@@ -60,7 +62,7 @@ docker-compose -f ../../ccloud/environment/docker-compose.yml ${ENABLE_DOCKER_CO
 docker-compose -f ../../ccloud/environment/docker-compose.yml ${ENABLE_DOCKER_COMPOSE_FILE_OVERRIDE} ${DISABLE_REPLICATOR_MONITORING} down -v --remove-orphans
 docker-compose -f ../../ccloud/environment/docker-compose.yml ${ENABLE_DOCKER_COMPOSE_FILE_OVERRIDE} ${DISABLE_REPLICATOR_MONITORING} ${profile_control_center_command} ${profile_conduktor_command} up -d
 log "📝 To see the actual properties file, use cli command playground get-properties -c <container>"
-command="source ../../scripts/utils.sh && docker-compose -f ../../ccloud/environment/docker-compose.yml ${ENABLE_DOCKER_COMPOSE_FILE_OVERRIDE} ${profile_control_center_command} ${profile_conduktor_command} up -d"
+command="source ${DIR}/../../scripts/utils.sh && docker-compose -f ${DIR}/../../ccloud/environment/docker-compose.yml ${ENABLE_DOCKER_COMPOSE_FILE_OVERRIDE} ${profile_control_center_command} ${profile_conduktor_command} up -d"
 echo "$command" > /tmp/playground-command
 log "✨ If you modify a docker-compose file and want to re-create the container(s), run cli command playground container recreate"
 

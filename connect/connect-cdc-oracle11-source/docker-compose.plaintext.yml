@@ -2,13 +2,15 @@
 version: '3.5'
 services:
 
-  oracle-datagen:
+  sql-datagen:
     build:
       context: ../../connect/connect-cdc-oracle11-source/oracle-datagen/
-    hostname: oracle-datagen
-    container_name: oracle-datagen
+    hostname: sql-datagen
+    container_name: sql-datagen
     profiles:
-    - oracle_datagen
+    - sql_datagen
+    volumes:
+      - ../../connect/connect-cdc-oracle11-source/oracle-datagen/target/sql-datagen-1.0-SNAPSHOT-jar-with-dependencies.jar:/sql-datagen-1.0-SNAPSHOT-jar-with-dependencies.jar
 
   oracle:
     image: wnameless/oracle-xe-11g-r2

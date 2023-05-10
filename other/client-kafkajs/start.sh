@@ -6,7 +6,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
 # make sure control-center is not disabled
-unset DISABLE_CONTROL_CENTER
+export ENABLE_CONTROL_CENTER=true
 
 ${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml" -a -b
 
@@ -19,5 +19,5 @@ docker exec -i client-kafkajs node /usr/src/app/producer.js > /dev/null 2>&1 &
 log "Starting consumer. Logs are in /tmp/result.log"
 docker exec -i client-kafkajs node /usr/src/app/consumer.js > /tmp/result.log 2>&1 &
 sleep 15
-cat /tmp/result.log
+tail -10 /tmp/result.log
 grep "kafkajs" /tmp/result.log

@@ -11,19 +11,24 @@ check_docker_compose_version
 
 # https://docs.docker.com/compose/profiles/
 profile_control_center_command=""
-if [ -z "$DISABLE_CONTROL_CENTER" ]
+if [ -z "$ENABLE_CONTROL_CENTER" ]
 then
-  profile_control_center_command="--profile control-center"
-else
   log "🛑 control-center is disabled"
+else
+  log "💠 control-center is enabled"
+  log "Use http://localhost:9021 to login"
+  profile_control_center_command="--profile control-center"
 fi
 
 profile_ksqldb_command=""
-if [ -z "$DISABLE_KSQLDB" ]
+if [ -z "$ENABLE_KSQLDB" ]
 then
-  profile_ksqldb_command="--profile ksqldb"
-else
   log "🛑 ksqldb is disabled"
+else
+  log "🚀 ksqldb is enabled"
+  log "🔧 You can use ksqlDB with CLI using:"
+  log "docker exec -i ksqldb-cli ksql http://ksqldb-server:8088"
+  profile_ksqldb_command="--profile ksqldb"
 fi
 
 # defined grafana variable and when profile is included/excluded
@@ -52,10 +57,10 @@ else
   log "Use http://localhost:8080/console (admin/admin) to login"
   profile_conduktor_command="--profile conduktor"
 fi
-profile_oracle_datagen_command=""
-if [ ! -z "$ORACLE_DATAGEN" ]
+profile_sql_datagen_command=""
+if [ ! -z "$SQL_DATAGEN" ]
 then
-  profile_oracle_datagen_command="--profile oracle_datagen"
+  profile_sql_datagen_command="--profile sql_datagen"
 fi
 
 #define kafka_nodes variable and when profile is included/excluded
@@ -114,9 +119,9 @@ fi
 
 docker-compose -f ../../environment/plaintext/docker-compose.yml ${ENABLE_DOCKER_COMPOSE_FILE_OVERRIDE} build
 docker-compose -f ../../environment/plaintext/docker-compose.yml ${ENABLE_DOCKER_COMPOSE_FILE_OVERRIDE} down -v --remove-orphans
-docker-compose -f ../../environment/plaintext/docker-compose.yml ${ENABLE_DOCKER_COMPOSE_FILE_OVERRIDE} ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} ${profile_conduktor_command} ${profile_oracle_datagen_command} ${profile_connect_nodes_command} ${profile_kafka_nodes_command} ${profile_schema_registry_command} up -d
+docker-compose -f ../../environment/plaintext/docker-compose.yml ${ENABLE_DOCKER_COMPOSE_FILE_OVERRIDE} ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} ${profile_conduktor_command} ${profile_sql_datagen_command} ${profile_connect_nodes_command} ${profile_kafka_nodes_command} ${profile_schema_registry_command} up -d
 log "📝 To see the actual properties file, use cli command playground get-properties -c <container>"
-command="source ../../scripts/utils.sh && docker-compose -f ../../environment/plaintext/docker-compose.yml ${ENABLE_DOCKER_COMPOSE_FILE_OVERRIDE} ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} ${profile_conduktor_command} ${profile_oracle_datagen_command} ${profile_connect_nodes_command} ${profile_kafka_nodes_command} ${profile_schema_registry_command} up -d"
+command="source ${DIR}/../../scripts/utils.sh && docker-compose -f ${DIR}/../../environment/plaintext/docker-compose.yml ${ENABLE_DOCKER_COMPOSE_FILE_OVERRIDE} ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} ${profile_conduktor_command} ${profile_sql_datagen_command} ${profile_connect_nodes_command} ${profile_kafka_nodes_command} ${profile_schema_registry_command} up -d"
 echo "$command" > /tmp/playground-command
 log "✨ If you modify a docker-compose file and want to re-create the container(s), run cli command playground container recreate"
 
