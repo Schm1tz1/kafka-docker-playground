@@ -166,13 +166,16 @@ then
 else
   log "🚀 Running example without any flags"
 fi
+set +e
+playground container kill-all
+set -e
 echo "playground run -f $test_file $flag_list ${other_args[*]}" > /tmp/playground-run
 log "####################################################"
 log "🚀 Executing $filename in dir $test_file_directory"
 log "####################################################"
 SECONDS=0
 cd $test_file_directory
-trap 'rm /tmp/playground-run-command-used;echo "";sleep 3;set +e;playground connector status' EXIT
+trap 'rm /tmp/playground-run-command-used;echo "";sleep 3;set +e;playground connector status;playground connector versions' EXIT
 touch /tmp/playground-run-command-used
 bash $filename ${other_args[*]}
 ret=$?

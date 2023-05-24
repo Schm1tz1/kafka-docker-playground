@@ -249,34 +249,7 @@ do
 done
 
 log "Verifying topic ORCLCDB.C__MYUSER.CUSTOMERS: there should be 13 records"
-set +e
-timeout 60 docker exec connect kafka-avro-console-consumer -bootstrap-server broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic ORCLCDB.C__MYUSER.CUSTOMERS --from-beginning --max-messages 13 --property print.key=true > /tmp/result.log  2>&1
-set -e
-cat /tmp/result.log
-log "Check there is 5 snapshots events"
-if [ $(grep -c "op_type\":{\"string\":\"R\"}" /tmp/result.log) -ne 5 ]
-then
-     logerror "Did not get expected results"
-     exit 1
-fi
-log "Check there is 3 insert events"
-if [ $(grep -c "op_type\":{\"string\":\"I\"}" /tmp/result.log) -ne 3 ]
-then
-     logerror "Did not get expected results"
-     exit 1
-fi
-log "Check there is 4 update events"
-if [ $(grep -c "op_type\":{\"string\":\"U\"}" /tmp/result.log) -ne 4 ]
-then
-     logerror "Did not get expected results"
-     exit 1
-fi
-log "Check there is 1 delete events"
-if [ $(grep -c "op_type\":{\"string\":\"D\"}" /tmp/result.log) -ne 1 ]
-then
-     logerror "Did not get expected results"
-     exit 1
-fi
+playground topic consume --topic ORCLCDB.C__MYUSER.CUSTOMERS --min-expected-messages 13
 
-log "Verifying topic redo-log-topic: there should be 9 records"
-timeout 60 docker exec connect kafka-avro-console-consumer -bootstrap-server broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic redo-log-topic --from-beginning --max-messages 9 --property print.key=true
+log "Verifying topic redo-log-topic: there should be 15 records"
+playground topic consume --topic redo-log-topic --min-expected-messages 15

@@ -23,11 +23,13 @@ function wait_for_solace () {
      sleep 30
 }
 
+cd ../../connect/connect-solace-source
 if [ ! -f ${DIR}/sol-jms-10.6.4.jar ]
 then
      log "Downloading sol-jms-10.6.4.jar"
      wget https://repo1.maven.org/maven2/com/solacesystems/sol-jms/10.6.4/sol-jms-10.6.4.jar
 fi
+cd -
 
 ${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
 
@@ -64,4 +66,4 @@ curl -X PUT \
      http://localhost:8083/connectors/solace-source/config | jq .
 
 log "Verifying topic from-solace-messages"
-timeout 60 docker exec broker kafka-console-consumer -bootstrap-server broker:9092 --topic from-solace-messages --from-beginning --max-messages 2
+playground topic consume --topic from-solace-messages --min-expected-messages 2

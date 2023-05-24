@@ -37,55 +37,57 @@ playground_usage() {
   echo
   # :command.usage_commands
   printf "%s\n" "$(bold "Run commands:")"
-  printf "  %s   🕹️ Run any example, except for Confluent Cloud (in this case use run-ccloud command)\n" "$(green "run")                           "
-  printf "  %s   ⚡ Simply re-run last example you ran with <playground run> or <playground run-ccloud>\n" "$(green "re-run")                        "
-  printf "  %s   ⛅ Run any Confluent Cloud (ccloud) example\n" "$(green "run-ccloud")                    "
-  printf "  %s   👐 Simply open last example you ran with <playground run> or <playground run-ccloud>\n" "$(green "open")                          "
-  printf "  %s   🛑 Stop currently running example\n" "$(green "stop")                          "
+  printf "  %s   🕹️ Run any example, except for Confluent Cloud (in this case use run-ccloud command)\n" "$(green "run")                               "
+  printf "  %s   ⚡ Simply re-run last example you ran with <playground run> or <playground run-ccloud>\n" "$(green "re-run")                            "
+  printf "  %s   ⛅ Run any Confluent Cloud (ccloud) example\n" "$(green "run-ccloud")                        "
+  printf "  %s   👐 When --file is not provided, simply open last example you ran with <playground run> or <playground run-ccloud>\n" "$(green "open")                              "
+  printf "  %s   🛑 Stop currently running example\n" "$(green "stop")                              "
   echo
   printf "%s\n" "$(bold "Bootstrap commands:")"
-  printf "  %s   🛠  Bootstrap reproduction model\n" "$(green "bootstrap-reproduction-model")  "
+  printf "  %s   🛠  Bootstrap reproduction model\n" "$(green "bootstrap-reproduction-model")      "
   echo
   printf "%s\n" "$(bold "Kafka commands:")"
-  printf "  %s   📝 Get properties file from a container\n" "$(green "get-properties")                "
-  printf "  %s   🔰 Get all schemas versions for all subjects\n" "$(green "get-all-schemas")               "
-  printf "  %s   🔢 Get JMX metrics from a component\n" "$(green "get-jmx-metrics")               "
+  printf "  %s   📝 Get properties file from a container\n" "$(green "get-properties")                    "
+  printf "  %s   🔰 Get all schemas versions for all subjects\n" "$(green "get-all-schemas")                   "
+  printf "  %s   🔢 Get JMX metrics from a component\n" "$(green "get-jmx-metrics")                   "
   echo
   printf "%s\n" "$(bold "Debug commands:")"
-  printf "  %s   ✨ Enable java remote debugging for container\n" "$(green "enable-remote-debugging")       "
-  printf "  %s   🧬 Set log level for any package\n" "$(green "log-level")                     "
+  printf "  %s   ✨ Enable java remote debugging for container\n" "$(green "enable-remote-debugging")           "
+  printf "  %s   🧬 Set log level for any package\n" "$(green "log-level")                         "
   echo
   printf "%s\n" "$(bold "Container commands:")"
-  printf "  %s   🐳 Container commands\n" "$(green "container")                     "
-  [[ -n $long_usage ]] && printf "  %s   💫 Recreate container(s)\n" "$(green "container recreate")            "
-  [[ -n $long_usage ]] && printf "  %s   🖥️  Get ip address of running containers\n" "$(green "container get-ip-addresses")    "
-  [[ -n $long_usage ]] && printf "  %s   💀 Kill all containers\n" "$(green "container kill-all")            "
-  [[ -n $long_usage ]] && printf "  %s   🕵️  Tail and follow container logs\n" "$(green "container logs")                "
-  [[ -n $long_usage ]] && printf "  %s   🛬 SSH into container\n" "$(green "container ssh")                 "
-  [[ -n $long_usage ]] && printf "  %s   🪄  Execute command in a container\n" "$(green "container exec")                "
-  [[ -n $long_usage ]] && printf "  %s   🔁 Restart a container\n" "$(green "container restart")             "
-  [[ -n $long_usage ]] && printf "  %s   ⏸️  Pause a container\n" "$(green "container pause")               "
-  [[ -n $long_usage ]] && printf "  %s   ⏯️  Resume a container\n" "$(green "container resume")              "
-  [[ -n $long_usage ]] && printf "  %s   🔫 Kill a container\n" "$(green "container kill")                "
+  printf "  %s   🐳 Container commands\n" "$(green "container")                         "
+  [[ -n $long_usage ]] && printf "  %s   💫 Recreate container(s)\n" "$(green "container recreate")                "
+  [[ -n $long_usage ]] && printf "  %s   🖥️  Get ip address of running containers\n" "$(green "container get-ip-addresses")        "
+  [[ -n $long_usage ]] && printf "  %s   💀 Kill all containers\n" "$(green "container kill-all")                "
+  [[ -n $long_usage ]] && printf "  %s   🕵️  Tail and follow container logs\n" "$(green "container logs")                    "
+  [[ -n $long_usage ]] && printf "  %s   🛬 SSH into container\n" "$(green "container ssh")                     "
+  [[ -n $long_usage ]] && printf "  %s   🪄  Execute command in a container\n" "$(green "container exec")                    "
+  [[ -n $long_usage ]] && printf "  %s   🔁 Restart a container\n" "$(green "container restart")                 "
+  [[ -n $long_usage ]] && printf "  %s   ⏸️  Pause a container\n" "$(green "container pause")                   "
+  [[ -n $long_usage ]] && printf "  %s   ⏯️  Resume a container\n" "$(green "container resume")                  "
+  [[ -n $long_usage ]] && printf "  %s   🔫 Kill a container\n" "$(green "container kill")                    "
   echo
   printf "%s\n" "$(bold "Topic commands:")"
-  printf "  %s   🗳 Topic commands\n" "$(green "topic")                         "
-  [[ -n $long_usage ]] && printf "  %s   💯 Get number of records in a topic\n" "$(green "topic get-number-records")      "
-  [[ -n $long_usage ]] && printf "  %s   📭 Display content of __consumer_offsets topic\n" "$(green "topic display-consumer-offsets")"
-  [[ -n $long_usage ]] && printf "  %s   🔬 Describe topic\n" "$(green "topic describe")                "
-  [[ -n $long_usage ]] && printf "  %s   📥 Consume topic from beginning\n" "$(green "topic consume")                 "
+  printf "  %s   🗳 Topic commands\n" "$(green "topic")                             "
+  [[ -n $long_usage ]] && printf "  %s   💯 Get number of records in a topic\n" "$(green "topic get-number-records")          "
+  [[ -n $long_usage ]] && printf "  %s   📭 Display content of __consumer_offsets topic\n" "$(green "topic display-consumer-offsets")    "
+  [[ -n $long_usage ]] && printf "  %s   🔬 Describe topic\n" "$(green "topic describe")                    "
+  [[ -n $long_usage ]] && printf "  %s   📥 Consume topic from beginning\n" "$(green "topic consume")                     "
+  [[ -n $long_usage ]] && printf "  %s   🛡️ Change topic's schema compatibility\n" "$(green "topic set-schema-compatibility")    "
+  [[ -n $long_usage ]] && printf "  %s   🧞 Easily identify the usage of different schema versions within a topic.\n" "$(green "topic display-schema-id-statistics")"
   echo
   printf "%s\n" "$(bold "Connector commands:")"
-  printf "  %s   🔗 Connector commands\n" "$(green "connector")                     "
-  [[ -n $long_usage ]] && printf "  %s   🧩 Show status of all connectors\n" "$(green "connector status")              "
-  [[ -n $long_usage ]] && printf "  %s   🎨 Show all plugins installed\n" "$(green "connector plugins")             "
-  [[ -n $long_usage ]] && printf "  %s   ⏸️  Pause connector\n" "$(green "connector pause")               "
-  [[ -n $long_usage ]] && printf "  %s   🧞 Get current version used in example\n" "$(green "connector versions")            "
-  [[ -n $long_usage ]] && printf "  %s   ♻️  Restart connector\n" "$(green "connector restart")             "
-  [[ -n $long_usage ]] && printf "  %s   ⏯️  Resume connector\n" "$(green "connector resume")              "
-  [[ -n $long_usage ]] && printf "  %s   🗑️  Delete connector\n" "$(green "connector delete")              "
-  [[ -n $long_usage ]] && printf "  %s   🐢 Show lag of sink connector\n" "$(green "connector show-lag")            "
-  [[ -n $long_usage ]] && printf "  %s   🧬 Set connect log level\n" "$(green "connector log-level")           "
+  printf "  %s   🔗 Connector commands\n" "$(green "connector")                         "
+  [[ -n $long_usage ]] && printf "  %s   🧩 Show status of all connectors\n" "$(green "connector status")                  "
+  [[ -n $long_usage ]] && printf "  %s   🎨 Show all plugins installed\n" "$(green "connector plugins")                 "
+  [[ -n $long_usage ]] && printf "  %s   ⏸️  Pause connector\n" "$(green "connector pause")                   "
+  [[ -n $long_usage ]] && printf "  %s   🧞 Get current and latest version available on Confluent Hub for connector(s) used in example\n" "$(green "connector versions")                "
+  [[ -n $long_usage ]] && printf "  %s   ♻️  Restart connector\n" "$(green "connector restart")                 "
+  [[ -n $long_usage ]] && printf "  %s   ⏯️  Resume connector\n" "$(green "connector resume")                  "
+  [[ -n $long_usage ]] && printf "  %s   🗑️  Delete connector\n" "$(green "connector delete")                  "
+  [[ -n $long_usage ]] && printf "  %s   🐢 Show lag of sink connector\n" "$(green "connector show-lag")                "
+  [[ -n $long_usage ]] && printf "  %s   🧬 Set connect log level\n" "$(green "connector log-level")               "
   echo
 
   # :command.long_usage
@@ -174,13 +176,19 @@ playground_get_topic_list_usage() {
   fi
 
   printf "%s\n" "$(bold "== Usage ==")"
-  printf "  playground get-topic-list\n"
+  printf "  playground get-topic-list [OPTIONS]\n"
   printf "  playground get-topic-list --help | -h\n"
   echo
 
   # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "== Options ==")"
+
+    # :command.usage_flags
+    # :flag.usage
+    printf "  %s\n" "$(magenta "--skip-connect-internal-topics")"
+    printf "\n"
+    echo
 
     # :command.usage_fixed_flags
     printf "  %s\n" "$(magenta "--help, -h")"
@@ -288,20 +296,20 @@ playground_get_zip_or_jar_with_fzf_usage() {
 }
 
 # :command.usage
-playground_get_schema_with_fzf_usage() {
+playground_get_any_file_with_fzf_usage() {
   if [[ -n $long_usage ]]; then
-    printf "playground get-schema-with-fzf - Return some completion for schema files\n"
+    printf "playground get-any-file-with-fzf - Return some completion for any files\n"
     echo
 
   else
-    printf "playground get-schema-with-fzf - Return some completion for schema files\n"
+    printf "playground get-any-file-with-fzf - Return some completion for any files\n"
     echo
 
   fi
 
   printf "%s\n" "$(bold "== Usage ==")"
-  printf "  playground get-schema-with-fzf [CUR]\n"
-  printf "  playground get-schema-with-fzf --help | -h\n"
+  printf "  playground get-any-file-with-fzf [CUR]\n"
+  printf "  playground get-any-file-with-fzf --help | -h\n"
   echo
 
   # :command.long_usage
@@ -356,10 +364,7 @@ playground_bashly_reload_usage() {
 # :command.usage
 playground_run_usage() {
   if [[ -n $long_usage ]]; then
-    printf "playground run\n"
-    echo
-
-    printf "  🕹️ Run any example, except for Confluent Cloud (in this case use run-ccloud\n  command)\n  \n  👉 Check documentation https://tinyurl.com/xxx\n"
+    printf "playground run - 🕹️ Run any example, except for Confluent Cloud (in this case use run-ccloud command)\n"
     echo
 
   else
@@ -588,7 +593,7 @@ playground_run_ccloud_usage() {
     printf "playground run-ccloud\n"
     echo
 
-    printf "  ⛅ Run any Confluent Cloud (ccloud) example\n  \n  All you have to do is to be already logged in with confluent CLI.\n  \n  By default, a new Confluent Cloud environment with a Cluster will be created.\n  \n  You can configure the new cluster by setting:\n  \n  --cluster-cloud (or CLUSTER_CLOUD environment variable)\n  --cluster-region (or CLUSTER_REGION environment variable)\n  --cluster-environment (or ENVIRONMENT environment variable)\n  \n  In case you want to use your own existing cluster, you need to setup, in\n  addition to previous ones:\n  \n  --cluster-name (or CLUSTER_NAME environment variable)\n  --cluster-creds (or CLUSTER_CREDS environment variable)\n  --cluster-schema-registry-creds (or SCHEMA_REGISTRY_CREDS environment\n  variable)\n  \n  👉 Check documentation https://tinyurl.com/xxx\n"
+    printf "  ⛅ Run any Confluent Cloud (ccloud) example\n  \n  All you have to do is to be already logged in with confluent CLI.\n  \n  By default, a new Confluent Cloud environment with a Cluster will be created.\n  \n  You can configure the new cluster by setting:\n  \n  --cluster-cloud (or CLUSTER_CLOUD environment variable)\n  --cluster-region (or CLUSTER_REGION environment variable)\n  --cluster-environment (or ENVIRONMENT environment variable)\n  \n  In case you want to use your own existing cluster, you need to setup, in\n  addition to previous ones:\n  \n  --cluster-name (or CLUSTER_NAME environment variable)\n  --cluster-creds (or CLUSTER_CREDS environment variable)\n  --cluster-schema-registry-creds (or SCHEMA_REGISTRY_CREDS environment\n  variable)\n"
     echo
 
   else
@@ -656,13 +661,11 @@ playground_run_ccloud_usage() {
     printf "  %s\n" "$(magenta "--cluster-cloud CLUSTER-CLOUD")"
     printf "    🌤 The cloud provider: aws, gcp or azure. Default is aws\n    \n    🎓 Tip: you can also use CLUSTER_CLOUD environment variable\n"
     printf "    Allowed: aws, gcp, azure\n"
-    printf "    Default: aws\n"
     echo
 
     # :flag.usage
     printf "  %s\n" "$(magenta "--cluster-region CLUSTER-REGION")"
     printf "    🗺 The Cloud region. \n    \n    🎓 Tip: you can also use CLUSTER_REGION environment variable\n"
-    printf "    Default: eu-west-2\n"
     echo
 
     # :flag.usage
@@ -708,23 +711,32 @@ playground_run_ccloud_usage() {
 # :command.usage
 playground_open_usage() {
   if [[ -n $long_usage ]]; then
-    printf "playground open - 👐 Simply open last example you ran with <playground run> or <playground run-ccloud>\n"
+    printf "playground open\n"
+    echo
+
+    printf "  👐 When --file is not provided, simply open last example you ran with\n  <playground run> or <playground run-ccloud>\n  \n  Otherwise, open any file from the playground using --file.\n"
     echo
 
   else
-    printf "playground open - 👐 Simply open last example you ran with <playground run> or <playground run-ccloud>\n"
+    printf "playground open - 👐 When --file is not provided, simply open last example you ran with <playground run> or <playground run-ccloud>\n"
     echo
 
   fi
 
   printf "%s\n" "$(bold "== Usage ==")"
-  printf "  playground open\n"
+  printf "  playground open [OPTIONS]\n"
   printf "  playground open --help | -h\n"
   echo
 
   # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "== Options ==")"
+
+    # :command.usage_flags
+    # :flag.usage
+    printf "  %s\n" "$(magenta "--file, -f FILE")"
+    printf "    🔎 Search any file and open it.\n    \n    ❕ It must be absolute full path\n    \n    🎓 Tip: use <tab> completion to trigger fzf completion\n"
+    echo
 
     # :command.usage_fixed_flags
     printf "  %s\n" "$(magenta "--help, -h")"
@@ -769,7 +781,7 @@ playground_bootstrap_reproduction_model_usage() {
     printf "playground bootstrap-reproduction-model\n"
     echo
 
-    printf "  🛠  Bootstrap reproduction model\n  \n  👉 Check documentation https://tinyurl.com/xxx\n"
+    printf "  🛠  Bootstrap reproduction model\n  \n  👉 Check documentation\n  https://kafka-docker-playground.io/#/reusables?id=%f0%9f%9b%a0-bootstrap-reproduction-model\n"
     echo
 
   else
@@ -856,7 +868,6 @@ playground_bootstrap_reproduction_model_usage() {
     # :flag.usage
     printf "  %s\n" "$(magenta "--cluster-region CLUSTER-REGION")"
     printf "    🗺 The Cloud region. \n    \n    🎓 Tip: you can also use CLUSTER_REGION environment variable\n"
-    printf "    Default: eu-west-2\n"
     echo
 
     # :flag.usage
@@ -903,13 +914,13 @@ playground_bootstrap_reproduction_model_usage() {
     echo
 
     # :flag.usage
-    printf "  %s\n" "$(magenta "--producer-schema-key PRODUCER_SCHEMA")"
-    printf "    🔰 Schema file to use for the key\n    \n    ❕ It must be absolute full path\n    \n    🎓 Tip: use <tab> completion to trigger fzf completion \n            use folder_producer_schema (default: ~/Downloads) in config.ini file\n    to configure where to search the files\n"
+    printf "  %s\n" "$(magenta "--producer-schema-key")"
+    printf "    🔰 Schema to use for the key\n    \n    ✨ Copy and paste the schema you want to use for the key, save and close the\n    file to continue\n"
     echo
 
     # :flag.usage
-    printf "  %s\n" "$(magenta "--producer-schema-value PRODUCER_SCHEMA")"
-    printf "    🔰 Schema file to use for the value\n    \n    ❕ It must be absolute full path\n    \n    🎓 Tip: use <tab> completion to trigger fzf completion \n            use folder_producer_schema (default: ~/Downloads) in config.ini file\n    to configure where to search the files\n"
+    printf "  %s\n" "$(magenta "--producer-schema-value")"
+    printf "    🔰 Schema to use for the value\n    \n    ✨ Copy and paste the schema you want to use for the key, save and close the\n    file to continue\n"
     echo
 
     # :flag.usage
@@ -961,7 +972,7 @@ playground_get_properties_usage() {
     printf "playground get-properties\n"
     echo
 
-    printf "  📝 Get properties file from a container\n  \n  👉 Check documentation https://tinyurl.com/xxx\n"
+    printf "  📝 Get properties file from a container\n  \n  👉 Check documentation\n  https://kafka-docker-playground.io/#/how-to-use?id=%f0%9f%93%9d-see-properties-file\n"
     echo
 
   else
@@ -1004,10 +1015,7 @@ playground_get_properties_usage() {
 # :command.usage
 playground_get_all_schemas_usage() {
   if [[ -n $long_usage ]]; then
-    printf "playground get-all-schemas\n"
-    echo
-
-    printf "  🔰 Get all schemas versions for all subjects\n  \n  👉 Check documentation xxxx\n"
+    printf "playground get-all-schemas - 🔰 Get all schemas versions for all subjects\n"
     echo
 
   else
@@ -1050,7 +1058,7 @@ playground_enable_remote_debugging_usage() {
     printf "playground enable-remote-debugging\n"
     echo
 
-    printf "  ✨ Enable java remote debugging for container\n  \n  👉 Check documentation https://tinyurl.com/xxx\n"
+    printf "  ✨ Enable java remote debugging for container\n  \n  👉 Check documentation\n  https://kafka-docker-playground.io/#/reusables?id=%e2%9c%a8-remote-debugging\n"
     echo
 
   else
@@ -1093,10 +1101,7 @@ playground_enable_remote_debugging_usage() {
 # :command.usage
 playground_log_level_usage() {
   if [[ -n $long_usage ]]; then
-    printf "playground log-level\n"
-    echo
-
-    printf "  🧬 Set log level for any package\n  \n  👉 Check documentation https://tinyurl.com/xxx\n"
+    printf "playground log-level - 🧬 Set log level for any package\n"
     echo
 
   else
@@ -1217,7 +1222,7 @@ playground_get_jmx_metrics_usage() {
     printf "playground get-jmx-metrics\n"
     echo
 
-    printf "  🔢 Get JMX metrics from a component\n  \n  👉 Check documentation https://tinyurl.com/xxx\n"
+    printf "  🔢 Get JMX metrics from a component\n  \n  👉 Check documentation\n  https://kafka-docker-playground.io/#/how-to-use?id=%f0%9f%94%a2-jmx-metrics\n"
     echo
 
   else
@@ -1311,7 +1316,7 @@ playground_container_recreate_usage() {
     printf "playground container recreate\n"
     echo
 
-    printf "  💫 Recreate container(s)\n  \n  👉 Check documentation https://tinyurl.com/xxx\n"
+    printf "  💫 Recreate container(s)\n  \n  👉 Check documentation\n  https://kafka-docker-playground.io/#/how-to-use?id=%e2%99%bb%ef%b8%8f-re-create-containers\n"
     echo
 
   else
@@ -1453,6 +1458,7 @@ playground_container_logs_usage() {
     printf "%s\n" "$(bold "Examples")"
     printf "  playground container logs --container connect\n"
     printf "  playground container logs -c connect --open\n"
+    printf "  playground container logs -c connect --wait-for-log \"StackOverflowError\"\n"
     echo
 
   fi
@@ -1730,10 +1736,12 @@ playground_topic_usage() {
   echo
   # :command.usage_commands
   printf "%s\n" "$(bold "Topic commands:")"
-  printf "  %s   💯 Get number of records in a topic\n" "$(green "get-number-records")      "
-  printf "  %s   📭 Display content of __consumer_offsets topic\n" "$(green "display-consumer-offsets")"
-  printf "  %s   🔬 Describe topic\n" "$(green "describe")                "
-  printf "  %s   📥 Consume topic from beginning\n" "$(green "consume")                 "
+  printf "  %s   💯 Get number of records in a topic\n" "$(green "get-number-records")          "
+  printf "  %s   📭 Display content of __consumer_offsets topic\n" "$(green "display-consumer-offsets")    "
+  printf "  %s   🔬 Describe topic\n" "$(green "describe")                    "
+  printf "  %s   📥 Consume topic from beginning\n" "$(green "consume")                     "
+  printf "  %s   🛡️ Change topic's schema compatibility\n" "$(green "set-schema-compatibility")    "
+  printf "  %s   🧞 Easily identify the usage of different schema versions within a topic.\n" "$(green "display-schema-id-statistics")"
   echo
 
   # :command.long_usage
@@ -1771,7 +1779,7 @@ playground_topic_get_number_records_usage() {
 
     # :command.usage_flags
     # :flag.usage
-    printf "  %s\n" "$(magenta "--topic, -t TOPIC (required)")"
+    printf "  %s\n" "$(magenta "--topic, -t TOPIC")"
     printf "    🗳 Topic name\n"
     echo
 
@@ -1841,7 +1849,7 @@ playground_topic_describe_usage() {
 
     # :command.usage_flags
     # :flag.usage
-    printf "  %s\n" "$(magenta "--topic, -t TOPIC (required)")"
+    printf "  %s\n" "$(magenta "--topic, -t TOPIC")"
     printf "    🗳 Topic name\n"
     echo
 
@@ -1876,7 +1884,7 @@ playground_topic_consume_usage() {
 
     # :command.usage_flags
     # :flag.usage
-    printf "  %s\n" "$(magenta "--topic, -t TOPIC (required)")"
+    printf "  %s\n" "$(magenta "--topic, -t TOPIC")"
     printf "    🗳 Topic name\n"
     echo
 
@@ -1884,6 +1892,97 @@ playground_topic_consume_usage() {
     printf "  %s\n" "$(magenta "--max-messages MAX-MESSAGES")"
     printf "    Max number of messages to consume\n"
     printf "    Default: \n"
+    echo
+
+    # :flag.usage
+    printf "  %s\n" "$(magenta "--min-expected-messages MIN-EXPECTED-MESSAGES")"
+    printf "    Minimum expected number of messages to be present in topic, returns an error\n    if this is not the case\n    \n    Note: --topic should be specified in this case.\n"
+    printf "    Default: \n"
+    echo
+
+    # :flag.usage
+    printf "  %s\n" "$(magenta "--grep GREP")"
+    printf "    Verify that topic content contains record which contains specified string\n"
+    printf "    Default: \n"
+    echo
+
+    # :command.usage_fixed_flags
+    printf "  %s\n" "$(magenta "--help, -h")"
+    printf "    Show this help\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+playground_topic_set_schema_compatibility_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "playground topic set-schema-compatibility - 🛡️ Change topic's schema compatibility\n"
+    echo
+
+  else
+    printf "playground topic set-schema-compatibility - 🛡️ Change topic's schema compatibility\n"
+    echo
+
+  fi
+
+  printf "%s\n" "$(bold "== Usage ==")"
+  printf "  playground topic set-schema-compatibility [OPTIONS]\n"
+  printf "  playground topic set-schema-compatibility --help | -h\n"
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "%s\n" "$(bold "== Options ==")"
+
+    # :command.usage_flags
+    # :flag.usage
+    printf "  %s\n" "$(magenta "--topic, -t TOPIC")"
+    printf "    🗳 Topic name\n"
+    echo
+
+    # :flag.usage
+    printf "  %s\n" "$(magenta "--compatibility COMPATIBILITY (required)")"
+    printf "    Schema Registry compatibility rule\n"
+    printf "    Allowed: BACKWARD, BACKWARD_TRANSITIVE, FORWARD, FORWARD_TRANSITIVE, FULL, FULL_TRANSITIVE, NONE\n"
+    echo
+
+    # :command.usage_fixed_flags
+    printf "  %s\n" "$(magenta "--help, -h")"
+    printf "    Show this help\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+playground_topic_display_schema_id_statistics_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "playground topic display-schema-id-statistics\n"
+    echo
+
+    printf "  🧞 Easily identify the usage of different schema versions within a topic.\n  \n  It makes use of https://github.com/EladLeev/schema-registry-statistics\n  \n  It only works when plaintext environment is used\n"
+    echo
+
+  else
+    printf "playground topic display-schema-id-statistics - 🧞 Easily identify the usage of different schema versions within a topic.\n"
+    echo
+
+  fi
+
+  printf "%s\n" "$(bold "== Usage ==")"
+  printf "  playground topic display-schema-id-statistics [OPTIONS]\n"
+  printf "  playground topic display-schema-id-statistics --help | -h\n"
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "%s\n" "$(bold "== Options ==")"
+
+    # :command.usage_flags
+    # :flag.usage
+    printf "  %s\n" "$(magenta "--topic, -t TOPIC")"
+    printf "    🗳 Topic name\n"
     echo
 
     # :command.usage_fixed_flags
@@ -1915,7 +2014,7 @@ playground_connector_usage() {
   printf "  %s   🧩 Show status of all connectors\n" "$(green "status")   "
   printf "  %s   🎨 Show all plugins installed\n" "$(green "plugins")  "
   printf "  %s   ⏸️  Pause connector\n" "$(green "pause")    "
-  printf "  %s   🧞 Get current version used in example\n" "$(green "versions") "
+  printf "  %s   🧞 Get current and latest version available on Confluent Hub for connector(s) used in example\n" "$(green "versions") "
   printf "  %s   ♻️  Restart connector\n" "$(green "restart")  "
   printf "  %s   ⏯️  Resume connector\n" "$(green "resume")   "
   printf "  %s   🗑️  Delete connector\n" "$(green "delete")   "
@@ -2040,29 +2139,23 @@ playground_connector_pause_usage() {
 # :command.usage
 playground_connector_versions_usage() {
   if [[ -n $long_usage ]]; then
-    printf "playground connector versions - 🧞 Get current version used in example\n"
+    printf "playground connector versions - 🧞 Get current and latest version available on Confluent Hub for connector(s) used in example\n"
     echo
 
   else
-    printf "playground connector versions - 🧞 Get current version used in example\n"
+    printf "playground connector versions - 🧞 Get current and latest version available on Confluent Hub for connector(s) used in example\n"
     echo
 
   fi
 
   printf "%s\n" "$(bold "== Usage ==")"
-  printf "  playground connector versions [OPTIONS]\n"
+  printf "  playground connector versions\n"
   printf "  playground connector versions --help | -h\n"
   echo
 
   # :command.long_usage
   if [[ -n $long_usage ]]; then
     printf "%s\n" "$(bold "== Options ==")"
-
-    # :command.usage_flags
-    # :flag.usage
-    printf "  %s\n" "$(magenta "--connector, -c CONNECTOR")"
-    printf "    🔗 Connector name\n    \n    🎓 Tip: If not specified, the command will apply to all connectors\n"
-    echo
 
     # :command.usage_fixed_flags
     printf "  %s\n" "$(magenta "--help, -h")"
@@ -2320,7 +2413,7 @@ function get_environment_used() {
     return
   fi
 
-  patterns=("environment/2way-ssl" "environment/sasl-ssl" "environment/rbac-sasl-plain" "environment/kerberos" "environment/ssl_kerberos" "environment/ldap-authorizer-sasl-plain" "environment/sasl-plain" "environment/ldap-sasl-plain" "environment/sasl-scram" "environment/mdc-plaintext" "environment/mdc-sasl-plain" "environment/mdc-kerberos")
+  patterns=("environment/2way-ssl" "environment/sasl-ssl" "environment/rbac-sasl-plain" "environment/kerberos" "environment/ssl_kerberos" "environment/ldap-authorizer-sasl-plain" "environment/sasl-plain" "environment/ldap-sasl-plain" "environment/sasl-scram" "environment/mdc-plaintext" "environment/mdc-sasl-plain" "environment/mdc-kerberos" "ccloud/environment")
 
   for pattern in "${patterns[@]}"; do
     if grep -q "$pattern" /tmp/playground-command; then
@@ -2383,6 +2476,17 @@ function get_sr_url_and_security() {
       DIR_CLI="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
       security="-u superUser:superUser"
+  elif [[ "$environment" == "environment" ]]
+  then
+    if [ -f /tmp/delta_configs/env.delta ]
+    then
+        source /tmp/delta_configs/env.delta
+    else
+        logerror "ERROR: /tmp/delta_configs/env.delta has not been generated"
+        exit 1
+    fi
+    sr_url=$SCHEMA_REGISTRY_URL
+    security="-u $SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO"
   fi
 
   echo "$sr_url@$security"
@@ -2572,7 +2676,11 @@ function get_zip_or_jar_with_fzf() {
   res=$(find $folder_zip_or_jar $PWD -name \*.$type ! -path '*/\.*' | fzf --query "$cur" --margin=1%,1%,1%,1% $fzf_option_rounded --info=inline --prompt="🍺" --header="ctrl-c or esc to quit" --color="bg:-1,bg+:-1,info:#BDBB72,border:#FFFFFF,spinner:0,hl:#beb665,fg:#00f7f7,header:#5CC9F5,fg+:#beb665,pointer:#E12672,marker:#5CC9F5,prompt:#98BEDE" $fzf_option_wrap $fzf_option_pointer);echo "$cur@$res"
 }
 
-function get_schema_with_fzf() {
+function get_any_files_with_fzf() {
+  DIR_CLI="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+  dir1=$(echo ${DIR_CLI%/*})
+  dir2=$(echo ${dir1%/*})
+
   cur="$1"
 
   fzf_version=$(get_fzf_version)
@@ -2587,18 +2695,7 @@ function get_schema_with_fzf() {
     fzf_option_rounded=""
   fi
 
-  if config_has_key "folder_producer_schema"
-  then
-    folder_producer_schema=$(config_get "folder_producer_schema")
-  else
-    logerror "Could not find config value <folder_producer_schema> !"
-    exit 1
-  fi
-
-  folder_producer_schema=${folder_producer_schema//\~/$HOME}
-  folder_producer_schema=${folder_producer_schema//,/ }
-
-  res=$(find $folder_producer_schema $PWD -type f \( -name "*.avsc" -o -name "*.json" -o -name "*.proto" -o -name "*.proto3" \) ! -path '*/\.*' | fzf --query "$cur" --margin=1%,1%,1%,1% $fzf_option_rounded --info=inline --prompt="🍺" --header="ctrl-c or esc to quit" --color="bg:-1,bg+:-1,info:#BDBB72,border:#FFFFFF,spinner:0,hl:#beb665,fg:#00f7f7,header:#5CC9F5,fg+:#beb665,pointer:#E12672,marker:#5CC9F5,prompt:#98BEDE" $fzf_option_wrap $fzf_option_pointer)
+  res=$(find $dir2 -type f ! -path '*/\.*' | fzf --query "$cur" --margin=1%,1%,1%,1% $fzf_option_rounded --info=inline --prompt="🍺" --header="ctrl-c or esc to quit" --color="bg:-1,bg+:-1,info:#BDBB72,border:#FFFFFF,spinner:0,hl:#beb665,fg:#00f7f7,header:#5CC9F5,fg+:#beb665,pointer:#E12672,marker:#5CC9F5,prompt:#98BEDE" $fzf_option_wrap $fzf_option_pointer);echo "$cur@$res"
 }
 
 function filter_not_mdc_environment() {
@@ -3189,6 +3286,8 @@ function verify_installed()
 function maybe_create_image()
 {
   set +e
+  log "🧰 Checking if Docker image ${CP_CONNECT_IMAGE}:${CONNECT_TAG} contains additional tools"
+  log "🧰 it can take a while if image is downloaded for the first time"
   docker run --rm ${CP_CONNECT_IMAGE}:${CONNECT_TAG} type unzip > /dev/null 2>&1
   if [ $? != 0 ]
   then
@@ -3752,7 +3851,6 @@ function display_jmx_info() {
   then
     log "    - ksqldb-server   : 10003"
   fi
-
 }
 function get_jmx_metrics() {
   JMXTERM_VERSION="1.0.2"
@@ -3815,7 +3913,21 @@ EOF
   docker exec -i $component java -jar $JMXTERM_UBER_JAR  -l localhost:$port -n < /tmp/commands >> /tmp/jmx_metrics.log 2>&1
 done
 
-  log "JMX metrics are available in /tmp/jmx_metrics.log file"
+  if config_has_key "editor"
+  then
+    editor=$(config_get "editor")
+    log "📖 Opening /tmp/jmx_metrics.log using configured editor $editor"
+    $editor /tmp/jmx_metrics.log
+  else
+    if [[ $(type code 2>&1) =~ "not found" ]]
+    then
+      logerror "Could not determine an editor to use as default code is not found - you can change editor by updating config.ini"
+      exit 1
+    else
+      log "📖 Opening /tmp/jmx_metrics.log with code (default) - you can change editor by updating config.ini"
+      code /tmp/jmx_metrics.log
+    fi
+  fi
 }
 
 # https://www.linuxjournal.com/content/validating-ip-address-bash-script
@@ -4407,12 +4519,12 @@ function bootstrap_ccloud_environment () {
   ccloud::create_ccloud_stack false  \
     && print_code_pass -c "ccloud::create_ccloud_stack false"
 
-  CONFIG_FILE=/tmp/tmp.config
-  export CONFIG_FILE=$CONFIG_FILE
-  ccloud::validate_ccloud_config $CONFIG_FILE || exit 1
+  CCLOUD_CONFIG_FILE=/tmp/tmp.config
+  export CCLOUD_CONFIG_FILE=$CCLOUD_CONFIG_FILE
+  ccloud::validate_ccloud_config $CCLOUD_CONFIG_FILE || exit 1
 
-  ccloud::generate_configs $CONFIG_FILE \
-    && print_code_pass -c "ccloud::generate_configs $CONFIG_FILE"
+  ccloud::generate_configs $CCLOUD_CONFIG_FILE \
+    && print_code_pass -c "ccloud::generate_configs $CCLOUD_CONFIG_FILE"
 
   if [ -f $DELTA_CONFIGS_ENV ]
   then
@@ -5271,7 +5383,7 @@ function ccloud::create_acls_connect_topics() {
 
 function ccloud::validate_ccloud_stack_up() {
   CLOUD_KEY=$1
-  CONFIG_FILE=$2
+  CCLOUD_CONFIG_FILE=$2
   enable_ksqldb=$3
 
   if [ -z "$enable_ksqldb" ]; then
@@ -5283,7 +5395,7 @@ function ccloud::validate_ccloud_stack_up() {
   ccloud::validate_schema_registry_up "$SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO" "$SCHEMA_REGISTRY_URL" || exit 1
   if $enable_ksqldb ; then
     ccloud::validate_ksqldb_up "$KSQLDB_ENDPOINT" || exit 1
-    ccloud::validate_credentials_ksqldb "$KSQLDB_ENDPOINT" "$CONFIG_FILE" "$KSQLDB_BASIC_AUTH_USER_INFO" || exit 1
+    ccloud::validate_credentials_ksqldb "$KSQLDB_ENDPOINT" "$CCLOUD_CONFIG_FILE" "$KSQLDB_BASIC_AUTH_USER_INFO" || exit 1
   fi
 }
 
@@ -5445,11 +5557,11 @@ function ccloud::create_ccloud_stack() {
   confluent api-key use $CLOUD_API_KEY --resource ${CLUSTER}
 
   if [[ -z "$SKIP_CONFIG_FILE_WRITE" ]]; then
-    if [[ -z "$CONFIG_FILE" ]]; then
-      CONFIG_FILE="/tmp/tmp.config"
+    if [[ -z "$CCLOUD_CONFIG_FILE" ]]; then
+      CCLOUD_CONFIG_FILE="/tmp/tmp.config"
     fi
 
-    cat <<EOF > $CONFIG_FILE
+    cat <<EOF > $CCLOUD_CONFIG_FILE
 # --------------------------------------
 # Confluent Cloud connection information
 # --------------------------------------
@@ -5459,11 +5571,11 @@ function ccloud::create_ccloud_stack() {
 # SCHEMA REGISTRY CLUSTER ID: ${SCHEMA_REGISTRY}
 EOF
     if $enable_ksqldb ; then
-      cat <<EOF >> $CONFIG_FILE
+      cat <<EOF >> $CCLOUD_CONFIG_FILE
 # KSQLDB APP ID: ${KSQLDB}
 EOF
     fi
-    cat <<EOF >> $CONFIG_FILE
+    cat <<EOF >> $CCLOUD_CONFIG_FILE
 # --------------------------------------
 sasl.mechanism=PLAIN
 security.protocol=SASL_SSL
@@ -5475,14 +5587,14 @@ basic.auth.user.info=`echo $SCHEMA_REGISTRY_CREDS | awk -F: '{print $1}'`:`echo 
 replication.factor=${REPLICATION_FACTOR}
 EOF
     if $enable_ksqldb ; then
-      cat <<EOF >> $CONFIG_FILE
+      cat <<EOF >> $CCLOUD_CONFIG_FILE
 ksql.endpoint=${KSQLDB_ENDPOINT}
 ksql.basic.auth.user.info=`echo $KSQLDB_CREDS | awk -F: '{print $1}'`:`echo $KSQLDB_CREDS | awk -F: '{print $2}'`
 EOF
     fi
 
     echo
-    echo "Client configuration file saved to: $CONFIG_FILE"
+    echo "Client configuration file saved to: $CCLOUD_CONFIG_FILE"
   fi
 
   return 0
@@ -5503,7 +5615,7 @@ function ccloud::destroy_ccloud_stack() {
 
   ENVIRONMENT_NAME_PREFIX=${ENVIRONMENT_NAME_PREFIX:-"pg-$SERVICE_ACCOUNT_ID"}
   CLUSTER_NAME=${CLUSTER_NAME:-"pg-cluster-$SERVICE_ACCOUNT_ID"}
-  CONFIG_FILE=${CONFIG_FILE:-"/tmp/tmp.config"}
+  CCLOUD_CONFIG_FILE=${CCLOUD_CONFIG_FILE:-"/tmp/tmp.config"}
   KSQLDB_NAME=${KSQLDB_NAME:-"demo-ksqldb-$SERVICE_ACCOUNT_ID"}
 
   # Setting default QUIET=false to surface potential errors
@@ -5547,7 +5659,7 @@ function ccloud::destroy_ccloud_stack() {
     fi
   fi
 
-  rm -f $CONFIG_FILE
+  rm -f $CCLOUD_CONFIG_FILE
 
   return 0
 }
@@ -5586,9 +5698,9 @@ function ccloud::destroy_ccloud_stack() {
 #
 # Arguments:
 #
-#   CONFIG_FILE, defaults to ~/.ccloud/config
+#   CCLOUD_CONFIG_FILE, defaults to ~/.ccloud/config
 #
-# Example CONFIG_FILE at ~/.ccloud/config
+# Example CCLOUD_CONFIG_FILE at ~/.ccloud/config
 #
 #   $ cat $HOME/.ccloud/config
 #
@@ -5609,27 +5721,27 @@ function ccloud::destroy_ccloud_stack() {
 #   ksql.basic.auth.user.info=<ksqlDB API KEY>:<ksqlDB API SECRET>
 #
 function ccloud::generate_configs() {
-  CONFIG_FILE=$1
-  if [[ -z "$CONFIG_FILE" ]]; then
-    CONFIG_FILE=~/.ccloud/config
+  CCLOUD_CONFIG_FILE=$1
+  if [[ -z "$CCLOUD_CONFIG_FILE" ]]; then
+    CCLOUD_CONFIG_FILE=~/.ccloud/config
   fi
-  if [[ ! -f "$CONFIG_FILE" ]]; then
-    echo "File $CONFIG_FILE is not found.  Please create this properties file to connect to your Confluent Cloud cluster and then try again"
+  if [[ ! -f "$CCLOUD_CONFIG_FILE" ]]; then
+    echo "File $CCLOUD_CONFIG_FILE is not found.  Please create this properties file to connect to your Confluent Cloud cluster and then try again"
     echo "See https://docs.confluent.io/current/cloud/connect/auto-generate-configs.html for more information"
     return 1
   fi
 
-  echo -e "\nGenerating component configurations from $CONFIG_FILE"
+  echo -e "\nGenerating component configurations from $CCLOUD_CONFIG_FILE"
   echo -e "\n(If you want to run any of these components to talk to Confluent Cloud, these are the configurations to add to the properties file for each component)"
 
   # Set permissions
   PERM=600
   if ls --version 2>/dev/null | grep -q 'coreutils' ; then
     # GNU binutils
-    PERM=$(stat -c "%a" $CONFIG_FILE)
+    PERM=$(stat -c "%a" $CCLOUD_CONFIG_FILE)
   else
     # BSD
-    PERM=$(stat -f "%OLp" $CONFIG_FILE)
+    PERM=$(stat -f "%OLp" $CCLOUD_CONFIG_FILE)
   fi
 
   # Make destination
@@ -5639,28 +5751,28 @@ function ccloud::generate_configs() {
   # Glean parameters from the Confluent Cloud configuration file
 
   # Kafka cluster
-  BOOTSTRAP_SERVERS=$( grep "^bootstrap.server" $CONFIG_FILE | awk -F'=' '{print $2;}' )
+  BOOTSTRAP_SERVERS=$( grep "^bootstrap.server" $CCLOUD_CONFIG_FILE | awk -F'=' '{print $2;}' )
   BOOTSTRAP_SERVERS=${BOOTSTRAP_SERVERS/\\/}
-  SASL_JAAS_CONFIG=$( grep "^sasl.jaas.config" $CONFIG_FILE | cut -d'=' -f2- )
+  SASL_JAAS_CONFIG=$( grep "^sasl.jaas.config" $CCLOUD_CONFIG_FILE | cut -d'=' -f2- )
   SASL_JAAS_CONFIG_PROPERTY_FORMAT=${SASL_JAAS_CONFIG/username\\=/username=}
   SASL_JAAS_CONFIG_PROPERTY_FORMAT=${SASL_JAAS_CONFIG_PROPERTY_FORMAT/password\\=/password=}
   CLOUD_KEY=$( echo $SASL_JAAS_CONFIG | awk '{print $3}' | awk -F"'" '$0=$2' )
   CLOUD_SECRET=$( echo $SASL_JAAS_CONFIG | awk '{print $4}' | awk -F"'" '$0=$2' )
 
   # Schema Registry
-  BASIC_AUTH_CREDENTIALS_SOURCE=$( grep "^basic.auth.credentials.source" $CONFIG_FILE | awk -F'=' '{print $2;}' )
-  SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO=$( grep "^basic.auth.user.info" $CONFIG_FILE | awk -F'=' '{print $2;}' )
-  SCHEMA_REGISTRY_URL=$( grep "^schema.registry.url" $CONFIG_FILE | awk -F'=' '{print $2;}' )
+  BASIC_AUTH_CREDENTIALS_SOURCE=$( grep "^basic.auth.credentials.source" $CCLOUD_CONFIG_FILE | awk -F'=' '{print $2;}' )
+  SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO=$( grep "^basic.auth.user.info" $CCLOUD_CONFIG_FILE | awk -F'=' '{print $2;}' )
+  SCHEMA_REGISTRY_URL=$( grep "^schema.registry.url" $CCLOUD_CONFIG_FILE | awk -F'=' '{print $2;}' )
 
   # ksqlDB
-  KSQLDB_ENDPOINT=$( grep "^ksql.endpoint" $CONFIG_FILE | awk -F'=' '{print $2;}' )
-  KSQLDB_BASIC_AUTH_USER_INFO=$( grep "^ksql.basic.auth.user.info" $CONFIG_FILE | awk -F'=' '{print $2;}' )
+  KSQLDB_ENDPOINT=$( grep "^ksql.endpoint" $CCLOUD_CONFIG_FILE | awk -F'=' '{print $2;}' )
+  KSQLDB_BASIC_AUTH_USER_INFO=$( grep "^ksql.basic.auth.user.info" $CCLOUD_CONFIG_FILE | awk -F'=' '{print $2;}' )
 
   # Build configuration file with Confluent Cloud connection parameters and
   # Confluent Monitoring Interceptors for Streams Monitoring in Confluent Control Center
   INTERCEPTORS_CONFIG_FILE=$DEST/interceptors-ccloud.config
   rm -f $INTERCEPTORS_CONFIG_FILE
-  echo "# Configuration derived from $CONFIG_FILE" > $INTERCEPTORS_CONFIG_FILE
+  echo "# Configuration derived from $CCLOUD_CONFIG_FILE" > $INTERCEPTORS_CONFIG_FILE
   while read -r line
   do
     # Skip lines that are commented out
@@ -5675,7 +5787,7 @@ function ccloud::generate_configs() {
       line=${line/\\/}
     fi
     echo $line >> $INTERCEPTORS_CONFIG_FILE
-  done < "$CONFIG_FILE"
+  done < "$CCLOUD_CONFIG_FILE"
   echo -e "\n# Confluent Monitoring Interceptor specific configuration" >> $INTERCEPTORS_CONFIG_FILE
   while read -r line
   do
@@ -5696,7 +5808,7 @@ function ccloud::generate_configs() {
           ${line:0:9} == 'bootstrap' ]]; then
       echo "confluent.monitoring.interceptor.$line" >> $INTERCEPTORS_CONFIG_FILE
     fi
-  done < "$CONFIG_FILE"
+  done < "$CCLOUD_CONFIG_FILE"
   chmod $PERM $INTERCEPTORS_CONFIG_FILE
 
   echo -e "\nConfluent Platform Components:"
@@ -5712,7 +5824,7 @@ function ccloud::generate_configs() {
         echo "kafkastore.$line" >> $SR_CONFIG_DELTA
       fi
     fi
-  done < "$CONFIG_FILE"
+  done < "$CCLOUD_CONFIG_FILE"
   chmod $PERM $SR_CONFIG_DELTA
 
   # Confluent Replicator (executable) for Confluent Cloud
@@ -5750,7 +5862,7 @@ function ccloud::generate_configs() {
     elif [[ ${line:0:15} == 'schema.registry' ]]; then
       echo "ksql.$line" >> $KSQLDB_SERVER_DELTA
     fi
-  done < $CONFIG_FILE
+  done < $CCLOUD_CONFIG_FILE
   chmod $PERM $KSQLDB_SERVER_DELTA
 
   # KSQL DataGen for Confluent Cloud
@@ -5768,7 +5880,7 @@ function ccloud::generate_configs() {
     elif [[ ${line:0:15} == 'schema.registry' ]]; then
       echo "ksql.$line" >> $KSQL_DATAGEN_DELTA
     fi
-  done < $CONFIG_FILE
+  done < $CCLOUD_CONFIG_FILE
   chmod $PERM $KSQL_DATAGEN_DELTA
 
   # Confluent Control Center runs locally, monitors Confluent Cloud, and uses Confluent Cloud cluster as the backstore
@@ -5787,7 +5899,7 @@ function ccloud::generate_configs() {
         echo "confluent.controlcenter.streams.$line" >> $C3_DELTA
       fi
     fi
-  done < "$CONFIG_FILE"
+  done < "$CCLOUD_CONFIG_FILE"
   # max.message.bytes is enforced to 8MB in Confluent Cloud
   echo "confluent.metrics.topic.max.message.bytes=8388608" >> $C3_DELTA
   echo -e "\n# Confluent Schema Registry configuration for Confluent Control Center" >> $C3_DELTA
@@ -5798,7 +5910,7 @@ function ccloud::generate_configs() {
     elif [[ ${line:0:15} == 'schema.registry' ]]; then
       echo "confluent.controlcenter.$line" >> $C3_DELTA
     fi
-  done < $CONFIG_FILE
+  done < $CCLOUD_CONFIG_FILE
   chmod $PERM $C3_DELTA
 
   # Confluent Metrics Reporter to Confluent Cloud
@@ -5814,7 +5926,7 @@ function ccloud::generate_configs() {
         echo "confluent.metrics.reporter.$line" >> $METRICS_REPORTER_DELTA
       fi
     fi
-  done < "$CONFIG_FILE"
+  done < "$CCLOUD_CONFIG_FILE"
   chmod $PERM $METRICS_REPORTER_DELTA
 
   # Confluent REST Proxy to Confluent Cloud
@@ -5829,7 +5941,7 @@ function ccloud::generate_configs() {
         echo "client.$line" >> $REST_PROXY_DELTA
       fi
     fi
-  done < "$CONFIG_FILE"
+  done < "$CCLOUD_CONFIG_FILE"
   echo -e "\n# Confluent Schema Registry configuration for REST Proxy" >> $REST_PROXY_DELTA
   while read -r line
   do
@@ -5838,7 +5950,7 @@ function ccloud::generate_configs() {
     elif [[ ${line:0:19} == 'schema.registry.url' ]]; then
       echo "$line" >> $REST_PROXY_DELTA
     fi
-  done < $CONFIG_FILE
+  done < $CCLOUD_CONFIG_FILE
   chmod $PERM $REST_PROXY_DELTA
 
   # Kafka Connect runs locally and connects to Confluent Cloud
@@ -5864,7 +5976,7 @@ EOF
         echo "$line" >> $CONNECT_DELTA
       fi
     fi
-  done < "$CONFIG_FILE"
+  done < "$CCLOUD_CONFIG_FILE"
 
   for prefix in "producer" "consumer" "producer.confluent.monitoring.interceptor" "consumer.confluent.monitoring.interceptor" ; do
 
@@ -5879,7 +5991,7 @@ EOF
         echo "${prefix}.$line" >> $CONNECT_DELTA
       fi
     fi
-  done < "$CONFIG_FILE"
+  done < "$CCLOUD_CONFIG_FILE"
 
   done
 
@@ -5910,7 +6022,7 @@ EOF
   AK_TOOLS_DELTA=$DEST/ak-tools-ccloud.delta
   echo "$AK_TOOLS_DELTA"
   rm -f $AK_TOOLS_DELTA
-  cp $CONFIG_FILE $AK_TOOLS_DELTA
+  cp $CCLOUD_CONFIG_FILE $AK_TOOLS_DELTA
   chmod $PERM $AK_TOOLS_DELTA
 
   echo -e "\nKafka Clients:"
@@ -6375,12 +6487,32 @@ playground_get_kafka_region_list_command() {
 # :command.function
 playground_get_topic_list_command() {
   # src/get_topic_list_command.sh
-  #docker exec broker kafka-topics --bootstrap-server broker:9092 --list | grep -v "^_"
-  # trick to be faster
-  docker exec broker ls /var/lib/kafka/data > /dev/null 2>&1
-  if [ $? -eq 0 ]
+  skip_connect_internal_topics="${args[--skip-connect-internal-topics]}"
+
+  environment=`get_environment_used`
+
+  if [ "$environment" == "error" ]
   then
-    docker exec broker ls /var/lib/kafka/data | grep -v "checkpoint" | grep -v "meta.properties" | grep -v "^_" | sed 's/[^-]*$//' | sed 's/.$//' | sort | uniq
+    logerror "File containing restart command /tmp/playground-command does not exist!"
+    exit 1
+
+  fi
+
+  if [[ "$environment" == "environment" ]]
+  then
+    confluent kafka topic list | grep -v "^_" | grep -v "Name" | grep -v "\-\-\-"
+  else
+    # trick to be faster
+    docker exec broker ls /var/lib/kafka/data > /dev/null 2>&1
+    if [ $? -eq 0 ]
+    then
+      if [[ -n "$skip_connect_internal_topics" ]]
+      then
+        docker exec broker ls /var/lib/kafka/data | grep -v "checkpoint" | grep -v "meta.properties" | grep -v "connect-" | grep -v "^_" | sed 's/[^-]*$//' | sed 's/.$//' | sort | uniq
+      else
+        docker exec broker ls /var/lib/kafka/data | grep -v "checkpoint" | grep -v "meta.properties" | grep -v "^_" | sed 's/[^-]*$//' | sed 's/.$//' | sort | uniq
+      fi
+    fi
   fi
 }
 
@@ -6423,11 +6555,11 @@ playground_get_zip_or_jar_with_fzf_command() {
 }
 
 # :command.function
-playground_get_schema_with_fzf_command() {
-  # src/get_schema_with_fzf_command.sh
+playground_get_any_file_with_fzf_command() {
+  # src/get_any_file_with_fzf_command.sh
   cur="${args[cur]}"
 
-  get_schema_with_fzf "$cur"
+  get_any_files_with_fzf "$cur"
 }
 
 # :command.function
@@ -6615,13 +6747,16 @@ playground_run_command() {
   else
     log "🚀 Running example without any flags"
   fi
+  set +e
+  playground container kill-all
+  set -e
   echo "playground run -f $test_file $flag_list ${other_args[*]}" > /tmp/playground-run
   log "####################################################"
   log "🚀 Executing $filename in dir $test_file_directory"
   log "####################################################"
   SECONDS=0
   cd $test_file_directory
-  trap 'rm /tmp/playground-run-command-used;echo "";sleep 3;set +e;playground connector status' EXIT
+  trap 'rm /tmp/playground-run-command-used;echo "";sleep 3;set +e;playground connector status;playground connector versions' EXIT
   touch /tmp/playground-run-command-used
   bash $filename ${other_args[*]}
   ret=$?
@@ -6873,12 +7008,22 @@ playground_run_ccloud_command() {
   then
     flag_list="$flag_list --cluster-cloud $cluster_cloud"
     export CLUSTER_CLOUD=$cluster_cloud
+  else
+    if [ -z "$CLUSTER_CLOUD" ]
+    then
+      export CLUSTER_CLOUD="aws"
+    fi
   fi
 
   if [[ -n "$cluster_region" ]]
   then
     flag_list="$flag_list --cluster-region $cluster_region"
     export CLUSTER_REGION=$cluster_region
+  else
+    if [ -z "$CLUSTER_REGION" ]
+    then
+      export CLUSTER_REGION="eu-west-2"
+    fi
   fi
 
   if [[ -n "$cluster_environment" ]]
@@ -6933,13 +7078,16 @@ playground_run_ccloud_command() {
   else
     log "🚀⛅ Running ccloud example without any flags"
   fi
+  set +e
+  playground container kill-all
+  set -e
   echo "playground run -f $test_file $flag_list ${other_args[*]}" > /tmp/playground-run
   log "####################################################"
   log "🚀 Executing $filename in dir $test_file_directory"
   log "####################################################"
   SECONDS=0
   cd $test_file_directory
-  trap 'rm /tmp/playground-run-command-used;echo "";sleep 3;set +e;playground connector status' EXIT
+  trap 'rm /tmp/playground-run-command-used;echo "";sleep 3;set +e;playground connector status;playground connector versions' EXIT
   touch /tmp/playground-run-command-used
   bash $filename ${other_args[*]}
   ret=$?
@@ -6962,21 +7110,31 @@ playground_run_ccloud_command() {
 # :command.function
 playground_open_command() {
   # src/open_command.sh
-  if [ ! -f /tmp/playground-run ]
+  test_file="${args[--file]}"
+
+  if [[ -n "$test_file" ]]
   then
-    logerror "File containing run command /tmp/playground-run does not exist!"
-    logerror "Make sure to use <playground run> command !"
-    exit 1
-  fi
+    if [[ $test_file == *"@"* ]]
+    then
+      test_file=$(echo "$test_file" | cut -d "@" -f 2)
+    fi
+  else
+    if [ ! -f /tmp/playground-run ]
+    then
+      logerror "File containing run command /tmp/playground-run does not exist!"
+      logerror "Make sure to use <playground run> command !"
+      exit 1
+    fi
 
-  test_file=$(cat /tmp/playground-run | awk '{ print $4}')
+    test_file=$(cat /tmp/playground-run | awk '{ print $4}')
 
-  if [ ! -f $test_file ]
-  then
+    if [ ! -f $test_file ]
+    then
 
-    logerror "File $test_file retrieved from /tmp/playground-run does not exist!"
-    logerror "Make sure to use <playground run> command !"
-    exit 1
+      logerror "File $test_file retrieved from /tmp/playground-run does not exist!"
+      logerror "Make sure to use <playground run> command !"
+      exit 1
+    fi
   fi
 
   if config_has_key "editor"
@@ -7216,70 +7374,34 @@ playground_bootstrap_reproduction_model_command() {
         echo "               \"key.converter\": \"org.apache.kafka.connect.storage.StringConverter\"," > $tmp_dir/key_converter
         echo "               \"value.converter\": \"io.confluent.connect.avro.AvroConverter\"," > $tmp_dir/value_converter
         echo "               \"value.converter.schema.registry.url\": \"http://schema-registry:8081\"," >> $tmp_dir/value_converter
-
-        log "Examples to consume:"
-        log "1️⃣ Simplest"
-        echo "docker exec connect kafka-avro-console-consumer -bootstrap-server broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic a-topic --from-beginning --max-messages 1"
-        log "2️⃣ Displaying key:"
-        echo "docker exec connect kafka-avro-console-consumer -bootstrap-server broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic a-topic --property print.key=true --property key.separator=, --from-beginning --max-messages 1"
       ;;
       avro-with-key)
         echo "               \"key.converter\": \"io.confluent.connect.avro.AvroConverter\"," > $tmp_dir/key_converter
         echo "               \"key.converter.schema.registry.url\": \"http://schema-registry:8081\"," >> $tmp_dir/key_converter
         echo "               \"value.converter\": \"io.confluent.connect.avro.AvroConverter\"," > $tmp_dir/value_converter
         echo "               \"value.converter.schema.registry.url\": \"http://schema-registry:8081\"," >> $tmp_dir/value_converter
-
-        log "Examples to consume:"
-        log "1️⃣ Simplest"
-        echo "docker exec connect kafka-avro-console-consumer -bootstrap-server broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic a-topic --from-beginning --max-messages 1"
-        log "2️⃣ Displaying key:"
-        echo "docker exec connect kafka-avro-console-consumer -bootstrap-server broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic a-topic --property print.key=true --property key.separator=, --from-beginning --max-messages 1"
       ;;
       json-schema)
         echo "               \"key.converter\": \"org.apache.kafka.connect.storage.StringConverter\"," > $tmp_dir/key_converter
         echo "               \"value.converter\": \"io.confluent.connect.json.JsonSchemaConverter\"," > $tmp_dir/value_converter
         echo "               \"value.converter.schema.registry.url\": \"http://schema-registry:8081\"," >> $tmp_dir/value_converter
-
-        log "Examples to consume:"
-        log "1️⃣ Simplest"
-        echo "docker exec connect kafka-json-schema-console-consumer -bootstrap-server broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic a-topic --from-beginning --max-messages 1"
-        log "2️⃣ Displaying key:"
-        echo "docker exec connect kafka-json-schema-console-consumer -bootstrap-server broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic a-topic --property print.key=true --property key.separator=, --from-beginning --max-messages 1"
       ;;
       json-schema-with-key)
         echo "               \"key.converter\": \"io.confluent.connect.json.JsonSchemaConverter\"," > $tmp_dir/key_converter
         echo "               \"key.converter.schema.registry.url\": \"http://schema-registry:8081\"," >> $tmp_dir/key_converter
         echo "               \"value.converter\": \"io.confluent.connect.json.JsonSchemaConverter\"," > $tmp_dir/value_converter
         echo "               \"value.converter.schema.registry.url\": \"http://schema-registry:8081\"," >> $tmp_dir/value_converter
-
-        log "Examples to consume:"
-        log "1️⃣ Simplest"
-        echo "docker exec connect kafka-json-schema-console-consumer -bootstrap-server broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic a-topic --from-beginning --max-messages 1"
-        log "2️⃣ Displaying key:"
-        echo "docker exec connect kafka-json-schema-console-consumer -bootstrap-server broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic a-topic --property print.key=true --property key.separator=, --from-beginning --max-messages 1"
       ;;
       protobuf)
         echo "               \"key.converter\": \"org.apache.kafka.connect.storage.StringConverter\"," > $tmp_dir/key_converter
         echo "               \"value.converter\": \"io.confluent.connect.protobuf.ProtobufConverter\"," > $tmp_dir/value_converter
         echo "               \"value.converter.schema.registry.url\": \"http://schema-registry:8081\"," >> $tmp_dir/value_converter
-
-        log "Examples to consume:"
-        log "1️⃣ Simplest"
-        echo "docker exec connect kafka-protobuf-console-consumer -bootstrap-server broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic a-topic --from-beginning --max-messages 1"
-        log "2️⃣ Displaying key:"
-        echo "docker exec connect kafka-protobuf-console-consumer -bootstrap-server broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic a-topic --property print.key=true --property key.separator=, --from-beginning --max-messages 1"
       ;;
       protobuf-with-key)
         echo "               \"key.converter\": \"io.confluent.connect.protobuf.ProtobufConverter\"," > $tmp_dir/key_converter
         echo "               \"key.converter.schema.registry.url\": \"http://schema-registry:8081\"," >> $tmp_dir/key_converter
         echo "               \"value.converter\": \"io.confluent.connect.protobuf.ProtobufConverter\"," > $tmp_dir/value_converter
         echo "               \"value.converter.schema.registry.url\": \"http://schema-registry:8081\"," >> $tmp_dir/value_converter
-
-        log "Examples to consume:"
-        log "1️⃣ Simplest"
-        echo "docker exec connect kafka-protobuf-console-consumer -bootstrap-server broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic a-topic --from-beginning --max-messages 1"
-        log "2️⃣ Displaying key:"
-        echo "docker exec connect kafka-protobuf-console-consumer -bootstrap-server broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic a-topic --property print.key=true --property key.separator=, --from-beginning --max-messages 1"
       ;;
       none)
       ;;
@@ -7288,7 +7410,6 @@ playground_bootstrap_reproduction_model_command() {
         exit 1
       ;;
     esac
-
     original_topic_name=$(grep "\"topics\"" $repro_test_file | cut -d "\"" -f 4 | head -1)
     if [ "$original_topic_name" != "" ]
     then
@@ -7318,73 +7439,88 @@ playground_bootstrap_reproduction_model_command() {
 
       if [[ -n "$schema_file_key" ]]
       then
-        if [[ $schema_file_key == *"@"* ]]
+        if config_has_key "editor"
         then
-          schema_file_key=$(echo "$schema_file_key" | cut -d "@" -f 2)
+          editor=$(config_get "editor")
+          log "✨ Copy and paste the schema you want to use for the key, save and close the file to continue"
+          if [ "$editor" = "code" ]
+          then
+            code --wait $tmp_dir/key_schema
+          else
+            $editor $tmp_dir/key_schema
+          fi
+        else
+          if [[ $(type code 2>&1) =~ "not found" ]]
+          then
+            logerror "Could not determine an editor to use as default code is not found - you can change editor by updating config.ini"
+            exit 1
+          else
+            log "✨ Copy and paste the schema you want to use for the key, save and close the file to continue"
+            code --wait $tmp_dir/key_schema
+          fi
         fi
-        cp $schema_file_key $tmp_dir/schema
 
         case "${producer}" in
           avro-with-key)
-            original_namespace=$(cat $tmp_dir/schema | jq -r .namespace)
+            original_namespace=$(cat $tmp_dir/key_schema | jq -r .namespace)
             if [ "$original_namespace" != "null" ]
             then
               sed -e "s|$original_namespace|com.github.vdesabou|g" \
-                  $tmp_dir/schema  > /tmp/tmp
+                  $tmp_dir/key_schema  > /tmp/tmp
 
-              mv /tmp/tmp $tmp_dir/schema
+              mv /tmp/tmp $tmp_dir/key_schema
               log "✨ Replacing namespace $original_namespace with com.github.vdesabou"
             else
               # need to add namespace
-              cp $tmp_dir/schema /tmp/tmp
+              cp $tmp_dir/key_schema /tmp/tmp
               line=2
-              { head -n $(($line-1)) /tmp/tmp; echo "    \"namespace\": \"com.github.vdesabou\","; tail -n +$line /tmp/tmp; } > $tmp_dir/schema
+              { head -n $(($line-1)) /tmp/tmp; echo "    \"namespace\": \"com.github.vdesabou\","; tail -n +$line /tmp/tmp; } > $tmp_dir/key_schema
             fi
             # replace record name with MyKey
-            jq '.name = "MyKey"' $tmp_dir/schema > /tmp/tmp
-            mv /tmp/tmp $tmp_dir/schema
+            jq '.name = "MyKey"' $tmp_dir/key_schema > /tmp/tmp
+            mv /tmp/tmp $tmp_dir/key_schema
 
-            cp $tmp_dir/schema $repro_dir/$producer_hostname/src/main/resources/schema/mykey.avsc
+            cp $tmp_dir/key_schema $repro_dir/$producer_hostname/src/main/resources/schema/mykey.avsc
           ;;
           json-schema-with-key)
             # replace title name with ID
-            jq '.title = "ID"' $tmp_dir/schema > /tmp/tmp
-            mv /tmp/tmp $tmp_dir/schema
+            jq '.title = "ID"' $tmp_dir/key_schema > /tmp/tmp
+            mv /tmp/tmp $tmp_dir/key_schema
 
-            cp $tmp_dir/schema $repro_dir/$producer_hostname/src/main/resources/schema/Id.json
+            cp $tmp_dir/key_schema $repro_dir/$producer_hostname/src/main/resources/schema/Id.json
           ;;
           protobuf-with-key)
-            original_package=$(grep "package " $tmp_dir/schema | cut -d " " -f 2 | cut -d ";" -f 1 | head -1)
+            original_package=$(grep "package " $tmp_dir/key_schema | cut -d " " -f 2 | cut -d ";" -f 1 | head -1)
             if [ "$original_package" != "" ]
             then
               sed -e "s|$original_package|com.github.vdesabou|g" \
-                  $tmp_dir/schema  > /tmp/tmp
+                  $tmp_dir/key_schema  > /tmp/tmp
 
-              mv /tmp/tmp $tmp_dir/schema
+              mv /tmp/tmp $tmp_dir/key_schema
               log "✨ Replacing package $original_package with com.github.vdesabou"
             else
               # need to add package
-              cp $tmp_dir/schema /tmp/tmp
+              cp $tmp_dir/key_schema /tmp/tmp
               line=2
-              { head -n $(($line-1)) /tmp/tmp; echo "package com.github.vdesabou;"; tail -n +$line /tmp/tmp; } > $tmp_dir/schema
+              { head -n $(($line-1)) /tmp/tmp; echo "package com.github.vdesabou;"; tail -n +$line /tmp/tmp; } > $tmp_dir/key_schema
             fi
 
-            original_java_outer_classname=$(grep "java_outer_classname" $tmp_dir/schema | cut -d "\"" -f 2 | cut -d "\"" -f 1 | head -1)
+            original_java_outer_classname=$(grep "java_outer_classname" $tmp_dir/key_schema | cut -d "\"" -f 2 | cut -d "\"" -f 1 | head -1)
             if [ "$original_java_outer_classname" != "" ]
             then
               sed -e "s|$original_java_outer_classname|IdImpl|g" \
-                  $tmp_dir/schema  > /tmp/tmp
+                  $tmp_dir/key_schema  > /tmp/tmp
 
-              mv /tmp/tmp $tmp_dir/schema
+              mv /tmp/tmp $tmp_dir/key_schema
               log "✨ Replacing java_outer_classname $original_java_outer_classname with IdImpl"
             else
               # need to add java_outer_classname
-              cp $tmp_dir/schema /tmp/tmp
+              cp $tmp_dir/key_schema /tmp/tmp
               line=3
-              { head -n $(($line-1)) /tmp/tmp; echo "option java_outer_classname = \"IdImpl\";"; tail -n +$line /tmp/tmp; } > $tmp_dir/schema
+              { head -n $(($line-1)) /tmp/tmp; echo "option java_outer_classname = \"IdImpl\";"; tail -n +$line /tmp/tmp; } > $tmp_dir/key_schema
             fi
 
-            cp $tmp_dir/schema $repro_dir/$producer_hostname/src/main/resources/schema/Id.proto
+            cp $tmp_dir/key_schema $repro_dir/$producer_hostname/src/main/resources/schema/Id.proto
           ;;
 
           none)
@@ -7398,73 +7534,88 @@ playground_bootstrap_reproduction_model_command() {
 
       if [[ -n "$schema_file_value" ]]
       then
-        if [[ $schema_file_value == *"@"* ]]
+        if config_has_key "editor"
         then
-          schema_file_value=$(echo "$schema_file_value" | cut -d "@" -f 2)
+          editor=$(config_get "editor")
+          log "✨ Copy and paste the schema you want to use for the value, save and close the file to continue"
+          if [ "$editor" = "code" ]
+          then
+            code --wait $tmp_dir/value_schema
+          else
+            $editor $tmp_dir/value_schema
+          fi
+        else
+          if [[ $(type code 2>&1) =~ "not found" ]]
+          then
+            logerror "Could not determine an editor to use as default code is not found - you can change editor by updating config.ini"
+            exit 1
+          else
+            log "✨ Copy and paste the schema you want to use for the value, save and close the file to continue"
+            code --wait $tmp_dir/value_schema
+          fi
         fi
-        cp $schema_file_value $tmp_dir/schema
 
         case "${producer}" in
           avro|avro-with-key)
-            original_namespace=$(cat $tmp_dir/schema | jq -r .namespace)
+            original_namespace=$(cat $tmp_dir/value_schema | jq -r .namespace)
             if [ "$original_namespace" != "null" ]
             then
               sed -e "s|$original_namespace|com.github.vdesabou|g" \
-                  $tmp_dir/schema  > /tmp/tmp
+                  $tmp_dir/value_schema  > /tmp/tmp
 
-              mv /tmp/tmp $tmp_dir/schema
+              mv /tmp/tmp $tmp_dir/value_schema
               log "✨ Replacing namespace $original_namespace with com.github.vdesabou"
             else
               # need to add namespace
-              cp $tmp_dir/schema /tmp/tmp
+              cp $tmp_dir/value_schema /tmp/tmp
               line=2
-              { head -n $(($line-1)) /tmp/tmp; echo "    \"namespace\": \"com.github.vdesabou\","; tail -n +$line /tmp/tmp; } > $tmp_dir/schema
+              { head -n $(($line-1)) /tmp/tmp; echo "    \"namespace\": \"com.github.vdesabou\","; tail -n +$line /tmp/tmp; } > $tmp_dir/value_schema
             fi
             # replace record name with Customer
-            jq '.name = "Customer"' $tmp_dir/schema > /tmp/tmp
-            mv /tmp/tmp $tmp_dir/schema
+            jq '.name = "Customer"' $tmp_dir/value_schema > /tmp/tmp
+            mv /tmp/tmp $tmp_dir/value_schema
 
-            cp $tmp_dir/schema $repro_dir/$producer_hostname/src/main/resources/schema/customer.avsc
+            cp $tmp_dir/value_schema $repro_dir/$producer_hostname/src/main/resources/schema/customer.avsc
           ;;
           json-schema|json-schema-with-key)
             # replace title name with Customer
-            jq '.title = "Customer"' $tmp_dir/schema > /tmp/tmp
-            mv /tmp/tmp $tmp_dir/schema
+            jq '.title = "Customer"' $tmp_dir/value_schema > /tmp/tmp
+            mv /tmp/tmp $tmp_dir/value_schema
 
-            cp $tmp_dir/schema $repro_dir/$producer_hostname/src/main/resources/schema/Customer.json
+            cp $tmp_dir/value_schema $repro_dir/$producer_hostname/src/main/resources/schema/Customer.json
           ;;
           protobuf|protobuf-with-key)
-            original_package=$(grep "package " $tmp_dir/schema | cut -d " " -f 2 | cut -d ";" -f 1 | head -1)
+            original_package=$(grep "package " $tmp_dir/value_schema | cut -d " " -f 2 | cut -d ";" -f 1 | head -1)
             if [ "$original_package" != "" ]
             then
               sed -e "s|$original_package|com.github.vdesabou|g" \
-                  $tmp_dir/schema  > /tmp/tmp
+                  $tmp_dir/value_schema  > /tmp/tmp
 
-              mv /tmp/tmp $tmp_dir/schema
+              mv /tmp/tmp $tmp_dir/value_schema
               log "✨ Replacing package $original_package with com.github.vdesabou"
             else
               # need to add package
-              cp $tmp_dir/schema /tmp/tmp
+              cp $tmp_dir/value_schema /tmp/tmp
               line=2
-              { head -n $(($line-1)) /tmp/tmp; echo "package com.github.vdesabou;"; tail -n +$line /tmp/tmp; } > $tmp_dir/schema
+              { head -n $(($line-1)) /tmp/tmp; echo "package com.github.vdesabou;"; tail -n +$line /tmp/tmp; } > $tmp_dir/value_schema
             fi
 
-            original_java_outer_classname=$(grep "java_outer_classname" $tmp_dir/schema | cut -d "\"" -f 2 | cut -d "\"" -f 1 | head -1)
+            original_java_outer_classname=$(grep "java_outer_classname" $tmp_dir/value_schema | cut -d "\"" -f 2 | cut -d "\"" -f 1 | head -1)
             if [ "$original_java_outer_classname" != "" ]
             then
               sed -e "s|$original_java_outer_classname|CustomerImpl|g" \
-                  $tmp_dir/schema  > /tmp/tmp
+                  $tmp_dir/value_schema  > /tmp/tmp
 
-              mv /tmp/tmp $tmp_dir/schema
+              mv /tmp/tmp $tmp_dir/value_schema
               log "✨ Replacing java_outer_classname $original_java_outer_classname with CustomerImpl"
             else
               # need to add java_outer_classname
-              cp $tmp_dir/schema /tmp/tmp
+              cp $tmp_dir/value_schema /tmp/tmp
               line=3
-              { head -n $(($line-1)) /tmp/tmp; echo "option java_outer_classname = \"CustomerImpl\";"; tail -n +$line /tmp/tmp; } > $tmp_dir/schema
+              { head -n $(($line-1)) /tmp/tmp; echo "option java_outer_classname = \"CustomerImpl\";"; tail -n +$line /tmp/tmp; } > $tmp_dir/value_schema
             fi
 
-            cp $tmp_dir/schema $repro_dir/$producer_hostname/src/main/resources/schema/Customer.proto
+            cp $tmp_dir/value_schema $repro_dir/$producer_hostname/src/main/resources/schema/Customer.proto
           ;;
 
           none)
@@ -8309,8 +8460,8 @@ playground_container_get_ip_addresses_command() {
 # :command.function
 playground_container_kill_all_command() {
   # src/container_kill_all_command.sh
-  log "Kill all docker containers"
-  docker rm -f $(docker ps -qa)
+  log "💀 Kill all docker containers"
+  docker rm -f $(docker ps -qa) > /dev/null 2>&1
 }
 
 # :command.function
@@ -8429,8 +8580,48 @@ playground_topic_get_number_records_command() {
   container=$(echo "$ret" | cut -d "@" -f 1)
   security=$(echo "$ret" | cut -d "@" -f 2)
 
-  log "Get number of records in a topic $topic"
-  docker exec $container kafka-run-class kafka.tools.GetOffsetShell --broker-list broker:9092 $security --topic $topic --time -1 | awk -F ":" '{sum += $3} END {print sum}'
+  if [[ ! -n "$topic" ]]
+  then
+      log "✨ --topic flag was not provided, applying command to all topics"
+      topic=$(playground get-topic-list --skip-connect-internal-topics)
+      if [ "$topic" == "" ]
+      then
+          logerror "❌ No topic found !"
+          exit 1
+      fi
+  fi
+
+  environment=`get_environment_used`
+
+  if [ "$environment" == "error" ]
+  then
+    logerror "File containing restart command /tmp/playground-command does not exist!"
+    exit 1
+
+  fi
+
+  items=($topic)
+  for topic in ${items[@]}
+  do
+      log "💯 Get number of records in a topic $topic"
+      if [[ "$environment" == "environment" ]]
+      then
+          if [ ! -f /tmp/delta_configs/librdkafka.delta ]
+          then
+              logerror "ERROR: /tmp/delta_configs/librdkafka.delta has not been generated"
+              exit 1
+          fi
+          docker run -it --network=host \
+              -v /tmp/delta_configs/librdkafka.delta:/tmp/configuration/ccloud.properties \
+              confluentinc/cp-kcat:latest kcat \
+                  -F /tmp/configuration/ccloud.properties \
+                  -C -t $topic \
+                  -e -q \
+                  | grep -v "Reading configuration from file" | wc -l | tr -d ' '
+      else
+          docker exec $container kafka-run-class kafka.tools.GetOffsetShell --broker-list broker:9092 $security --topic $topic --time -1 | awk -F ":" '{sum += $3} END {print sum}'
+      fi
+  done
 }
 
 # :command.function
@@ -8441,8 +8632,42 @@ playground_topic_display_consumer_offsets_command() {
   container=$(echo "$ret" | cut -d "@" -f 1)
   security=$(echo "$ret" | cut -d "@" -f 2)
 
+  environment=`get_environment_used`
+
+  if [ "$environment" == "error" ]
+  then
+    logerror "File containing restart command /tmp/playground-command does not exist!"
+    exit 1
+
+  fi
+
   log "Display content of __consumer_offsets topic, press crtl-c to stop..."
-  docker exec -i $container kafka-console-consumer --bootstrap-server broker:9092 --topic __consumer_offsets --from-beginning --formatter "kafka.coordinator.group.GroupMetadataManager\$OffsetsMessageFormatter" $security | grep -v "_confluent-controlcenter"
+  if [[ "$environment" == "environment" ]]
+  then
+      if [ -f /tmp/delta_configs/env.delta ]
+      then
+          source /tmp/delta_configs/env.delta
+      else
+          logerror "ERROR: /tmp/delta_configs/env.delta has not been generated"
+          exit 1
+      fi
+      if [ ! -f /tmp/delta_configs/ak-tools-ccloud.delta ]
+      then
+          logerror "ERROR: /tmp/delta_configs/ak-tools-ccloud.delta has not been generated"
+          exit 1
+      fi
+
+      DIR_CLI="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+      dir1=$(echo ${DIR_CLI%/*})
+      root_folder=$(echo ${dir1%/*})
+      IGNORE_CHECK_FOR_DOCKER_COMPOSE=true
+      source $root_folder/scripts/utils.sh
+
+      docker run --rm -v /tmp/delta_configs/ak-tools-ccloud.delta:/tmp/configuration/ccloud.properties -e BOOTSTRAP_SERVERS="$BOOTSTRAP_SERVERS" -e SASL_JAAS_CONFIG="$SASL_JAAS_CONFIG" ${CP_CONNECT_IMAGE}:${CONNECT_TAG} kafka-topics --describe --topic $topic --bootstrap-server $BOOTSTRAP_SERVERS --command-config /tmp/configuration/ccloud.properties
+  else
+      docker exec -i $container kafka-console-consumer --bootstrap-server broker:9092 --topic __consumer_offsets --from-beginning --formatter "kafka.coordinator.group.GroupMetadataManager\$OffsetsMessageFormatter" $security | grep -v "_confluent-controlcenter"
+  fi
+
 }
 
 # :command.function
@@ -8455,8 +8680,56 @@ playground_topic_describe_command() {
   container=$(echo "$ret" | cut -d "@" -f 1)
   security=$(echo "$ret" | cut -d "@" -f 2)
 
-  log "Describing topic $topic"
-  docker exec $container kafka-topics --describe --topic $topic --bootstrap-server broker:9092 $security
+  if [[ ! -n "$topic" ]]
+  then
+      log "✨ --topic flag was not provided, applying command to all topics"
+      topic=$(playground get-topic-list --skip-connect-internal-topics)
+      if [ "$topic" == "" ]
+      then
+          logerror "❌ No topic found !"
+          exit 1
+      fi
+  fi
+
+  environment=`get_environment_used`
+
+  if [ "$environment" == "error" ]
+  then
+    logerror "File containing restart command /tmp/playground-command does not exist!"
+    exit 1
+
+  fi
+
+  items=($topic)
+  for topic in ${items[@]}
+  do
+      log "🔎 Describing topic $topic"
+      if [[ "$environment" == "environment" ]]
+      then
+          if [ -f /tmp/delta_configs/env.delta ]
+          then
+              source /tmp/delta_configs/env.delta
+          else
+              logerror "ERROR: /tmp/delta_configs/env.delta has not been generated"
+              exit 1
+          fi
+          if [ ! -f /tmp/delta_configs/ak-tools-ccloud.delta ]
+          then
+              logerror "ERROR: /tmp/delta_configs/ak-tools-ccloud.delta has not been generated"
+              exit 1
+          fi
+
+          DIR_CLI="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+          dir1=$(echo ${DIR_CLI%/*})
+          root_folder=$(echo ${dir1%/*})
+          IGNORE_CHECK_FOR_DOCKER_COMPOSE=true
+          source $root_folder/scripts/utils.sh
+
+          docker run --rm -v /tmp/delta_configs/ak-tools-ccloud.delta:/tmp/configuration/ccloud.properties ${CP_CONNECT_IMAGE}:${CONNECT_TAG} kafka-topics --describe --topic $topic --bootstrap-server $BOOTSTRAP_SERVERS --command-config /tmp/configuration/ccloud.properties
+      else
+          docker exec $container kafka-topics --describe --topic $topic --bootstrap-server broker:9092 $security
+      fi
+  done
 }
 
 # :command.function
@@ -8464,6 +8737,8 @@ playground_topic_consume_command() {
   # src/topic_consume_command.sh
   topic="${args[--topic]}"
   max_messages="${args[--max-messages]}"
+  grep_string="${args[--grep]}"
+  min_expected_messages="${args[--min-expected-messages]}"
 
   environment=`get_environment_used`
 
@@ -8479,128 +8754,336 @@ playground_topic_consume_command() {
   sr_url=$(echo "$ret" | cut -d "@" -f 1)
   sr_security=$(echo "$ret" | cut -d "@" -f 2)
 
-  key_type=""
-  version=$(curl $sr_security -s "${sr_url}/subjects/${topic}-key/versions/1" | jq -r .version)
-  if [ "$version" != "null" ]
-  then
-    schema_type=$(curl $sr_security -s "${sr_url}/subjects/${topic}-key/versions/1"  | jq -r .schemaType)
-    case "${schema_type}" in
-      JSON)
-        key_type="json-schema"
-      ;;
-      PROTOBUF)
-        key_type="protobuf"
-      ;;
-      null)
-        key_type="avro"
-      ;;
-    esac
-  fi
-
-  if [ "$key_type" != "" ]
-  then
-    log "🔮🔰 topic is using $key_type for key"
-  else
-    log "🔮🙅 topic is not using any schema for key"
-  fi
-
-  value_type=""
-  version=$(curl $sr_security -s "${sr_url}/subjects/${topic}-value/versions/1" | jq -r .version)
-  if [ "$version" != "null" ]
-  then
-    schema_type=$(curl $sr_security -s "${sr_url}/subjects/${topic}-value/versions/1"  | jq -r .schemaType)
-    case "${schema_type}" in
-      JSON)
-        value_type="json-schema"
-      ;;
-      PROTOBUF)
-        value_type="protobuf"
-      ;;
-      null)
-        value_type="avro"
-      ;;
-    esac
-  fi
-
-  if [ "$value_type" != "" ]
-  then
-    log "🔮🔰 topic is using $value_type for value"
-  else
-    log "🔮🙅 topic is not using any schema for value"
-  fi
-
+  bootstrap_server="broker:9092"
   container="connect"
-  sr_url="http://schema-registry:8081"
+  sr_url_cli="http://schema-registry:8081"
   security=""
   if [[ "$environment" == *"ssl"* ]]
   then
-      sr_url="https://schema-registry:8081"
+      sr_url_cli="https://schema-registry:8081"
       security="--property schema.registry.ssl.truststore.location=/etc/kafka/secrets/kafka.client.truststore.jks --property schema.registry.ssl.truststore.password=confluent --property schema.registry.ssl.keystore.location=/etc/kafka/secrets/kafka.client.keystore.jks --property schema.registry.ssl.keystore.password=confluent --consumer.config /etc/kafka/secrets/client_without_interceptors.config"
   elif [[ "$environment" == "rbac-sasl-plain" ]]
   then
-      sr_url="http://schema-registry:8081"
+      sr_url_cli="http://schema-registry:8081"
       security="--property basic.auth.credentials.source=USER_INFO --property schema.registry.basic.auth.user.info=clientAvroCli:clientAvroCli --consumer.config /etc/kafka/secrets/client_without_interceptors.config"
   elif [[ "$environment" == "kerberos" ]]
   then
       container="client"
-      sr_url="http://schema-registry:8081"
+      sr_url_cli="http://schema-registry:8081"
       security="--consumer.config /etc/kafka/consumer.properties"
 
       docker exec -i client kinit -k -t /var/lib/secret/kafka-connect.key connect
-  fi
-
-  if [[ -n "$max_messages" ]]
+  elif [[ "$environment" == "environment" ]]
   then
-    nb_messages=$(playground topic get-number-records -t $topic | tail -1)
-    log "✨ Display content of topic $topic, it contains $nb_messages messages, but displaying only --max-messages=$max_messages"
-    nb_messages=$max_messages
-  else
-    nb_messages=$(playground topic get-number-records -t $topic | tail -1)
-    log "✨ Display content of topic $topic, it contains $nb_messages messages"
+    if [ -f /tmp/delta_configs/env.delta ]
+    then
+        source /tmp/delta_configs/env.delta
+    else
+        logerror "ERROR: /tmp/delta_configs/env.delta has not been generated"
+        exit 1
+    fi
+    if [ ! -f /tmp/delta_configs/ak-tools-ccloud.delta ]
+    then
+        logerror "ERROR: /tmp/delta_configs/ak-tools-ccloud.delta has not been generated"
+        exit 1
+    fi
+    DIR_CLI="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+    dir1=$(echo ${DIR_CLI%/*})
+    root_folder=$(echo ${dir1%/*})
+    IGNORE_CHECK_FOR_DOCKER_COMPOSE=true
+    source $root_folder/scripts/utils.sh
   fi
 
-  type=""
-  tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
-  fifo_path="$tmp_dir/kafka_output_fifo"
-  mkfifo "$fifo_path"
-  case "${value_type}" in
-    avro|protobuf|json-schema)
-        if [ "$key_type" == "avro" ] || [ "$key_type" == "protobuf" ] || [ "$key_type" == "json-schema" ]
-        then
-            docker exec -e SCHEMA_REGISTRY_LOG4J_OPTS="-Dlog4j.configuration=file:/etc/kafka/tools-log4j.properties" $container kafka-$value_type-console-consumer -bootstrap-server broker:9092 --property schema.registry.url=$sr_url --topic $topic --property print.partition=true --property print.offset=true --property print.headers=true --property print.timestamp=true --property print.key=true --property key.separator="|" $security --from-beginning --max-messages $nb_messages > "$fifo_path" &
-        else
-            docker exec -e SCHEMA_REGISTRY_LOG4J_OPTS="-Dlog4j.configuration=file:/etc/kafka/tools-log4j.properties" $container kafka-$value_type-console-consumer --bootstrap-server broker:9092 --property schema.registry.url=$sr_url --topic $topic --property print.partition=true --property print.offset=true --property print.headers=true --property print.timestamp=true --property print.key=true --property key.separator="|" --property key.deserializer=org.apache.kafka.common.serialization.StringDeserializer $security --from-beginning --max-messages $nb_messages > "$fifo_path" &
-        fi
+  if [[ ! -n "$topic" ]]
+  then
+      if [[ -n "$min_expected_messages" ]]
+      then
+        logerror "--min-expected-messages was provided without specifying --topic"
+        exit 1
+      fi
+      log "✨ --topic flag was not provided, applying command to all topics"
+      topic=$(playground get-topic-list --skip-connect-internal-topics)
+      if [ "$topic" == "" ]
+      then
+          logerror "❌ No topic found !"
+          exit 1
+      fi
+  fi
+
+  items=($topic)
+  for topic in ${items[@]}
+  do
+    if [[ -n "$min_expected_messages" ]]
+    then
+      nb_messages=$(playground topic get-number-records -t $topic | tail -1)
+      if [ $nb_messages -lt $min_expected_messages ]
+      then
+        logerror "❌ --min-expected-messages is set with $min_expected_messages but topic $topic contains $nb_messages messages"
+        exit 1
+      fi
+    else
+      nb_messages=$(playground topic get-number-records -t $topic | tail -1)
+    fi
+
+    if [[ -n "$max_messages" ]]
+    then
+      log "✨ Display content of topic $topic, it contains $nb_messages messages, but displaying only --max-messages=$max_messages"
+      nb_messages=$max_messages
+    else
+      log "✨ Display content of topic $topic, it contains $nb_messages messages"
+    fi
+
+    key_type=""
+    version=$(curl $sr_security -s "${sr_url}/subjects/${topic}-key/versions/1" | jq -r .version)
+    if [ "$version" != "null" ]
+    then
+      schema_type=$(curl $sr_security -s "${sr_url}/subjects/${topic}-key/versions/1"  | jq -r .schemaType)
+      case "${schema_type}" in
+        JSON)
+          key_type="json-schema"
         ;;
-    *)
-        docker exec $container kafka-console-consumer --bootstrap-server broker:9092 --topic $topic --property print.partition=true --property print.offset=true --property print.headers=true --property print.timestamp=true --property print.key=true --property key.separator="|" $security --from-beginning --max-messages $nb_messages > "$fifo_path" &
-    ;;
-  esac
+        PROTOBUF)
+          key_type="protobuf"
+        ;;
+        null)
+          key_type="avro"
+        ;;
+      esac
+    fi
 
-  # Detect the platform (macOS or Linux) and set the date command accordingly
-  if [[ "$(uname)" == "Darwin" ]]; then
-    # macOS
-    date_command="date -r "
-  else
-    # Linux
-    date_command="date -d @"
+    if [ "$key_type" != "" ]
+    then
+      log "🔮🔰 topic is using $key_type for key"
+    else
+      log "🔮🙅 topic is not using any schema for key"
+    fi
+
+    value_type=""
+    version=$(curl $sr_security -s "${sr_url}/subjects/${topic}-value/versions/1" | jq -r .version)
+    if [ "$version" != "null" ]
+    then
+      schema_type=$(curl $sr_security -s "${sr_url}/subjects/${topic}-value/versions/1"  | jq -r .schemaType)
+      case "${schema_type}" in
+        JSON)
+          value_type="json-schema"
+        ;;
+        PROTOBUF)
+          value_type="protobuf"
+        ;;
+        null)
+          value_type="avro"
+        ;;
+      esac
+    fi
+
+    if [ "$value_type" != "" ]
+    then
+      log "🔮🔰 topic is using $value_type for value"
+    else
+      log "🔮🙅 topic is not using any schema for value"
+    fi
+
+    type=""
+    tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
+    fifo_path="$tmp_dir/kafka_output_fifo"
+    mkfifo "$fifo_path"
+    case "${value_type}" in
+      avro|protobuf|json-schema)
+          if [ "$key_type" == "avro" ] || [ "$key_type" == "protobuf" ] || [ "$key_type" == "json-schema" ]
+          then
+              if [[ "$environment" == "environment" ]]
+              then
+                docker run --rm -e SCHEMA_REGISTRY_LOG4J_OPTS="-Dlog4j.configuration=file:/etc/kafka/tools-log4j.properties" -e value_type=$value_type -e BOOTSTRAP_SERVERS="$BOOTSTRAP_SERVERS" -e SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO="$SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO" -e SCHEMA_REGISTRY_URL="$SCHEMA_REGISTRY_URL" ${CP_CONNECT_IMAGE}:${CONNECT_TAG} kafka-$value_type-console-consumer --bootstrap-server $BOOTSTRAP_SERVERS --topic $topic --consumer-property ssl.endpoint.identification.algorithm=https --consumer-property sasl.mechanism=PLAIN --consumer-property security.protocol=SASL_SSL --consumer-property sasl.jaas.config="$SASL_JAAS_CONFIG" --property basic.auth.credentials.source=USER_INFO --property schema.registry.basic.auth.user.info="$SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO" --property schema.registry.url=$SCHEMA_REGISTRY_URL --property print.partition=true --property print.offset=true --property print.headers=true --property print.timestamp=true --property print.key=true --property key.separator="|" --skip-message-on-error $security --from-beginning --max-messages $nb_messages > "$fifo_path" 2>&1 &
+              else
+                docker exec -e SCHEMA_REGISTRY_LOG4J_OPTS="-Dlog4j.configuration=file:/etc/kafka/tools-log4j.properties" $container kafka-$value_type-console-consumer -bootstrap-server $bootstrap_server --property schema.registry.url=$sr_url_cli --topic $topic --property print.partition=true --property print.offset=true --property print.headers=true --property print.timestamp=true --property print.key=true --property key.separator="|" --skip-message-on-error $security --from-beginning --max-messages $nb_messages > "$fifo_path" 2>&1 &
+              fi
+          else
+              if [[ "$environment" == "environment" ]]
+              then
+                docker run --rm -e SCHEMA_REGISTRY_LOG4J_OPTS="-Dlog4j.configuration=file:/etc/kafka/tools-log4j.properties" -e value_type=$value_type -e BOOTSTRAP_SERVERS="$BOOTSTRAP_SERVERS" -e SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO="$SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO" -e SCHEMA_REGISTRY_URL="$SCHEMA_REGISTRY_URL" ${CP_CONNECT_IMAGE}:${CONNECT_TAG} kafka-$value_type-console-consumer --bootstrap-server $BOOTSTRAP_SERVERS --topic $topic --consumer-property ssl.endpoint.identification.algorithm=https --consumer-property sasl.mechanism=PLAIN --consumer-property security.protocol=SASL_SSL --consumer-property sasl.jaas.config="$SASL_JAAS_CONFIG" --property basic.auth.credentials.source=USER_INFO --property schema.registry.basic.auth.user.info="$SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO" --property schema.registry.url=$SCHEMA_REGISTRY_URL --property print.partition=true --property print.offset=true --property print.headers=true --property print.timestamp=true --property print.key=true --property key.separator="|"  --property key.deserializer=org.apache.kafka.common.serialization.StringDeserializer --skip-message-on-error $security --from-beginning --max-messages $nb_messages > "$fifo_path" 2>&1 &
+              else
+                docker exec -e SCHEMA_REGISTRY_LOG4J_OPTS="-Dlog4j.configuration=file:/etc/kafka/tools-log4j.properties" $container kafka-$value_type-console-consumer --bootstrap-server $bootstrap_server --property schema.registry.url=$sr_url_cli --topic $topic --property print.partition=true --property print.offset=true --property print.headers=true --property print.timestamp=true --property print.key=true --property key.separator="|" --property key.deserializer=org.apache.kafka.common.serialization.StringDeserializer --skip-message-on-error $security --from-beginning --max-messages $nb_messages > "$fifo_path" 2>&1 &
+              fi
+          fi
+          ;;
+      *)
+        if [[ "$environment" == "environment" ]]
+        then
+          docker run --rm -v /tmp/delta_configs/ak-tools-ccloud.delta:/tmp/configuration/ccloud.properties -e BOOTSTRAP_SERVERS="$BOOTSTRAP_SERVERS" ${CP_CONNECT_IMAGE}:${CONNECT_TAG} kafka-console-consumer --bootstrap-server $BOOTSTRAP_SERVERS --topic $topic --consumer.config  --property print.partition=true --property print.offset=true --property print.headers=true --property print.timestamp=true --property print.key=true --property key.separator="|" $security --from-beginning --max-messages $nb_messages > "$fifo_path" 2>&1 &
+        else
+          docker exec $container kafka-console-consumer --bootstrap-server $bootstrap_server --topic $topic --property print.partition=true --property print.offset=true --property print.headers=true --property print.timestamp=true --property print.key=true --property key.separator="|" $security --from-beginning --max-messages $nb_messages > "$fifo_path" 2>&1  &
+        fi
+      ;;
+    esac
+
+    # Detect the platform (macOS or Linux) and set the date command accordingly
+    if [[ "$(uname)" == "Darwin" ]]; then
+      # macOS
+      date_command="date -r "
+    else
+      # Linux
+      date_command="date -d @"
+    fi
+
+    found=0
+    # Loop through each line in the named pipe
+    while read -r line
+    do
+      if [[ $line =~ "CreateTime:" ]]
+      then
+        # Extract the timestamp from the line
+        timestamp_ms=$(echo "$line" | cut -d ":" -f 2 | cut -d "|" -f 1)
+        # Convert milliseconds to seconds
+        timestamp_sec=$((timestamp_ms / 1000))
+        milliseconds=$((timestamp_ms % 1000))
+        readable_date="$(${date_command}${timestamp_sec} "+%Y-%m-%d %H:%M:%S.${milliseconds}")"
+        line_with_date=$(echo "$line" | sed -E "s/CreateTime:[0-9]{13}/CreateTime: ${readable_date}/")
+        echo "$line_with_date"
+      elif [[ $line =~ "Processed a total of" ]]
+      then
+        continue
+      else
+        echo "$line"
+      fi
+      if [[ -n "$grep_string" ]]
+      then
+        if [[ $line =~ "$grep_string" ]]
+        then
+          log "✅ found $grep_string in topic $topic"
+          found=1
+        fi
+      fi
+    done < "$fifo_path"
+
+    if [[ -n "$grep_string" ]]
+    then
+      if [ $found != 1 ]
+      then
+        logerror "❌ could not find $grep_string in topic $topic"
+        exit 1
+      fi
+    fi
+  done
+}
+
+# :command.function
+playground_topic_set_schema_compatibility_command() {
+  # src/topic_set_schema_compatibility_command.sh
+  topic="${args[--topic]}"
+  compatibility="${args[--compatibility]}"
+
+  environment=`get_environment_used`
+
+  if [ "$environment" == "error" ]
+  then
+    logerror "File containing restart command /tmp/playground-command does not exist!"
+    exit 1
+
   fi
 
-  # Loop through each line in the named pipe
-  while read -r line; do
-    # Extract the timestamp from the line
-    timestamp_ms=$(echo "$line" | cut -d ":" -f 2 | cut -d "|" -f 1)
+  ret=$(get_sr_url_and_security)
 
-    # Convert milliseconds to seconds
-    timestamp_sec=$((timestamp_ms / 1000))
-    milliseconds=$((timestamp_ms % 1000))
+  sr_url=$(echo "$ret" | cut -d "@" -f 1)
+  sr_security=$(echo "$ret" | cut -d "@" -f 2)
 
-    readable_date="$(${date_command}${timestamp_sec} "+%Y-%m-%d %H:%M:%S.${milliseconds}")"
+  if [[ ! -n "$topic" ]]
+  then
+      logwarn "--topic flag was not provided, applying command to all topics"
+      check_if_continue
+      topic=$(playground get-topic-list --skip-connect-internal-topics)
+      if [ "$topic" == "" ]
+      then
+          logerror "❌ No topic found !"
+          exit 1
+      fi
+  fi
 
-    line_with_date=$(echo "$line" | sed -E "s/CreateTime:[0-9]{13}/CreateTime: ${readable_date}/")
+  items=($topic)
+  for topic in ${items[@]}
+  do
+    log "🛡️ Set compatibility for subject ${topic}-value to $compatibility"
+    curl $sr_security -X PUT -H "Content-Type: application/vnd.schemaregistry.v1+json" --data "{\"compatibility\": \"$compatibility\"}" "${sr_url}/config/${topic}-value"
+  done
+}
 
-    echo "$line_with_date"
-  done < "$fifo_path"
+# :command.function
+playground_topic_display_schema_id_statistics_command() {
+  # src/topic_display_schema_id_statistics_command.sh
+  topic="${args[--topic]}"
+
+  environment=`get_environment_used`
+
+  if [ "$environment" == "error" ]
+  then
+      logerror "File containing restart command /tmp/playground-command does not exist!"
+      exit 1
+  fi
+
+  if [ "$environment" != "plaintext" ]
+  then
+      logerror "It only works when plaintext environment is used"
+      exit 1
+  fi
+
+  DIR_CLI="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+  dir1=$(echo ${DIR_CLI%/*})
+  root_folder=$(echo ${dir1%/*})
+
+  sr_cli=$root_folder/scripts/cli/schema-registry-statistics
+  sr_cli_version=1.3.0
+
+  if [ ! -f $sr_cli ]
+  then
+      log "⏳ $sr_cli is not installed, installing it now"
+      cd /tmp
+      rm -f schema-registry-statistics.tar.gz
+      curl -L -o schema-registry-statistics.tar.gz https://github.com/EladLeev/schema-registry-statistics/releases/download/v${sr_cli_version}/schema-registry-statistics_${sr_cli_version}_`uname -s`_`uname -m`.tar.gz
+      tar xvfz schema-registry-statistics.tar.gz
+      mv schema-registry-statistics $sr_cli
+      rm -f chema-registry-statistics.tar.gz
+      chmod u+x $sr_cli
+      cd -
+  fi
+
+  if [[ ! -n "$topic" ]]
+  then
+      log "✨ --topic flag was not provided, applying command to all topics"
+      topic=$(playground get-topic-list --skip-connect-internal-topics)
+      if [ "$topic" == "" ]
+      then
+          logerror "❌ No topic found !"
+          exit 1
+      fi
+  fi
+
+  items=($topic)
+  for topic in ${items[@]}
+  do
+      nb_messages=$(playground topic get-number-records -t $topic | tail -1)
+      rm -f /tmp/results.json
+      log "✨ Display statistics of topic $topic, it contains $nb_messages messages"
+      output_file="/tmp/output.txt"
+      $sr_cli --bootstrap localhost:29092 --topic "$topic" --group "$RANDOM" --limit $nb_messages --store true --path /tmp/results.json  > "$output_file" 2>&1 &
+
+      pid=$!
+
+      while true
+      do
+          if grep -q "Use SIGINT to stop consuming" "$output_file"
+          then
+              break
+          fi
+          sleep 1
+      done
+
+      kill -SIGINT $pid
+
+      sleep 2
+      grep "Schema ID" $output_file
+      cat /tmp/results.json | jq .
+
+      rm -f /tmp/results.json $output_file
+  done
 }
 
 # :command.function
@@ -8618,8 +9101,8 @@ playground_connector_status_command() {
   then
       log "💤 There are no connectors running !"
   else
-      printf "%-30s %-12s %-30s %-50s\n" "Name" "Status" "Tasks" "Stack Trace"
-      echo "-------------------------------------------------------------------------------------------------------------"
+      printf "%-30s %-12s %-60s %-50s\n" "Name" "Status" "Tasks" "Stack Trace"
+      echo "-----------------------------------------------------------------------------------------------------------------------------"
 
       for connector in $connectors
       do
@@ -8638,7 +9121,7 @@ playground_connector_status_command() {
               status="🤔 UNKNOWN"
           fi
 
-          tasks=$(curl -s $security "$connect_url/connectors/$connector/status" | jq -r '.tasks[] | "\(.id):\(.state)"' | tr '\n' ',' | sed 's/,$/\n/')
+          tasks=$(curl -s $security "$connect_url/connectors/$connector/status" | jq -r '.tasks[] | "\(.id):\(.state)[\(.worker_id)]"' | tr '\n' ',' | sed 's/,$/\n/' | sed 's/:8083//g' | sed 's/:8283//g' | sed 's/:8383//g')
 
           if [[ "$tasks" == *"RUNNING"* ]]
           then
@@ -8702,7 +9185,7 @@ playground_connector_pause_command() {
 
   if [[ ! -n "$connector" ]]
   then
-      logwarn "--connector flag was not provided, applying command to all connectors"
+      log "✨ --connector flag was not provided, applying command to all connectors"
       connector=$(playground get-connector-list)
       if [ "$connector" == "" ]
       then
@@ -8723,31 +9206,94 @@ playground_connector_pause_command() {
 # :command.function
 playground_connector_versions_command() {
   # src/connector_versions_command.sh
-  ret=$(get_connect_url_and_security)
-
-  connect_url=$(echo "$ret" | cut -d "@" -f 1)
-  security=$(echo "$ret" | cut -d "@" -f 2)
-
-  connector="${args[--connector]}"
-
-  if [[ ! -n "$connector" ]]
+  if [ ! -f /tmp/playground-run ]
   then
-      logwarn "--connector flag was not provided, applying command to all connectors"
-      connector=$(playground get-connector-list)
-      if [ "$connector" == "" ]
-      then
-          logerror "💤 No connector is running !"
-          exit 1
-      fi
+      logerror "File containing re-run command /tmp/playground-run does not exist!"
+      logerror "Make sure to use <playground run> command !"
+      exit 1
   fi
 
-  items=($connector)
-  for connector in ${items[@]}
-  do
-      log "Current version for $connector:"
-      package=$(curl -s $security "$connect_url/connectors/$connector" | jq -r '.config."connector.class"')
-      curl $security -s -X GET -H "Content-Type: application/json" "$connect_url/connector-plugins" | jq -r ".[] | select(.class == \"$package\").version"
-  done
+  test_file=$(cat /tmp/playground-run | awk '{ print $4}')
+
+  if [ ! -f $test_file ]
+  then
+
+      logerror "File $test_file retrieved from /tmp/playground-run does not exist!"
+      logerror "Make sure to use <playground run> command !"
+      exit 1
+  fi
+
+  # determining the docker-compose file from from test_file
+  docker_compose_file=$(grep "environment" "$test_file" | grep DIR | grep start.sh | cut -d "/" -f 7 | cut -d '"' -f 1 | tail -n1 | xargs)
+  test_file_directory="$(dirname "${test_file}")"
+  docker_compose_file="${test_file_directory}/${docker_compose_file}"
+
+  if [ "${docker_compose_file}" != "" ] && [ ! -f "${docker_compose_file}" ]
+  then
+      logwarn "Skipping as docker-compose override file could not be detemined"
+      exit 0
+  fi
+
+  connector_paths=$(grep "CONNECT_PLUGIN_PATH" "${docker_compose_file}" | grep -v "KSQL_CONNECT_PLUGIN_PATH" | cut -d ":" -f 2  | tr -s " " | head -1)
+  if [ "$connector_paths" == "" ]
+  then
+      logwarn "Skipping as it is not an example with connector"
+      exit 0
+  else
+      my_array_connector_tag=($(echo $CONNECTOR_TAG | tr "," "\n"))
+      for connector_path in ${connector_paths//,/ }
+      do
+          full_connector_name=$(basename "$connector_path")
+          connector_name=$(echo "$full_connector_name" | cut -d'-' -f2-)
+
+          connectors=(
+          "$connector_name"
+          )
+
+          output_format="\"🔢 v\" + .version + \" - 📅 release date: \" + .release_date"
+
+          curl -s -S 'https://api.hub.confluent.io/api/plugins?per_page=100000' | jq '. | sort_by(.release_date) | reverse | .' > /tmp/allmanis.json
+
+          connectors_string=""
+          delim=""
+          for conn in "${connectors[@]}"; do
+              connectors_string="$connectors_string$delim\"$conn\""
+              delim=","
+          done
+
+          latest=$(jq '.[] | select(IN(.name; '"${connectors_string}"')) | '"${output_format}"'' /tmp/allmanis.json)
+
+          rm /tmp/allmanis.json
+
+          DIR_CLI="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+          dir1=$(echo ${DIR_CLI%/*})
+          root_folder=$(echo ${dir1%/*})
+
+          manifest_file="$root_folder/confluent-hub/$full_connector_name/manifest.json"
+          if [ -f $manifest_file ]
+          then
+              version=$(cat $manifest_file | jq -r '.version')
+              release_date=$(cat $manifest_file | jq -r '.release_date')
+          else
+              logerror "file $manifest_file does not exist"
+              exit 1
+          fi
+
+          current="\"🔢 v$version - 📅 release date: $release_date\""
+          if [ "$current" == "$latest" ]
+          then
+              log "👻 Version currently used for $full_connector_name is latest"
+              echo "$current"
+          else
+              log "🗯️ Version currently used for $full_connector_name is not latest"
+              log "Current"
+              echo "$current"
+              log "Latest on Hub"
+              echo "$latest"
+          fi
+
+      done
+  fi
 }
 
 # :command.function
@@ -8762,7 +9308,7 @@ playground_connector_restart_command() {
 
   if [[ ! -n "$connector" ]]
   then
-      logwarn "--connector flag was not provided, applying command to all connectors"
+      log "✨ --connector flag was not provided, applying command to all connectors"
       connector=$(playground get-connector-list)
       if [ "$connector" == "" ]
       then
@@ -8771,13 +9317,30 @@ playground_connector_restart_command() {
       fi
   fi
 
+  DIR_CLI="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+  dir1=$(echo ${DIR_CLI%/*})
+  root_folder=$(echo ${dir1%/*})
+  IGNORE_CHECK_FOR_DOCKER_COMPOSE=true
+  source $root_folder/scripts/utils.sh
+
   items=($connector)
   for connector in ${items[@]}
   do
       log "🔄 Restarting connector $connector"
-      curl $security -s -X POST -H "Content-Type: application/json" "$connect_url/connectors/$connector/restart?includeTasks=true&onlyFailed=false" | jq .
+      if ! version_gt $TAG_BASE "6.9.9"
+      then
+          task_ids=$(curl $security -s -X GET "$connect_url/connectors/$connector/tasks" | jq -r '.[].id.task')
+
+          for task_id in $task_ids
+          do
+              log "🤹‍♂️ Restart task $task_id"
+              curl $security -s -X POST -H "Content-Type: application/json" "$connect_url/connectors/$connector/tasks/$task_id/restart"
+          done
+      else
+          curl $security -s -X POST -H "Content-Type: application/json" "$connect_url/connectors/$connector/restart?includeTasks=true&onlyFailed=false" | jq .
+      fi
   done
-  sleep 2
+  sleep 3
   playground connector status
 }
 
@@ -8793,7 +9356,7 @@ playground_connector_resume_command() {
 
   if [[ ! -n "$connector" ]]
   then
-      logwarn "--connector flag was not provided, applying command to all connectors"
+      log "✨ --connector flag was not provided, applying command to all connectors"
       connector=$(playground get-connector-list)
       if [ "$connector" == "" ]
       then
@@ -8854,7 +9417,7 @@ playground_connector_show_lag_command() {
 
   if [[ ! -n "$connector" ]]
   then
-      logwarn "--connector flag was not provided, applying command to all connectors"
+      log "✨ --connector flag was not provided, applying command to all connectors"
       connector=$(playground get-connector-list)
       if [ "$connector" == "" ]
       then
@@ -8897,7 +9460,7 @@ playground_connector_log_level_command() {
 
   if [[ ! -n "$connector" ]]
   then
-      logwarn "--connector flag was not provided, applying command to all connectors"
+      log "✨ --connector flag was not provided, applying command to all connectors"
       connector=$(playground get-connector-list)
       if [ "$connector" == "" ]
       then
@@ -8909,7 +9472,8 @@ playground_connector_log_level_command() {
   items=($connector)
   for connector in ${items[@]}
   do
-      package=$(curl -s $security "$connect_url/connectors/$connector" | jq -r '.config."connector.class"')
+      tmp=$(curl -s $security "$connect_url/connectors/$connector" | jq -r '.config."connector.class"')
+      package="${tmp%.*}"
       # log "🧬 Set log level for connector $connector to $level"
       playground log-level set -p "$package" -l $level
   done
@@ -8943,6 +9507,7 @@ parse_requirements() {
     deps['docker']="$(command -v docker | head -n1)"
   else
     printf "missing dependency: docker\n" >&2
+    printf "%s\n" "visit $(blue_underlined https://docs.docker.com/get-docker) to install" >&2
     exit 1
   fi
 
@@ -8987,10 +9552,10 @@ parse_requirements() {
       shift $#
       ;;
 
-    get-schema-with-fzf)
-      action="get-schema-with-fzf"
+    get-any-file-with-fzf)
+      action="get-any-file-with-fzf"
       shift
-      playground_get_schema_with_fzf_parse_requirements "$@"
+      playground_get_any_file_with_fzf_parse_requirements "$@"
       shift $#
       ;;
 
@@ -9209,6 +9774,7 @@ playground_get_kafka_region_list_parse_requirements() {
     deps['confluent']="$(command -v confluent | head -n1)"
   else
     printf "missing dependency: confluent\n" >&2
+    printf "%s\n" "visit $(blue_underlined https://docs.confluent.io/confluent-cli/current/overview.html) to install" >&2
     exit 1
   fi
 
@@ -9263,6 +9829,13 @@ playground_get_topic_list_parse_requirements() {
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
+      # :flag.case
+      --skip-connect-internal-topics)
+
+        # :flag.case_no_arg
+        args['--skip-connect-internal-topics']=1
+        shift
+        ;;
 
       -?*)
         printf "invalid option: %s\n" "$key" >&2
@@ -9426,13 +9999,13 @@ playground_get_zip_or_jar_with_fzf_parse_requirements() {
 }
 
 # :command.parse_requirements
-playground_get_schema_with_fzf_parse_requirements() {
+playground_get_any_file_with_fzf_parse_requirements() {
   # :command.fixed_flags_filter
   while [[ $# -gt 0 ]]; do
     case "${1:-}" in
       --help | -h)
         long_usage=yes
-        playground_get_schema_with_fzf_usage
+        playground_get_any_file_with_fzf_usage
         exit
         ;;
 
@@ -9444,7 +10017,7 @@ playground_get_schema_with_fzf_parse_requirements() {
   done
 
   # :command.command_filter
-  action="get-schema-with-fzf"
+  action="get-any-file-with-fzf"
 
   # :command.parse_requirements_while
   while [[ $# -gt 0 ]]; do
@@ -9498,6 +10071,7 @@ playground_bashly_reload_parse_requirements() {
     deps['bashly']="$(command -v bashly | head -n1)"
   else
     printf "missing dependency: bashly\n" >&2
+    printf "%s\n" "visit $(blue_underlined https://bashly.dannyb.co/installation/) to install" >&2
     exit 1
   fi
 
@@ -9550,6 +10124,7 @@ playground_run_parse_requirements() {
     deps['fzf']="$(command -v fzf | head -n1)"
   else
     printf "missing dependency: fzf\n" >&2
+    printf "%s\n" "visit $(blue_underlined https://github.com/junegunn/fzf#installation) to install" >&2
     exit 1
   fi
 
@@ -9798,6 +10373,7 @@ playground_re_run_parse_requirements() {
     deps['fzf']="$(command -v fzf | head -n1)"
   else
     printf "missing dependency: fzf\n" >&2
+    printf "%s\n" "visit $(blue_underlined https://github.com/junegunn/fzf#installation) to install" >&2
     exit 1
   fi
 
@@ -10012,6 +10588,7 @@ playground_run_ccloud_parse_requirements() {
     deps['fzf']="$(command -v fzf | head -n1)"
   else
     printf "missing dependency: fzf\n" >&2
+    printf "%s\n" "visit $(blue_underlined https://github.com/junegunn/fzf#installation) to install" >&2
     exit 1
   fi
 
@@ -10019,6 +10596,7 @@ playground_run_ccloud_parse_requirements() {
     deps['confluent']="$(command -v confluent | head -n1)"
   else
     printf "missing dependency: confluent\n" >&2
+    printf "%s\n" "visit $(blue_underlined https://docs.confluent.io/confluent-cli/current/overview.html) to install" >&2
     exit 1
   fi
 
@@ -10304,10 +10882,6 @@ playground_run_ccloud_parse_requirements() {
     exit 1
   fi
 
-  # :command.default_assignments
-  [[ -n ${args['--cluster-cloud']:-} ]] || args['--cluster-cloud']="aws"
-  [[ -n ${args['--cluster-region']:-} ]] || args['--cluster-region']="eu-west-2"
-
   # :command.whitelist_filter
   if [[ ${args['--cluster-cloud']} ]] && [[ ! ${args['--cluster-cloud']} =~ ^(aws|gcp|azure)$ ]]; then
     printf "%s\n" "--cluster-cloud must be one of: aws, gcp, azure" >&2
@@ -10339,6 +10913,7 @@ playground_open_parse_requirements() {
     deps['fzf']="$(command -v fzf | head -n1)"
   else
     printf "missing dependency: fzf\n" >&2
+    printf "%s\n" "visit $(blue_underlined https://github.com/junegunn/fzf#installation) to install" >&2
     exit 1
   fi
 
@@ -10349,6 +10924,25 @@ playground_open_parse_requirements() {
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
+      # :flag.case
+      --file | -f)
+
+        # :flag.case_arg
+        if [[ -n ${2+x} ]]; then
+          # :flag.validations
+          if [[ -n $(validate_file_exists_with_trick "$2") ]]; then
+            printf "validation error in %s:\n%s\n" "--file, -f FILE" "$(validate_file_exists_with_trick "$2")" >&2
+            exit 1
+          fi
+
+          args['--file']="$2"
+          shift
+          shift
+        else
+          printf "%s\n" "--file requires an argument: --file, -f FILE" >&2
+          exit 1
+        fi
+        ;;
 
       -?*)
         printf "invalid option: %s\n" "$key" >&2
@@ -10439,6 +11033,7 @@ playground_bootstrap_reproduction_model_parse_requirements() {
     deps['fzf']="$(command -v fzf | head -n1)"
   else
     printf "missing dependency: fzf\n" >&2
+    printf "%s\n" "visit $(blue_underlined https://github.com/junegunn/fzf#installation) to install" >&2
     exit 1
   fi
 
@@ -10784,41 +11379,17 @@ playground_bootstrap_reproduction_model_parse_requirements() {
       # :flag.case
       --producer-schema-key)
 
-        # :flag.case_arg
-        if [[ -n ${2+x} ]]; then
-          # :flag.validations
-          if [[ -n $(validate_file_exists_with_trick "$2") ]]; then
-            printf "validation error in %s:\n%s\n" "--producer-schema-key PRODUCER_SCHEMA" "$(validate_file_exists_with_trick "$2")" >&2
-            exit 1
-          fi
-
-          args['--producer-schema-key']="$2"
-          shift
-          shift
-        else
-          printf "%s\n" "--producer-schema-key requires an argument: --producer-schema-key PRODUCER_SCHEMA" >&2
-          exit 1
-        fi
+        # :flag.case_no_arg
+        args['--producer-schema-key']=1
+        shift
         ;;
 
       # :flag.case
       --producer-schema-value)
 
-        # :flag.case_arg
-        if [[ -n ${2+x} ]]; then
-          # :flag.validations
-          if [[ -n $(validate_file_exists_with_trick "$2") ]]; then
-            printf "validation error in %s:\n%s\n" "--producer-schema-value PRODUCER_SCHEMA" "$(validate_file_exists_with_trick "$2")" >&2
-            exit 1
-          fi
-
-          args['--producer-schema-value']="$2"
-          shift
-          shift
-        else
-          printf "%s\n" "--producer-schema-value requires an argument: --producer-schema-value PRODUCER_SCHEMA" >&2
-          exit 1
-        fi
+        # :flag.case_no_arg
+        args['--producer-schema-value']=1
+        shift
         ;;
 
       # :flag.case
@@ -10887,7 +11458,6 @@ playground_bootstrap_reproduction_model_parse_requirements() {
   fi
 
   # :command.default_assignments
-  [[ -n ${args['--cluster-region']:-} ]] || args['--cluster-region']="eu-west-2"
   [[ -n ${args['--producer']:-} ]] || args['--producer']="none"
   [[ -n ${args['--nb-producers']:-} ]] || args['--nb-producers']=""
 
@@ -11346,6 +11916,7 @@ playground_get_jmx_metrics_parse_requirements() {
     deps['java']="$(command -v java | head -n1)"
   else
     printf "missing dependency: java\n" >&2
+    printf "%s\n" "visit $(blue_underlined https://openjdk.org/install/) to install" >&2
     exit 1
   fi
 
@@ -12296,6 +12867,20 @@ playground_topic_parse_requirements() {
       shift $#
       ;;
 
+    set-schema-compatibility)
+      action="set-schema-compatibility"
+      shift
+      playground_topic_set_schema_compatibility_parse_requirements "$@"
+      shift $#
+      ;;
+
+    display-schema-id-statistics)
+      action="display-schema-id-statistics"
+      shift
+      playground_topic_display_schema_id_statistics_parse_requirements "$@"
+      shift $#
+      ;;
+
     # :command.command_fallback
     "")
       playground_topic_usage >&2
@@ -12394,12 +12979,6 @@ playground_topic_get_number_records_parse_requirements() {
 
     esac
   done
-
-  # :command.required_flags_filter
-  if [[ -z ${args['--topic']+x} ]]; then
-    printf "missing required flag: --topic, -t TOPIC\n" >&2
-    exit 1
-  fi
 
 }
 
@@ -12503,12 +13082,6 @@ playground_topic_describe_parse_requirements() {
     esac
   done
 
-  # :command.required_flags_filter
-  if [[ -z ${args['--topic']+x} ]]; then
-    printf "missing required flag: --topic, -t TOPIC\n" >&2
-    exit 1
-  fi
-
 }
 
 # :command.parse_requirements
@@ -12571,6 +13144,126 @@ playground_topic_consume_parse_requirements() {
         fi
         ;;
 
+      # :flag.case
+      --min-expected-messages)
+
+        # :flag.case_arg
+        if [[ -n ${2+x} ]]; then
+          # :flag.validations
+          if [[ -n $(validate_integer "$2") ]]; then
+            printf "validation error in %s:\n%s\n" "--min-expected-messages MIN-EXPECTED-MESSAGES" "$(validate_integer "$2")" >&2
+            exit 1
+          fi
+
+          args['--min-expected-messages']="$2"
+          shift
+          shift
+        else
+          printf "%s\n" "--min-expected-messages requires an argument: --min-expected-messages MIN-EXPECTED-MESSAGES" >&2
+          exit 1
+        fi
+        ;;
+
+      # :flag.case
+      --grep)
+
+        # :flag.case_arg
+        if [[ -n ${2+x} ]]; then
+
+          args['--grep']="$2"
+          shift
+          shift
+        else
+          printf "%s\n" "--grep requires an argument: --grep GREP" >&2
+          exit 1
+        fi
+        ;;
+
+      -?*)
+        printf "invalid option: %s\n" "$key" >&2
+        exit 1
+        ;;
+
+      *)
+        # :command.parse_requirements_case
+        # :command.parse_requirements_case_simple
+        printf "invalid argument: %s\n" "$key" >&2
+        exit 1
+
+        ;;
+
+    esac
+  done
+
+  # :command.default_assignments
+  [[ -n ${args['--max-messages']:-} ]] || args['--max-messages']=""
+  [[ -n ${args['--min-expected-messages']:-} ]] || args['--min-expected-messages']=""
+  [[ -n ${args['--grep']:-} ]] || args['--grep']=""
+
+  # :command.user_filter
+  filter_error=$(filter_schema_registry_running)
+  if [[ -n $filter_error ]]; then
+    echo "$filter_error" >&2
+    exit 1
+  fi
+
+}
+
+# :command.parse_requirements
+playground_topic_set_schema_compatibility_parse_requirements() {
+  # :command.fixed_flags_filter
+  while [[ $# -gt 0 ]]; do
+    case "${1:-}" in
+      --help | -h)
+        long_usage=yes
+        playground_topic_set_schema_compatibility_usage
+        exit
+        ;;
+
+      *)
+        break
+        ;;
+
+    esac
+  done
+
+  # :command.command_filter
+  action="topic set-schema-compatibility"
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+      # :flag.case
+      --topic | -t)
+
+        # :flag.case_arg
+        if [[ -n ${2+x} ]]; then
+
+          args['--topic']="$2"
+          shift
+          shift
+        else
+          printf "%s\n" "--topic requires an argument: --topic, -t TOPIC" >&2
+          exit 1
+        fi
+        ;;
+
+      # :flag.case
+      --compatibility)
+
+        # :flag.case_arg
+        if [[ -n ${2+x} ]]; then
+
+          args['--compatibility']="$2"
+          shift
+          shift
+        else
+          printf "%s\n" "--compatibility requires an argument: --compatibility COMPATIBILITY" >&2
+          exit 1
+        fi
+        ;;
+
       -?*)
         printf "invalid option: %s\n" "$key" >&2
         exit 1
@@ -12588,13 +13281,16 @@ playground_topic_consume_parse_requirements() {
   done
 
   # :command.required_flags_filter
-  if [[ -z ${args['--topic']+x} ]]; then
-    printf "missing required flag: --topic, -t TOPIC\n" >&2
+  if [[ -z ${args['--compatibility']+x} ]]; then
+    printf "missing required flag: --compatibility COMPATIBILITY\n" >&2
     exit 1
   fi
 
-  # :command.default_assignments
-  [[ -n ${args['--max-messages']:-} ]] || args['--max-messages']=""
+  # :command.whitelist_filter
+  if [[ ${args['--compatibility']} ]] && [[ ! ${args['--compatibility']} =~ ^(BACKWARD|BACKWARD_TRANSITIVE|FORWARD|FORWARD_TRANSITIVE|FULL|FULL_TRANSITIVE|NONE)$ ]]; then
+    printf "%s\n" "--compatibility must be one of: BACKWARD, BACKWARD_TRANSITIVE, FORWARD, FORWARD_TRANSITIVE, FULL, FULL_TRANSITIVE, NONE" >&2
+    exit 1
+  fi
 
   # :command.user_filter
   filter_error=$(filter_schema_registry_running)
@@ -12602,6 +13298,64 @@ playground_topic_consume_parse_requirements() {
     echo "$filter_error" >&2
     exit 1
   fi
+
+}
+
+# :command.parse_requirements
+playground_topic_display_schema_id_statistics_parse_requirements() {
+  # :command.fixed_flags_filter
+  while [[ $# -gt 0 ]]; do
+    case "${1:-}" in
+      --help | -h)
+        long_usage=yes
+        playground_topic_display_schema_id_statistics_usage
+        exit
+        ;;
+
+      *)
+        break
+        ;;
+
+    esac
+  done
+
+  # :command.command_filter
+  action="topic display-schema-id-statistics"
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+      # :flag.case
+      --topic | -t)
+
+        # :flag.case_arg
+        if [[ -n ${2+x} ]]; then
+
+          args['--topic']="$2"
+          shift
+          shift
+        else
+          printf "%s\n" "--topic requires an argument: --topic, -t TOPIC" >&2
+          exit 1
+        fi
+        ;;
+
+      -?*)
+        printf "invalid option: %s\n" "$key" >&2
+        exit 1
+        ;;
+
+      *)
+        # :command.parse_requirements_case
+        # :command.parse_requirements_case_simple
+        printf "invalid argument: %s\n" "$key" >&2
+        exit 1
+
+        ;;
+
+    esac
+  done
 
 }
 
@@ -12912,20 +13666,6 @@ playground_connector_versions_parse_requirements() {
   while [[ $# -gt 0 ]]; do
     key="$1"
     case "$key" in
-      # :flag.case
-      --connector | -c)
-
-        # :flag.case_arg
-        if [[ -n ${2+x} ]]; then
-
-          args['--connector']="$2"
-          shift
-          shift
-        else
-          printf "%s\n" "--connector requires an argument: --connector, -c CONNECTOR" >&2
-          exit 1
-        fi
-        ;;
 
       -?*)
         printf "invalid option: %s\n" "$key" >&2
@@ -13287,7 +14027,7 @@ run() {
     "get-topic-list") playground_get_topic_list_command ;;
     "get-examples-list-with-fzf") playground_get_examples_list_with_fzf_command ;;
     "get-zip-or-jar-with-fzf") playground_get_zip_or_jar_with_fzf_command ;;
-    "get-schema-with-fzf") playground_get_schema_with_fzf_command ;;
+    "get-any-file-with-fzf") playground_get_any_file_with_fzf_command ;;
     "bashly-reload") playground_bashly_reload_command ;;
     "run") playground_run_command ;;
     "re-run") playground_re_run_command ;;
@@ -13318,6 +14058,8 @@ run() {
     "topic display-consumer-offsets") playground_topic_display_consumer_offsets_command ;;
     "topic describe") playground_topic_describe_command ;;
     "topic consume") playground_topic_consume_command ;;
+    "topic set-schema-compatibility") playground_topic_set_schema_compatibility_command ;;
+    "topic display-schema-id-statistics") playground_topic_display_schema_id_statistics_command ;;
     "connector") playground_connector_command ;;
     "connector status") playground_connector_status_command ;;
     "connector plugins") playground_connector_plugins_command ;;

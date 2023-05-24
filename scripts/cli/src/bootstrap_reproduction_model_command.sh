@@ -181,70 +181,34 @@ then
       echo "               \"key.converter\": \"org.apache.kafka.connect.storage.StringConverter\"," > $tmp_dir/key_converter
       echo "               \"value.converter\": \"io.confluent.connect.avro.AvroConverter\"," > $tmp_dir/value_converter
       echo "               \"value.converter.schema.registry.url\": \"http://schema-registry:8081\"," >> $tmp_dir/value_converter
-
-      log "Examples to consume:"
-      log "1️⃣ Simplest"
-      echo "docker exec connect kafka-avro-console-consumer -bootstrap-server broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic a-topic --from-beginning --max-messages 1"
-      log "2️⃣ Displaying key:"
-      echo "docker exec connect kafka-avro-console-consumer -bootstrap-server broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic a-topic --property print.key=true --property key.separator=, --from-beginning --max-messages 1"
     ;;
     avro-with-key)
       echo "               \"key.converter\": \"io.confluent.connect.avro.AvroConverter\"," > $tmp_dir/key_converter
       echo "               \"key.converter.schema.registry.url\": \"http://schema-registry:8081\"," >> $tmp_dir/key_converter
       echo "               \"value.converter\": \"io.confluent.connect.avro.AvroConverter\"," > $tmp_dir/value_converter
       echo "               \"value.converter.schema.registry.url\": \"http://schema-registry:8081\"," >> $tmp_dir/value_converter
-
-      log "Examples to consume:"
-      log "1️⃣ Simplest"
-      echo "docker exec connect kafka-avro-console-consumer -bootstrap-server broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic a-topic --from-beginning --max-messages 1"
-      log "2️⃣ Displaying key:"
-      echo "docker exec connect kafka-avro-console-consumer -bootstrap-server broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic a-topic --property print.key=true --property key.separator=, --from-beginning --max-messages 1"
     ;;
     json-schema)
       echo "               \"key.converter\": \"org.apache.kafka.connect.storage.StringConverter\"," > $tmp_dir/key_converter
       echo "               \"value.converter\": \"io.confluent.connect.json.JsonSchemaConverter\"," > $tmp_dir/value_converter
       echo "               \"value.converter.schema.registry.url\": \"http://schema-registry:8081\"," >> $tmp_dir/value_converter
-
-      log "Examples to consume:"
-      log "1️⃣ Simplest"
-      echo "docker exec connect kafka-json-schema-console-consumer -bootstrap-server broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic a-topic --from-beginning --max-messages 1"
-      log "2️⃣ Displaying key:"
-      echo "docker exec connect kafka-json-schema-console-consumer -bootstrap-server broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic a-topic --property print.key=true --property key.separator=, --from-beginning --max-messages 1"
     ;;
     json-schema-with-key)
       echo "               \"key.converter\": \"io.confluent.connect.json.JsonSchemaConverter\"," > $tmp_dir/key_converter
       echo "               \"key.converter.schema.registry.url\": \"http://schema-registry:8081\"," >> $tmp_dir/key_converter
       echo "               \"value.converter\": \"io.confluent.connect.json.JsonSchemaConverter\"," > $tmp_dir/value_converter
       echo "               \"value.converter.schema.registry.url\": \"http://schema-registry:8081\"," >> $tmp_dir/value_converter
-
-      log "Examples to consume:"
-      log "1️⃣ Simplest"
-      echo "docker exec connect kafka-json-schema-console-consumer -bootstrap-server broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic a-topic --from-beginning --max-messages 1"
-      log "2️⃣ Displaying key:"
-      echo "docker exec connect kafka-json-schema-console-consumer -bootstrap-server broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic a-topic --property print.key=true --property key.separator=, --from-beginning --max-messages 1"
     ;;
     protobuf)
       echo "               \"key.converter\": \"org.apache.kafka.connect.storage.StringConverter\"," > $tmp_dir/key_converter
       echo "               \"value.converter\": \"io.confluent.connect.protobuf.ProtobufConverter\"," > $tmp_dir/value_converter
       echo "               \"value.converter.schema.registry.url\": \"http://schema-registry:8081\"," >> $tmp_dir/value_converter
-      
-      log "Examples to consume:"
-      log "1️⃣ Simplest"
-      echo "docker exec connect kafka-protobuf-console-consumer -bootstrap-server broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic a-topic --from-beginning --max-messages 1"
-      log "2️⃣ Displaying key:"
-      echo "docker exec connect kafka-protobuf-console-consumer -bootstrap-server broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic a-topic --property print.key=true --property key.separator=, --from-beginning --max-messages 1"
     ;;
     protobuf-with-key)
       echo "               \"key.converter\": \"io.confluent.connect.protobuf.ProtobufConverter\"," > $tmp_dir/key_converter
       echo "               \"key.converter.schema.registry.url\": \"http://schema-registry:8081\"," >> $tmp_dir/key_converter
       echo "               \"value.converter\": \"io.confluent.connect.protobuf.ProtobufConverter\"," > $tmp_dir/value_converter
       echo "               \"value.converter.schema.registry.url\": \"http://schema-registry:8081\"," >> $tmp_dir/value_converter
-
-      log "Examples to consume:"
-      log "1️⃣ Simplest"
-      echo "docker exec connect kafka-protobuf-console-consumer -bootstrap-server broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic a-topic --from-beginning --max-messages 1"
-      log "2️⃣ Displaying key:"
-      echo "docker exec connect kafka-protobuf-console-consumer -bootstrap-server broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic a-topic --property print.key=true --property key.separator=, --from-beginning --max-messages 1"
     ;;
     none)
     ;;
@@ -253,7 +217,6 @@ then
       exit 1
     ;;
   esac
-
   original_topic_name=$(grep "\"topics\"" $repro_test_file | cut -d "\"" -f 4 | head -1)
   if [ "$original_topic_name" != "" ]
   then
@@ -285,73 +248,88 @@ then
     #### schema_file_key
     if [[ -n "$schema_file_key" ]]
     then
-      if [[ $schema_file_key == *"@"* ]]
+      if config_has_key "editor"
       then
-        schema_file_key=$(echo "$schema_file_key" | cut -d "@" -f 2)
+        editor=$(config_get "editor")
+        log "✨ Copy and paste the schema you want to use for the key, save and close the file to continue"
+        if [ "$editor" = "code" ]
+        then
+          code --wait $tmp_dir/key_schema
+        else
+          $editor $tmp_dir/key_schema
+        fi
+      else
+        if [[ $(type code 2>&1) =~ "not found" ]]
+        then
+          logerror "Could not determine an editor to use as default code is not found - you can change editor by updating config.ini"
+          exit 1
+        else
+          log "✨ Copy and paste the schema you want to use for the key, save and close the file to continue"
+          code --wait $tmp_dir/key_schema
+        fi
       fi
-      cp $schema_file_key $tmp_dir/schema
 
       case "${producer}" in
         avro-with-key)
-          original_namespace=$(cat $tmp_dir/schema | jq -r .namespace)
+          original_namespace=$(cat $tmp_dir/key_schema | jq -r .namespace)
           if [ "$original_namespace" != "null" ]
           then
             sed -e "s|$original_namespace|com.github.vdesabou|g" \
-                $tmp_dir/schema  > /tmp/tmp
+                $tmp_dir/key_schema  > /tmp/tmp
 
-            mv /tmp/tmp $tmp_dir/schema
+            mv /tmp/tmp $tmp_dir/key_schema
             log "✨ Replacing namespace $original_namespace with com.github.vdesabou"
           else
             # need to add namespace
-            cp $tmp_dir/schema /tmp/tmp
+            cp $tmp_dir/key_schema /tmp/tmp
             line=2
-            { head -n $(($line-1)) /tmp/tmp; echo "    \"namespace\": \"com.github.vdesabou\","; tail -n +$line /tmp/tmp; } > $tmp_dir/schema
+            { head -n $(($line-1)) /tmp/tmp; echo "    \"namespace\": \"com.github.vdesabou\","; tail -n +$line /tmp/tmp; } > $tmp_dir/key_schema
           fi
           # replace record name with MyKey
-          jq '.name = "MyKey"' $tmp_dir/schema > /tmp/tmp
-          mv /tmp/tmp $tmp_dir/schema
+          jq '.name = "MyKey"' $tmp_dir/key_schema > /tmp/tmp
+          mv /tmp/tmp $tmp_dir/key_schema
 
-          cp $tmp_dir/schema $repro_dir/$producer_hostname/src/main/resources/schema/mykey.avsc
+          cp $tmp_dir/key_schema $repro_dir/$producer_hostname/src/main/resources/schema/mykey.avsc
         ;;
         json-schema-with-key)
           # replace title name with ID
-          jq '.title = "ID"' $tmp_dir/schema > /tmp/tmp
-          mv /tmp/tmp $tmp_dir/schema
+          jq '.title = "ID"' $tmp_dir/key_schema > /tmp/tmp
+          mv /tmp/tmp $tmp_dir/key_schema
 
-          cp $tmp_dir/schema $repro_dir/$producer_hostname/src/main/resources/schema/Id.json
+          cp $tmp_dir/key_schema $repro_dir/$producer_hostname/src/main/resources/schema/Id.json
         ;;
         protobuf-with-key)
-          original_package=$(grep "package " $tmp_dir/schema | cut -d " " -f 2 | cut -d ";" -f 1 | head -1)
+          original_package=$(grep "package " $tmp_dir/key_schema | cut -d " " -f 2 | cut -d ";" -f 1 | head -1)
           if [ "$original_package" != "" ]
           then
             sed -e "s|$original_package|com.github.vdesabou|g" \
-                $tmp_dir/schema  > /tmp/tmp
+                $tmp_dir/key_schema  > /tmp/tmp
 
-            mv /tmp/tmp $tmp_dir/schema
+            mv /tmp/tmp $tmp_dir/key_schema
             log "✨ Replacing package $original_package with com.github.vdesabou"
           else
             # need to add package
-            cp $tmp_dir/schema /tmp/tmp
+            cp $tmp_dir/key_schema /tmp/tmp
             line=2
-            { head -n $(($line-1)) /tmp/tmp; echo "package com.github.vdesabou;"; tail -n +$line /tmp/tmp; } > $tmp_dir/schema
+            { head -n $(($line-1)) /tmp/tmp; echo "package com.github.vdesabou;"; tail -n +$line /tmp/tmp; } > $tmp_dir/key_schema
           fi
 
-          original_java_outer_classname=$(grep "java_outer_classname" $tmp_dir/schema | cut -d "\"" -f 2 | cut -d "\"" -f 1 | head -1)
+          original_java_outer_classname=$(grep "java_outer_classname" $tmp_dir/key_schema | cut -d "\"" -f 2 | cut -d "\"" -f 1 | head -1)
           if [ "$original_java_outer_classname" != "" ]
           then
             sed -e "s|$original_java_outer_classname|IdImpl|g" \
-                $tmp_dir/schema  > /tmp/tmp
+                $tmp_dir/key_schema  > /tmp/tmp
 
-            mv /tmp/tmp $tmp_dir/schema
+            mv /tmp/tmp $tmp_dir/key_schema
             log "✨ Replacing java_outer_classname $original_java_outer_classname with IdImpl"
           else
             # need to add java_outer_classname
-            cp $tmp_dir/schema /tmp/tmp
+            cp $tmp_dir/key_schema /tmp/tmp
             line=3
-            { head -n $(($line-1)) /tmp/tmp; echo "option java_outer_classname = \"IdImpl\";"; tail -n +$line /tmp/tmp; } > $tmp_dir/schema
+            { head -n $(($line-1)) /tmp/tmp; echo "option java_outer_classname = \"IdImpl\";"; tail -n +$line /tmp/tmp; } > $tmp_dir/key_schema
           fi
 
-          cp $tmp_dir/schema $repro_dir/$producer_hostname/src/main/resources/schema/Id.proto
+          cp $tmp_dir/key_schema $repro_dir/$producer_hostname/src/main/resources/schema/Id.proto
         ;;
 
         none)
@@ -367,73 +345,88 @@ then
     #### schema_file_value
     if [[ -n "$schema_file_value" ]]
     then
-      if [[ $schema_file_value == *"@"* ]]
+      if config_has_key "editor"
       then
-        schema_file_value=$(echo "$schema_file_value" | cut -d "@" -f 2)
+        editor=$(config_get "editor")
+        log "✨ Copy and paste the schema you want to use for the value, save and close the file to continue"
+        if [ "$editor" = "code" ]
+        then
+          code --wait $tmp_dir/value_schema
+        else
+          $editor $tmp_dir/value_schema
+        fi
+      else
+        if [[ $(type code 2>&1) =~ "not found" ]]
+        then
+          logerror "Could not determine an editor to use as default code is not found - you can change editor by updating config.ini"
+          exit 1
+        else
+          log "✨ Copy and paste the schema you want to use for the value, save and close the file to continue"
+          code --wait $tmp_dir/value_schema
+        fi
       fi
-      cp $schema_file_value $tmp_dir/schema
 
       case "${producer}" in
         avro|avro-with-key)
-          original_namespace=$(cat $tmp_dir/schema | jq -r .namespace)
+          original_namespace=$(cat $tmp_dir/value_schema | jq -r .namespace)
           if [ "$original_namespace" != "null" ]
           then
             sed -e "s|$original_namespace|com.github.vdesabou|g" \
-                $tmp_dir/schema  > /tmp/tmp
+                $tmp_dir/value_schema  > /tmp/tmp
 
-            mv /tmp/tmp $tmp_dir/schema
+            mv /tmp/tmp $tmp_dir/value_schema
             log "✨ Replacing namespace $original_namespace with com.github.vdesabou"
           else
             # need to add namespace
-            cp $tmp_dir/schema /tmp/tmp
+            cp $tmp_dir/value_schema /tmp/tmp
             line=2
-            { head -n $(($line-1)) /tmp/tmp; echo "    \"namespace\": \"com.github.vdesabou\","; tail -n +$line /tmp/tmp; } > $tmp_dir/schema
+            { head -n $(($line-1)) /tmp/tmp; echo "    \"namespace\": \"com.github.vdesabou\","; tail -n +$line /tmp/tmp; } > $tmp_dir/value_schema
           fi
           # replace record name with Customer
-          jq '.name = "Customer"' $tmp_dir/schema > /tmp/tmp
-          mv /tmp/tmp $tmp_dir/schema
+          jq '.name = "Customer"' $tmp_dir/value_schema > /tmp/tmp
+          mv /tmp/tmp $tmp_dir/value_schema
 
-          cp $tmp_dir/schema $repro_dir/$producer_hostname/src/main/resources/schema/customer.avsc
+          cp $tmp_dir/value_schema $repro_dir/$producer_hostname/src/main/resources/schema/customer.avsc
         ;;
         json-schema|json-schema-with-key)
           # replace title name with Customer
-          jq '.title = "Customer"' $tmp_dir/schema > /tmp/tmp
-          mv /tmp/tmp $tmp_dir/schema
+          jq '.title = "Customer"' $tmp_dir/value_schema > /tmp/tmp
+          mv /tmp/tmp $tmp_dir/value_schema
 
-          cp $tmp_dir/schema $repro_dir/$producer_hostname/src/main/resources/schema/Customer.json
+          cp $tmp_dir/value_schema $repro_dir/$producer_hostname/src/main/resources/schema/Customer.json
         ;;
         protobuf|protobuf-with-key)
-          original_package=$(grep "package " $tmp_dir/schema | cut -d " " -f 2 | cut -d ";" -f 1 | head -1)
+          original_package=$(grep "package " $tmp_dir/value_schema | cut -d " " -f 2 | cut -d ";" -f 1 | head -1)
           if [ "$original_package" != "" ]
           then
             sed -e "s|$original_package|com.github.vdesabou|g" \
-                $tmp_dir/schema  > /tmp/tmp
+                $tmp_dir/value_schema  > /tmp/tmp
 
-            mv /tmp/tmp $tmp_dir/schema
+            mv /tmp/tmp $tmp_dir/value_schema
             log "✨ Replacing package $original_package with com.github.vdesabou"
           else
             # need to add package
-            cp $tmp_dir/schema /tmp/tmp
+            cp $tmp_dir/value_schema /tmp/tmp
             line=2
-            { head -n $(($line-1)) /tmp/tmp; echo "package com.github.vdesabou;"; tail -n +$line /tmp/tmp; } > $tmp_dir/schema
+            { head -n $(($line-1)) /tmp/tmp; echo "package com.github.vdesabou;"; tail -n +$line /tmp/tmp; } > $tmp_dir/value_schema
           fi
 
-          original_java_outer_classname=$(grep "java_outer_classname" $tmp_dir/schema | cut -d "\"" -f 2 | cut -d "\"" -f 1 | head -1)
+          original_java_outer_classname=$(grep "java_outer_classname" $tmp_dir/value_schema | cut -d "\"" -f 2 | cut -d "\"" -f 1 | head -1)
           if [ "$original_java_outer_classname" != "" ]
           then
             sed -e "s|$original_java_outer_classname|CustomerImpl|g" \
-                $tmp_dir/schema  > /tmp/tmp
+                $tmp_dir/value_schema  > /tmp/tmp
 
-            mv /tmp/tmp $tmp_dir/schema
+            mv /tmp/tmp $tmp_dir/value_schema
             log "✨ Replacing java_outer_classname $original_java_outer_classname with CustomerImpl"
           else
             # need to add java_outer_classname
-            cp $tmp_dir/schema /tmp/tmp
+            cp $tmp_dir/value_schema /tmp/tmp
             line=3
-            { head -n $(($line-1)) /tmp/tmp; echo "option java_outer_classname = \"CustomerImpl\";"; tail -n +$line /tmp/tmp; } > $tmp_dir/schema
+            { head -n $(($line-1)) /tmp/tmp; echo "option java_outer_classname = \"CustomerImpl\";"; tail -n +$line /tmp/tmp; } > $tmp_dir/value_schema
           fi
 
-          cp $tmp_dir/schema $repro_dir/$producer_hostname/src/main/resources/schema/Customer.proto
+          cp $tmp_dir/value_schema $repro_dir/$producer_hostname/src/main/resources/schema/Customer.proto
         ;;
 
         none)

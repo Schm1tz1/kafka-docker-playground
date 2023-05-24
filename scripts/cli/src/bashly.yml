@@ -1,7 +1,7 @@
 name: playground
 version: 1.0.0
 dependencies:
-- docker
+  docker: visit $(blue_underlined https://docs.docker.com/get-docker) to install
 help: |-
   🧠 CLI for Kafka Docker Playground 🐳
 
@@ -19,11 +19,14 @@ commands:
   help: Return some completion for confluent cloud kafka cluster region list
   private: true
   dependencies:
-  - confluent
+    confluent: visit $(blue_underlined https://docs.confluent.io/confluent-cli/current/overview.html) to install
 
 - name: get-topic-list
   help: Return some completion for topic list
   private: true
+  flags:
+  - long: --skip-connect-internal-topics
+    required: false
 
 - name: get-examples-list-with-fzf
   help: Return some completion for examples list
@@ -53,8 +56,8 @@ commands:
     arg: type
     allowed: [zip, jar]
 
-- name: get-schema-with-fzf
-  help: Return some completion for schema files
+- name: get-any-file-with-fzf
+  help: Return some completion for any files
   private: true
   args:
   - name: cur
@@ -64,7 +67,7 @@ commands:
 - name: bashly-reload
   private: true
   dependencies:
-  - bashly
+    bashly: visit $(blue_underlined https://bashly.dannyb.co/installation/) to install
 
 - name: run
   group: Run
@@ -80,11 +83,9 @@ commands:
       playground run -f zendesk-source<tab> <ZENDESK_URL> <ZENDESK_USERNAME> <ZENDESK_PASSWORD>
     required: false
   dependencies:
-  - fzf
+    fzf: visit $(blue_underlined https://github.com/junegunn/fzf#installation) to install
   help: |-
     🕹️ Run any example, except for Confluent Cloud (in this case use run-ccloud command)
-    
-    👉 Check documentation https://tinyurl.com/xxx
 
   flags:
   - long: --file
@@ -243,7 +244,7 @@ commands:
       playground run -f zendesk-source<tab> <ZENDESK_URL> <ZENDESK_USERNAME> <ZENDESK_PASSWORD>
     required: false
   dependencies:
-  - fzf
+    fzf: visit $(blue_underlined https://github.com/junegunn/fzf#installation) to install
   flags:
     - *tag
     - *connector-tag
@@ -276,8 +277,8 @@ commands:
       playground run -f zendesk-source<tab> <ZENDESK_URL> <ZENDESK_USERNAME> <ZENDESK_PASSWORD>
     required: false
   dependencies:
-  - fzf
-  - confluent
+    fzf: visit $(blue_underlined https://github.com/junegunn/fzf#installation) to install
+    confluent: visit $(blue_underlined https://docs.confluent.io/confluent-cli/current/overview.html) to install
   help: |-
     ⛅ Run any Confluent Cloud (ccloud) example
 
@@ -297,7 +298,6 @@ commands:
     --cluster-creds (or CLUSTER_CREDS environment variable)
     --cluster-schema-registry-creds (or SCHEMA_REGISTRY_CREDS environment variable)
     
-    👉 Check documentation https://tinyurl.com/xxx
   flags:
     - long: --file
       short: -f
@@ -325,7 +325,6 @@ commands:
     - &cluster-cloud
       long: --cluster-cloud
       required: false
-      default: aws
       arg: cluster-cloud
       allowed: [aws, gcp, azure]
       help: |-
@@ -335,7 +334,6 @@ commands:
     - &cluster-region
       long: --cluster-region
       required: false
-      default: eu-west-2
       arg: cluster-region
       completions:
         - $(playground get-kafka-region-list)
@@ -376,7 +374,7 @@ commands:
         ❣️ Only required if you want to use your own existing cluster
 
         🎓 Tip: you can also use CLUSTER_CREDS environment variable
-    - &luster-schema-registry-creds
+    - &cluster-schema-registry-creds
       long: --cluster-schema-registry-creds
       required: false
       validate: not_empty
@@ -395,9 +393,25 @@ commands:
 - name: open
   group: Run
   dependencies:
-  - fzf
+    fzf: visit $(blue_underlined https://github.com/junegunn/fzf#installation) to install
   help: |-
-    👐 Simply open last example you ran with <playground run> or <playground run-ccloud>
+    👐 When --file is not provided, simply open last example you ran with <playground run> or <playground run-ccloud>
+
+    Otherwise, open any file from the playground using --file.
+  flags:
+  - long: --file
+    short: -f
+    required: false
+    validate: file_exists_with_trick
+    arg: file
+    completions:
+      - $(playground get-any-file-with-fzf "$cur")
+    help: |-
+      🔎 Search any file and open it.
+      
+      ❕ It must be absolute full path
+
+      🎓 Tip: use <tab> completion to trigger fzf completion
 
 - name: stop
   group: Run
@@ -411,11 +425,11 @@ commands:
     default: reproduction-models
   group: Bootstrap
   dependencies:
-  - fzf
+    fzf: visit $(blue_underlined https://github.com/junegunn/fzf#installation) to install
   help: |-
     🛠  Bootstrap reproduction model
     
-    👉 Check documentation https://tinyurl.com/xxx
+    👉 Check documentation https://kafka-docker-playground.io/#/reusables?id=%f0%9f%9b%a0-bootstrap-reproduction-model
   catch_all:
     label: arguments
     help: |-
@@ -445,7 +459,7 @@ commands:
   - *cluster-environment
   - *cluster-name
   - *cluster-creds
-  - *luster-schema-registry-creds
+  - *cluster-schema-registry-creds
 
   - long: --file
     short: -f
@@ -498,32 +512,18 @@ commands:
       2️⃣ Number of java producers to generate
 
   - long: --producer-schema-key
-    arg: producer_schema
     required: false
-    validate: file_exists_with_trick
-    completions:
-      - $(playground get-schema-with-fzf "$cur")
     help: |-
-      🔰 Schema file to use for the key
+      🔰 Schema to use for the key
 
-      ❕ It must be absolute full path
-
-      🎓 Tip: use <tab> completion to trigger fzf completion 
-              use folder_producer_schema (default: ~/Downloads) in config.ini file to configure where to search the files
+      ✨ Copy and paste the schema you want to use for the key, save and close the file to continue
 
   - long: --producer-schema-value
-    arg: producer_schema
     required: false
-    validate: file_exists_with_trick
-    completions:
-      - $(playground get-schema-with-fzf "$cur")
     help: |-
-      🔰 Schema file to use for the value
+      🔰 Schema to use for the value
 
-      ❕ It must be absolute full path
-
-      🎓 Tip: use <tab> completion to trigger fzf completion 
-              use folder_producer_schema (default: ~/Downloads) in config.ini file to configure where to search the files
+      ✨ Copy and paste the schema you want to use for the key, save and close the file to continue
 
   - long: --custom-smt
     help: |-
@@ -555,7 +555,7 @@ commands:
   help: |-
     📝 Get properties file from a container
     
-    👉 Check documentation https://tinyurl.com/xxx
+    👉 Check documentation https://kafka-docker-playground.io/#/how-to-use?id=%f0%9f%93%9d-see-properties-file
 
   flags:
   - &container
@@ -581,8 +581,6 @@ commands:
   - schema_registry_running
   help: |-
     🔰 Get all schemas versions for all subjects
-    
-    👉 Check documentation xxxx
   flags:
     - long: --open
       short: -o
@@ -597,7 +595,7 @@ commands:
   help: |-
     ✨ Enable java remote debugging for container
     
-    👉 Check documentation https://tinyurl.com/xxx
+    👉 Check documentation https://kafka-docker-playground.io/#/reusables?id=%e2%9c%a8-remote-debugging
   flags:
     - *container
   examples:
@@ -609,8 +607,6 @@ commands:
   group: Debug
   help: |-
     🧬 Set log level for any package
-
-    👉 Check documentation https://tinyurl.com/xxx
   filters:
   - connect_running
   commands:
@@ -655,9 +651,9 @@ commands:
   help: |-
     🔢 Get JMX metrics from a component
     
-    👉 Check documentation https://tinyurl.com/xxx
+    👉 Check documentation https://kafka-docker-playground.io/#/how-to-use?id=%f0%9f%94%a2-jmx-metrics
   dependencies:
-  - java
+    java: visit $(blue_underlined https://openjdk.org/install/) to install
   flags:
   - long: --component
     short: -c
@@ -692,7 +688,7 @@ commands:
       help: |-
         💫 Recreate container(s)
         
-        👉 Check documentation https://tinyurl.com/xxx
+        👉 Check documentation https://kafka-docker-playground.io/#/how-to-use?id=%e2%99%bb%ef%b8%8f-re-create-containers
 
     - name: get-ip-addresses
       group: Container
@@ -737,6 +733,7 @@ commands:
       examples:
       - playground container logs --container connect
       - playground container logs -c connect --open
+      - playground container logs -c connect --wait-for-log "StackOverflowError"
 
     - name: ssh
       group: Container
@@ -848,7 +845,7 @@ commands:
       - &topic
         long: --topic
         short: -t
-        required: true
+        required: false
         arg: topic
         completions:
           - $(playground get-topic-list)
@@ -885,7 +882,54 @@ commands:
         default: ""
         help: |-
           Max number of messages to consume
+      - long: --min-expected-messages
+        arg: min-expected-messages
+        validate: integer
+        required: false
+        default: ""
+        help: |-
+          Minimum expected number of messages to be present in topic, returns an error if this is not the case
 
+          Note: --topic should be specified in this case.
+      - long: --grep
+        arg: grep
+        required: false
+        default: ""
+        help: |-
+          Verify that topic content contains record which contains specified string
+
+    - name: set-schema-compatibility
+      filters:
+      - schema_registry_running
+      group: Topic
+      help: |-
+        🛡️ Change topic's schema compatibility
+      flags:
+      - *topic
+      - long: --compatibility
+        arg: compatibility
+        allowed: 
+          - BACKWARD
+          - BACKWARD_TRANSITIVE
+          - FORWARD
+          - FORWARD_TRANSITIVE
+          - FULL
+          - FULL_TRANSITIVE
+          - NONE
+        required: true
+        help: |-
+          Schema Registry compatibility rule
+
+    - name: display-schema-id-statistics
+      group: Topic
+      help: |-
+        🧞 Easily identify the usage of different schema versions within a topic.
+
+        It makes use of https://github.com/EladLeev/schema-registry-statistics
+
+        It only works when plaintext environment is used
+      flags:
+      - *topic
 - name: connector
   expose: true
   group: Connector
@@ -918,9 +962,7 @@ commands:
         🎓 Tip: If not specified, the command will apply to all connectors
 
   - name: versions
-    help:  🧞 Get current version used in example
-    flags:
-    - *connector
+    help:  🧞 Get current and latest version available on Confluent Hub for connector(s) used in example
 
   - name: restart
     help: ♻️  Restart connector

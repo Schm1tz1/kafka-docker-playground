@@ -8,7 +8,7 @@ connector="${args[--connector]}"
 
 if [[ ! -n "$connector" ]]
 then
-    logwarn "--connector flag was not provided, applying command to all connectors"
+    log "✨ --connector flag was not provided, applying command to all connectors"
     connector=$(playground get-connector-list)
     if [ "$connector" == "" ]
     then
@@ -20,7 +20,8 @@ fi
 items=($connector)
 for connector in ${items[@]}
 do
-    package=$(curl -s $security "$connect_url/connectors/$connector" | jq -r '.config."connector.class"')
+    tmp=$(curl -s $security "$connect_url/connectors/$connector" | jq -r '.config."connector.class"')
+    package="${tmp%.*}"
     # log "🧬 Set log level for connector $connector to $level"
     playground log-level set -p "$package" -l $level
 done
