@@ -56,10 +56,10 @@ $ curl -X PUT \
                     "tasks.max": "1",
                     "curl.logging": "true",
                     "salesforce.object" : "Lead",
-                    "salesforce.instance" : "'"$SALESFORCE_INSTANCE"'",
-                    "salesforce.username" : "'"$SALESFORCE_USERNAME"'",
-                    "salesforce.password" : "'"$SALESFORCE_PASSWORD"'",
-                    "salesforce.password.token" : "'"$SALESFORCE_SECURITY_TOKEN"'",
+                    "salesforce.instance" : "$SALESFORCE_INSTANCE",
+                    "salesforce.username" : "$SALESFORCE_USERNAME",
+                    "salesforce.password" : "$SALESFORCE_PASSWORD",
+                    "salesforce.password.token" : "$SALESFORCE_SECURITY_TOKEN",
                     "key.converter": "org.apache.kafka.connect.json.JsonConverter",
                     "value.converter": "org.apache.kafka.connect.json.JsonConverter",
                     "confluent.license": "",
@@ -73,7 +73,7 @@ $ curl -X PUT \
 Verify we have received the data in `sfdc-bukapi-leads` topic
 
 ```bash
-playground topic consume --topic sfdc-bukapi-leads --min-expected-messages 1
+playground topic consume --topic sfdc-bukapi-leads --min-expected-messages 1 --timeout 60
 ```
 
 Results:

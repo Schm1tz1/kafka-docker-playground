@@ -24,7 +24,7 @@ $ curl -X PUT \
                "tasks.max": "1",
                "connector.class": "org.apache.kafka.connect.file.FileStreamSourceConnector",
                "topic": "filestream",
-               "file": "'"$INPUT_FILE"'",
+               "file": "$INPUT_FILE",
                "key.converter": "org.apache.kafka.connect.storage.StringConverter",
                "value.converter": "org.apache.kafka.connect.json.JsonConverter",
                "value.converter.schemas.enable": "false"
@@ -35,7 +35,7 @@ $ curl -X PUT \
 Verifying topic `filestream`
 
 ```bash
-playground topic consume --topic filestream --min-expected-messages 10
+playground topic consume --topic filestream --min-expected-messages 10 --timeout 60
 ```
 
 Results:

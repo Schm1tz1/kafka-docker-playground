@@ -92,18 +92,18 @@ $ curl -X PUT \
                "connector.class": "io.confluent.connect.oracle.cdc.OracleCdcSourceConnector",
                "tasks.max":2,
                "key.converter" : "io.confluent.connect.avro.AvroConverter",
-               "key.converter.schema.registry.url": "'"$SCHEMA_REGISTRY_URL"'",
+               "key.converter.schema.registry.url": "$SCHEMA_REGISTRY_URL",
                "key.converter.basic.auth.user.info": "${file:/data:schema.registry.basic.auth.user.info}",
                "key.converter.basic.auth.credentials.source": "USER_INFO",
                "value.converter" : "io.confluent.connect.avro.AvroConverter",
-               "value.converter.schema.registry.url": "'"$SCHEMA_REGISTRY_URL"'",
+               "value.converter.schema.registry.url": "$SCHEMA_REGISTRY_URL",
                "value.converter.basic.auth.user.info": "${file:/data:schema.registry.basic.auth.user.info}",
                "value.converter.basic.auth.credentials.source": "USER_INFO",
 
                "confluent.topic.ssl.endpoint.identification.algorithm" : "https",
                "confluent.topic.sasl.mechanism" : "PLAIN",
                "confluent.topic.bootstrap.servers": "${file:/data:bootstrap.servers}",
-               "confluent.topic.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/data:sasl.username}\" password=\"${file:/data:sasl.password}\";",
+               "confluent.topic.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"\${file:/data:sasl.username}\" password=\"\${file:/data:sasl.password}\";",
                "confluent.topic.security.protocol" : "SASL_SSL",
                "confluent.topic.replication.factor": "3",
 
@@ -126,7 +126,7 @@ $ curl -X PUT \
 
                "redo.log.topic.name": "redo-log-topic",
                "redo.log.consumer.bootstrap.servers": "${file:/data:bootstrap.servers}",
-               "redo.log.consumer.sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/data:sasl.username}\" password=\"${file:/data:sasl.password}\";",
+               "redo.log.consumer.sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"\${file:/data:sasl.username}\" password=\"\${file:/data:sasl.password}\";",
                "redo.log.consumer.security.protocol":"SASL_SSL",
                "redo.log.consumer.sasl.mechanism":"PLAIN",
 
@@ -143,7 +143,7 @@ $ curl -X PUT \
 Verify the topic `ORCLCDB.C__MYUSER.CUSTOMERS`:
 
 ```bash
-playground topic consume --topic ORCLCDB.C__MYUSER.CUSTOMERS --min-expected-messages 13
+playground topic consume --topic ORCLCDB.C__MYUSER.CUSTOMERS --min-expected-messages 13 --timeout 60
 ```
 
 Results:
@@ -173,18 +173,18 @@ $ curl -X PUT \
                "connector.class": "io.confluent.connect.oracle.cdc.OracleCdcSourceConnector",
                "tasks.max":2,
                "key.converter" : "io.confluent.connect.avro.AvroConverter",
-               "key.converter.schema.registry.url": "'"$SCHEMA_REGISTRY_URL"'",
+               "key.converter.schema.registry.url": "$SCHEMA_REGISTRY_URL",
                "key.converter.basic.auth.user.info": "${file:/data:schema.registry.basic.auth.user.info}",
                "key.converter.basic.auth.credentials.source": "USER_INFO",
                "value.converter" : "io.confluent.connect.avro.AvroConverter",
-               "value.converter.schema.registry.url": "'"$SCHEMA_REGISTRY_URL"'",
+               "value.converter.schema.registry.url": "$SCHEMA_REGISTRY_URL",
                "value.converter.basic.auth.user.info": "${file:/data:schema.registry.basic.auth.user.info}",
                "value.converter.basic.auth.credentials.source": "USER_INFO",
 
                "confluent.topic.ssl.endpoint.identification.algorithm" : "https",
                "confluent.topic.sasl.mechanism" : "PLAIN",
                "confluent.topic.bootstrap.servers": "${file:/data:bootstrap.servers}",
-               "confluent.topic.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/data:sasl.username}\" password=\"${file:/data:sasl.password}\";",
+               "confluent.topic.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"\${file:/data:sasl.username}\" password=\"\${file:/data:sasl.password}\";",
                "confluent.topic.security.protocol" : "SASL_SSL",
                "confluent.topic.replication.factor": "3",
 
@@ -208,7 +208,7 @@ $ curl -X PUT \
 
                "redo.log.topic.name": "redo-log-topic",
                "redo.log.consumer.bootstrap.servers": "${file:/data:bootstrap.servers}",
-               "redo.log.consumer.sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/data:sasl.username}\" password=\"${file:/data:sasl.password}\";",
+               "redo.log.consumer.sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"\${file:/data:sasl.username}\" password=\"\${file:/data:sasl.password}\";",
                "redo.log.consumer.security.protocol":"SASL_SSL",
                "redo.log.consumer.sasl.mechanism":"PLAIN",
 
@@ -225,7 +225,7 @@ $ curl -X PUT \
 Verify the topic `ORCLPDB1.C__MYUSER.CUSTOMERS`:
 
 ```bash
-playground topic consume --topic ORCLPDB1.C__MYUSER.CUSTOMERS --min-expected-messages 13
+playground topic consume --topic ORCLPDB1.C__MYUSER.CUSTOMERS --min-expected-messages 13 --timeout 60
 ```
 
 Results:

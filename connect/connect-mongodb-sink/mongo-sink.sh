@@ -26,22 +26,67 @@ EOF
 sleep 2
 
 log "Sending messages to topic orders"
-docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic orders --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"id","type":"int"},{"name":"product", "type": "string"}, {"name":"quantity", "type": "int"}, {"name":"price","type": "float"}]}' << EOF
-{"id": 999, "product": "foo", "quantity": 100, "price": 50}
+playground topic produce -t orders --nb-messages 1 << 'EOF'
+{
+  "type": "record",
+  "name": "myrecord",
+  "fields": [
+    {
+      "name": "id",
+      "type": "int"
+    },
+    {
+      "name": "product",
+      "type": "string"
+    },
+    {
+      "name": "quantity",
+      "type": "int"
+    },
+    {
+      "name": "price",
+      "type": "float"
+    }
+  ]
+}
+EOF
+
+playground topic produce -t orders --nb-messages 1 --forced-value '{"id":2,"product":"foo","quantity":2,"price":0.86583304}' << 'EOF'
+{
+  "type": "record",
+  "name": "myrecord",
+  "fields": [
+    {
+      "name": "id",
+      "type": "int"
+    },
+    {
+      "name": "product",
+      "type": "string"
+    },
+    {
+      "name": "quantity",
+      "type": "int"
+    },
+    {
+      "name": "price",
+      "type": "float"
+    }
+  ]
+}
 EOF
 
 log "Creating MongoDB sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class" : "com.mongodb.kafka.connect.MongoSinkConnector",
-                    "tasks.max" : "1",
-                    "connection.uri" : "mongodb://myuser:mypassword@mongodb:27017",
-                    "database":"inventory",
-                    "collection":"customers",
-                    "topics":"orders"
-          }' \
-     http://localhost:8083/connectors/mongodb-sink/config | jq .
+playground connector create-or-update --connector mongodb-sink << EOF
+{
+    "connector.class" : "com.mongodb.kafka.connect.MongoSinkConnector",
+    "tasks.max" : "1",
+    "connection.uri" : "mongodb://myuser:mypassword@mongodb:27017",
+    "database":"inventory",
+    "collection":"customers",
+    "topics":"orders"
+}
+EOF
 
 sleep 10
 

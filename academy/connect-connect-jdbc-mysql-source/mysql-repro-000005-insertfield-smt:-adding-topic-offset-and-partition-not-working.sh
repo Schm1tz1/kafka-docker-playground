@@ -19,7 +19,7 @@ then
      do
      set +e
      log "🏗 Building jar for ${component}"
-     docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${DIR}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${DIR}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
+     docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${PWD}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${PWD}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
      if [ $? != 0 ]
      then
           logerror "ERROR: failed to build java component "
@@ -80,12 +80,11 @@ log "Show content of team table:"
 docker exec mysql bash -c "mysql --user=root --password=password --database=mydb -e 'select * from team'"
 
 
-playground log-level set --package "org.apache.kafka.connect.runtime.TransformationChain" --level TRACE
+playground debug log-level set --package "org.apache.kafka.connect.runtime.TransformationChain" --level TRACE
 
 log "Creating MySQL source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector mysql-source << EOF
+{
                "connector.class":"io.confluent.connect.jdbc.JdbcSourceConnector",
                "tasks.max":"1",
                "connection.url":"jdbc:mysql://mysql:3306/mydb?user=user&password=password&useSSL=false",
@@ -98,19 +97,19 @@ curl -X PUT \
                "errors.log.include.messages": "true",
                "transforms": "InsertTopic,InsertOffset,InsertPartition,InsertTimestamp,TimestampConverter",
                "transforms.InsertOffset.offset.field": "__kafka_offset",
-               "transforms.InsertOffset.type": "org.apache.kafka.connect.transforms.InsertField$Value",
+               "transforms.InsertOffset.type": "org.apache.kafka.connect.transforms.InsertField\$Value",
                "transforms.InsertPartition.partition.field": "__kafka_partition",
-               "transforms.InsertPartition.type": "org.apache.kafka.connect.transforms.InsertField$Value",
+               "transforms.InsertPartition.type": "org.apache.kafka.connect.transforms.InsertField\$Value",
                "transforms.InsertTimestamp.timestamp.field": "__kafka_ts",
-               "transforms.InsertTimestamp.type": "org.apache.kafka.connect.transforms.InsertField$Value",
+               "transforms.InsertTimestamp.type": "org.apache.kafka.connect.transforms.InsertField\$Value",
                "transforms.InsertTopic.topic.field": "__kafka_topic",
-               "transforms.InsertTopic.type": "org.apache.kafka.connect.transforms.InsertField$Value",
-               "transforms.TimestampConverter.type": "org.apache.kafka.connect.transforms.TimestampConverter$Value",
+               "transforms.InsertTopic.type": "org.apache.kafka.connect.transforms.InsertField\$Value",
+               "transforms.TimestampConverter.type": "org.apache.kafka.connect.transforms.TimestampConverter\$Value",
                "transforms.TimestampConverter.format": "yyyy-MM-dd HH:mm:ss.SSS",
                "transforms.TimestampConverter.target.type": "string",
                "transforms.TimestampConverter.field": "__kafka_ts"
-          }' \
-     http://localhost:8083/connectors/mysql-source/config | jq .
+          }
+EOF
 
 sleep 5
 

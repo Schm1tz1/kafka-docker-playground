@@ -39,9 +39,8 @@ EOF
 cat /tmp/result.log
 
 log "Creating SAP HANA JDBC Source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector jdbc-sap-hana-source << EOF
+{
                "tasks.max": "1",
                "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
                "mode": "incrementing",
@@ -51,11 +50,11 @@ curl -X PUT \
                "connection.user": "LOCALDEV",
                "connection.password" : "Localdev1",
                "topic.prefix": "sap-hana-"
-          }' \
-     http://localhost:8083/connectors/jdbc-sap-hana-source/config | jq .
+          }
+EOF
 
 sleep 5
 
 log "Verifying topic sap-hana-CUSTOMERS"
-playground topic consume --topic sap-hana-CUSTOMERS --min-expected-messages 1
+playground topic consume --topic sap-hana-CUSTOMERS --min-expected-messages 1 --timeout 60
 

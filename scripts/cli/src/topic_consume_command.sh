@@ -1,7 +1,11 @@
 topic="${args[--topic]}"
+verbose="${args[--verbose]}"
 max_messages="${args[--max-messages]}"
 grep_string="${args[--grep]}"
 min_expected_messages="${args[--min-expected-messages]}"
+timeout="${args[--timeout]}"
+tail="${args[--tail]}"
+timestamp_field="${args[--plot-latencies-timestamp-field]}"
 
 environment=`get_environment_used`
 
@@ -56,6 +60,15 @@ then
   source $root_folder/scripts/utils.sh
 fi
 
+if [[ -n "$timeout" ]] && [ "$timeout" != "60" ]
+then
+  if [[ ! -n "$min_expected_messages" ]]
+  then
+    logerror "❌ --timeout was provided without specifying --min-expected-messages"
+    exit 1
+  fi
+fi
+
 if [[ ! -n "$topic" ]]
 then
     if [[ -n "$min_expected_messages" ]]
@@ -63,11 +76,21 @@ then
       logerror "--min-expected-messages was provided without specifying --topic"
       exit 1
     fi
+    if [[ -n "$tail" ]]
+    then
+      logerror "--tail was provided without specifying --topic"
+      exit 1
+    fi
+    if [[ -n "$timestamp_field" ]]
+    then
+      logerror "--plot-latencies-timestamp-field was provided without specifying --topic"
+      exit 1
+    fi
     log "✨ --topic flag was not provided, applying command to all topics"
     topic=$(playground get-topic-list --skip-connect-internal-topics)
     if [ "$topic" == "" ]
     then
-        logerror "❌ No topic found !"
+        logerror "❌ no topic found !"
         exit 1
     fi
 fi
@@ -75,19 +98,64 @@ fi
 items=($topic)
 for topic in ${items[@]}
 do
-  if [[ -n "$min_expected_messages" ]]
+  if [ ! -n "$tail" ]
   then
-    nb_messages=$(playground topic get-number-records -t $topic | tail -1)
-    if [ $nb_messages -lt $min_expected_messages ]
-    then
-      logerror "❌ --min-expected-messages is set with $min_expected_messages but topic $topic contains $nb_messages messages"
-      exit 1
+    if [[ -n "$min_expected_messages" ]]
+    then 
+      start_time=$(date +%s)
+
+      while true; do
+        nb_messages=$(playground topic get-number-records -t $topic | tail -1)
+        
+        if [[ ! $nb_messages =~ ^[0-9]+$ ]]
+        then
+          echo $nb_messages | grep "does not exist" > /dev/null 2>&1
+          if [ $? == 0 ]
+          then
+            logwarn "❌ topic $topic does not exist !"
+          else
+            logwarn "❌ problem while getting number of messages: $nb_messages"
+          fi
+          exit 1
+        fi
+
+        if [ $nb_messages -ge $min_expected_messages ]
+        then
+          break
+        fi
+        
+        current_time=$(date +%s)
+        elapsed_time=$((current_time - start_time))
+        
+        if [ $elapsed_time -ge $timeout ]
+        then
+          logerror "❌ overall timeout of $timeout seconds exceeded. --min-expected-messages is set with $min_expected_messages but topic $topic contains $nb_messages messages"
+          exit 1
+        fi
+        
+        sleep 1
+      done
+    else
+      nb_messages=$(playground topic get-number-records -t $topic | tail -1)
+
+      if [[ ! $nb_messages =~ ^[0-9]+$ ]]
+      then
+        echo $nb_messages | grep "does not exist" > /dev/null 2>&1
+        if [ $? == 0 ]
+        then
+          logwarn "❌ topic $topic does not exist !"
+        else
+          logwarn "❌ problem while getting number of messages: $nb_messages"
+        fi
+        break
+      fi
     fi
-  else
-    nb_messages=$(playground topic get-number-records -t $topic | tail -1)
   fi
 
-  if [[ -n "$max_messages" ]]
+  if [ -n "$tail" ]
+  then
+    log "✨ Tailing content of topic $topic"
+  elif [[ -n "$max_messages" ]] && [ $nb_messages -ge $max_messages ] && [[ ! -n "$timestamp_field" ]]
   then
     log "✨ Display content of topic $topic, it contains $nb_messages messages, but displaying only --max-messages=$max_messages"
     nb_messages=$max_messages
@@ -95,11 +163,20 @@ do
     log "✨ Display content of topic $topic, it contains $nb_messages messages"
   fi
 
+  if [[ -n "$grep_string" ]]
+  then
+    logwarn "--grep is set so only matched results will be displayed !"
+  fi
+
+  if [[ -n "$timestamp_field" ]]
+  then
+    log "📈 plotting results.."
+  fi
   key_type=""
   version=$(curl $sr_security -s "${sr_url}/subjects/${topic}-key/versions/1" | jq -r .version)
   if [ "$version" != "null" ]
   then
-    schema_type=$(curl $sr_security -s "${sr_url}/subjects/${topic}-key/versions/1"  | jq -r .schemaType)
+    schema_type=$(curl $sr_security -s "${sr_url}/subjects/${topic}-key/versions/1" | jq -r .schemaType)
     case "${schema_type}" in
       JSON)
         key_type="json-schema"
@@ -147,37 +224,55 @@ do
 
   type=""
   tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
+  trap 'rm -rf $tmp_dir' EXIT
   fifo_path="$tmp_dir/kafka_output_fifo"
   mkfifo "$fifo_path"
+
+  nottailing1=""
+  nottailing2=""
+  if [ ! -n "$tail" ]
+  then
+    nottailing1="--from-beginning --max-messages $nb_messages"
+    nottailing2="timeout $timeout"
+  fi
+
+  if [[ -n "$max_messages" ]]
+  then
+    nottailing2=""
+  fi
+  if [[ -n "$verbose" ]]
+  then
+      set -x
+  fi
   case "${value_type}" in
     avro|protobuf|json-schema)
         if [ "$key_type" == "avro" ] || [ "$key_type" == "protobuf" ] || [ "$key_type" == "json-schema" ]
         then
             if [[ "$environment" == "environment" ]]
             then
-              docker run --rm -e SCHEMA_REGISTRY_LOG4J_OPTS="-Dlog4j.configuration=file:/etc/kafka/tools-log4j.properties" -e value_type=$value_type -e BOOTSTRAP_SERVERS="$BOOTSTRAP_SERVERS" -e SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO="$SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO" -e SCHEMA_REGISTRY_URL="$SCHEMA_REGISTRY_URL" ${CP_CONNECT_IMAGE}:${CONNECT_TAG} kafka-$value_type-console-consumer --bootstrap-server $BOOTSTRAP_SERVERS --topic $topic --consumer-property ssl.endpoint.identification.algorithm=https --consumer-property sasl.mechanism=PLAIN --consumer-property security.protocol=SASL_SSL --consumer-property sasl.jaas.config="$SASL_JAAS_CONFIG" --property basic.auth.credentials.source=USER_INFO --property schema.registry.basic.auth.user.info="$SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO" --property schema.registry.url=$SCHEMA_REGISTRY_URL --property print.partition=true --property print.offset=true --property print.headers=true --property print.timestamp=true --property print.key=true --property key.separator="|" --skip-message-on-error $security --from-beginning --max-messages $nb_messages > "$fifo_path" 2>&1 &
+              $nottailing2 docker run -i --rm -e SCHEMA_REGISTRY_LOG4J_OPTS="-Dlog4j.configuration=file:/etc/kafka/tools-log4j.properties" -e value_type=$value_type -e BOOTSTRAP_SERVERS="$BOOTSTRAP_SERVERS" -e SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO="$SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO" -e SCHEMA_REGISTRY_URL="$SCHEMA_REGISTRY_URL" ${CP_CONNECT_IMAGE}:${CONNECT_TAG} kafka-$value_type-console-consumer --bootstrap-server $BOOTSTRAP_SERVERS --topic $topic --consumer-property ssl.endpoint.identification.algorithm=https --consumer-property sasl.mechanism=PLAIN --consumer-property security.protocol=SASL_SSL --consumer-property sasl.jaas.config="$SASL_JAAS_CONFIG" --property basic.auth.credentials.source=USER_INFO --property schema.registry.basic.auth.user.info="$SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO" --property schema.registry.url=$SCHEMA_REGISTRY_URL --property print.schema.ids=true --property schema.id.separator="|schema_id=" --property print.partition=true --property print.offset=true --property print.headers=true --property headers.separator=, --property headers.deserializer=org.apache.kafka.common.serialization.StringDeserializer --property print.timestamp=true --property print.key=true --property key.separator="|" --skip-message-on-error $security $nottailing1 > "$fifo_path" 2>&1 &
             else
-              docker exec -e SCHEMA_REGISTRY_LOG4J_OPTS="-Dlog4j.configuration=file:/etc/kafka/tools-log4j.properties" $container kafka-$value_type-console-consumer -bootstrap-server $bootstrap_server --property schema.registry.url=$sr_url_cli --topic $topic --property print.partition=true --property print.offset=true --property print.headers=true --property print.timestamp=true --property print.key=true --property key.separator="|" --skip-message-on-error $security --from-beginning --max-messages $nb_messages > "$fifo_path" 2>&1 &
+              $nottailing2 docker exec -e SCHEMA_REGISTRY_LOG4J_OPTS="-Dlog4j.configuration=file:/etc/kafka/tools-log4j.properties" $container kafka-$value_type-console-consumer -bootstrap-server $bootstrap_server --property schema.registry.url=$sr_url_cli --topic $topic  --property print.schema.ids=true --property schema.id.separator="|schema_id=" --property print.partition=true --property print.offset=true --property print.headers=true --property headers.separator=, --property headers.deserializer=org.apache.kafka.common.serialization.StringDeserializer --property print.timestamp=true --property print.key=true --property key.separator="|" --skip-message-on-error $security $nottailing1 > "$fifo_path" 2>&1 &
             fi
         else
             if [[ "$environment" == "environment" ]]
             then
-              docker run --rm -e SCHEMA_REGISTRY_LOG4J_OPTS="-Dlog4j.configuration=file:/etc/kafka/tools-log4j.properties" -e value_type=$value_type -e BOOTSTRAP_SERVERS="$BOOTSTRAP_SERVERS" -e SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO="$SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO" -e SCHEMA_REGISTRY_URL="$SCHEMA_REGISTRY_URL" ${CP_CONNECT_IMAGE}:${CONNECT_TAG} kafka-$value_type-console-consumer --bootstrap-server $BOOTSTRAP_SERVERS --topic $topic --consumer-property ssl.endpoint.identification.algorithm=https --consumer-property sasl.mechanism=PLAIN --consumer-property security.protocol=SASL_SSL --consumer-property sasl.jaas.config="$SASL_JAAS_CONFIG" --property basic.auth.credentials.source=USER_INFO --property schema.registry.basic.auth.user.info="$SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO" --property schema.registry.url=$SCHEMA_REGISTRY_URL --property print.partition=true --property print.offset=true --property print.headers=true --property print.timestamp=true --property print.key=true --property key.separator="|"  --property key.deserializer=org.apache.kafka.common.serialization.StringDeserializer --skip-message-on-error $security --from-beginning --max-messages $nb_messages > "$fifo_path" 2>&1 &
+              $nottailing2 docker run -i --rm -e SCHEMA_REGISTRY_LOG4J_OPTS="-Dlog4j.configuration=file:/etc/kafka/tools-log4j.properties" -e value_type=$value_type -e BOOTSTRAP_SERVERS="$BOOTSTRAP_SERVERS" -e SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO="$SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO" -e SCHEMA_REGISTRY_URL="$SCHEMA_REGISTRY_URL" ${CP_CONNECT_IMAGE}:${CONNECT_TAG} kafka-$value_type-console-consumer --bootstrap-server $BOOTSTRAP_SERVERS --topic $topic --consumer-property ssl.endpoint.identification.algorithm=https --consumer-property sasl.mechanism=PLAIN --consumer-property security.protocol=SASL_SSL --consumer-property sasl.jaas.config="$SASL_JAAS_CONFIG" --property basic.auth.credentials.source=USER_INFO --property schema.registry.basic.auth.user.info="$SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO" --property schema.registry.url=$SCHEMA_REGISTRY_URL --property print.schema.ids=true --property schema.id.separator="|schema_id=" --property print.partition=true --property print.offset=true --property print.headers=true --property headers.separator=, --property headers.deserializer=org.apache.kafka.common.serialization.StringDeserializer --property print.timestamp=true --property print.key=true --property key.separator="|" --property key.deserializer=org.apache.kafka.common.serialization.StringDeserializer --skip-message-on-error $security $nottailing1 > "$fifo_path" 2>&1 &
             else
-              docker exec -e SCHEMA_REGISTRY_LOG4J_OPTS="-Dlog4j.configuration=file:/etc/kafka/tools-log4j.properties" $container kafka-$value_type-console-consumer --bootstrap-server $bootstrap_server --property schema.registry.url=$sr_url_cli --topic $topic --property print.partition=true --property print.offset=true --property print.headers=true --property print.timestamp=true --property print.key=true --property key.separator="|" --property key.deserializer=org.apache.kafka.common.serialization.StringDeserializer --skip-message-on-error $security --from-beginning --max-messages $nb_messages > "$fifo_path" 2>&1 &
+              $nottailing2 docker exec -e SCHEMA_REGISTRY_LOG4J_OPTS="-Dlog4j.configuration=file:/etc/kafka/tools-log4j.properties" $container kafka-$value_type-console-consumer --bootstrap-server $bootstrap_server --property schema.registry.url=$sr_url_cli --topic $topic --property print.partition=true  --property print.schema.ids=true --property schema.id.separator="|schema_id=" --property print.offset=true --property print.headers=true --property headers.separator=, --property headers.deserializer=org.apache.kafka.common.serialization.StringDeserializer --property print.timestamp=true --property print.key=true --property key.separator="|" --property key.deserializer=org.apache.kafka.common.serialization.StringDeserializer --skip-message-on-error $security $nottailing1 > "$fifo_path" 2>&1 &
             fi
         fi
         ;;
     *)
       if [[ "$environment" == "environment" ]]
       then
-        docker run --rm -v /tmp/delta_configs/ak-tools-ccloud.delta:/tmp/configuration/ccloud.properties -e BOOTSTRAP_SERVERS="$BOOTSTRAP_SERVERS" ${CP_CONNECT_IMAGE}:${CONNECT_TAG} kafka-console-consumer --bootstrap-server $BOOTSTRAP_SERVERS --topic $topic --consumer.config  --property print.partition=true --property print.offset=true --property print.headers=true --property print.timestamp=true --property print.key=true --property key.separator="|" $security --from-beginning --max-messages $nb_messages > "$fifo_path" 2>&1 &
+        $nottailing2 docker run -i --rm -v /tmp/delta_configs/ak-tools-ccloud.delta:/tmp/configuration/ccloud.properties -e BOOTSTRAP_SERVERS="$BOOTSTRAP_SERVERS" ${CP_CONNECT_IMAGE}:${CONNECT_TAG} kafka-console-consumer --bootstrap-server $BOOTSTRAP_SERVERS --topic $topic --consumer.config /tmp/configuration/ccloud.properties --property print.partition=true --property print.offset=true --property print.headers=true --property headers.separator=, --property headers.deserializer=org.apache.kafka.common.serialization.StringDeserializer --property print.timestamp=true --property print.key=true --property key.separator="|" $security $nottailing1 > "$fifo_path" 2>&1 &
       else
-        docker exec $container kafka-console-consumer --bootstrap-server $bootstrap_server --topic $topic --property print.partition=true --property print.offset=true --property print.headers=true --property print.timestamp=true --property print.key=true --property key.separator="|" $security --from-beginning --max-messages $nb_messages > "$fifo_path" 2>&1  &
+        $nottailing2 docker exec $container kafka-console-consumer --bootstrap-server $bootstrap_server --topic $topic --property print.partition=true --property print.offset=true --property print.headers=true --property headers.separator=, --property headers.deserializer=org.apache.kafka.common.serialization.StringDeserializer --property print.timestamp=true --property print.key=true --property key.separator="|" $security $nottailing1 > "$fifo_path" 2>&1  &
       fi
     ;;
   esac
-
+  set +x
   # Detect the platform (macOS or Linux) and set the date command accordingly
   if [[ "$(uname)" == "Darwin" ]]; then
     # macOS
@@ -187,10 +282,16 @@ do
     date_command="date -d @"
   fi
 
+  if [[ -n "$timestamp_field" ]]
+  then
+     latency_csv="$tmp_dir/latency.csv"
+     latency_png="$tmp_dir/latency.png"
+  fi
   found=0
   # Loop through each line in the named pipe
   while read -r line
   do
+    display_line=1
     if [[ $line =~ "CreateTime:" ]]
     then
       # Extract the timestamp from the line
@@ -200,19 +301,57 @@ do
       milliseconds=$((timestamp_ms % 1000))
       readable_date="$(${date_command}${timestamp_sec} "+%Y-%m-%d %H:%M:%S.${milliseconds}")"
       line_with_date=$(echo "$line" | sed -E "s/CreateTime:[0-9]{13}/CreateTime: ${readable_date}/")
-      echo "$line_with_date"
+
+      if [[ -n "$grep_string" ]]
+      then
+        if [[ $line =~ "$grep_string" ]]
+        then
+          log "✅ found $grep_string in topic $topic"
+          found=1
+        else
+          display_line=0
+        fi
+      fi
+
+      if [[ ! -n "$timestamp_field" ]]
+      then
+        if [ $display_line -eq 1 ]
+        then
+          echo "$line_with_date"
+        fi
+      fi
+
+      if [[ -n "$timestamp_field" ]]
+      then
+        payload=$(echo "$line" | cut -d "|" -f 6)
+        # JSON is invalid
+        if ! echo "$payload" | jq -e .  > /dev/null 2>&1
+        then
+            logerror "--plot-latencies-timestamp-field is set but value content is not in json representation"
+            exit 1
+        else
+          timestamp_source=$(echo "$payload" | jq -r .${timestamp_field})
+          echo "$readable_date,$timestamp_ms,$timestamp_source" >> $latency_csv
+        fi
+      fi
     elif [[ $line =~ "Processed a total of" ]]
     then
       continue
     else
-      echo "$line"
-    fi
-    if [[ -n "$grep_string" ]]
-    then
-      if [[ $line =~ "$grep_string" ]]
+      if [[ -n "$grep_string" ]]
       then
-        log "✅ found $grep_string in topic $topic"
-        found=1
+        if [[ $line =~ "$grep_string" ]]
+        then
+          log "✅ found $grep_string in topic $topic"
+          found=1
+        else
+          display_line=0
+        fi
+      fi
+
+      if [ $display_line -eq 1 ]
+      then
+        echo "$line"
       fi
     fi
   done < "$fifo_path"
@@ -226,3 +365,24 @@ do
     fi
   fi
 done
+
+if [[ -n "$timestamp_field" ]]
+then
+  log "Plot data using gnuplot, see ${latency_png}"
+  docker run --rm -i -v $tmp_dir:/work remuslazar/gnuplot -e \
+  "
+  set grid;
+  set datafile separator ',';
+  set timefmt \"%Y-%m-%d %H:%M:%S.%s\";
+  set format x '%H:%M:%S';
+  set term png size 1200,600;
+  set output 'latency.png';
+  set xdata time;
+  set autoscale;
+  set xlabel 'Time';
+  set ylabel 'Latency in ms';
+  plot 'latency.csv' using 1:(\$2-\$3) with points;"
+
+  # open $latency_csv
+  open $latency_png
+fi

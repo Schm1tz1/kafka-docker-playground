@@ -30,13 +30,13 @@ sed -e "s|:BOOTSTRAP_SERVERS:|$BOOTSTRAP_SERVERS|g" \
 
 log "Creating topic sales_A in Confluent Cloud"
 set +e
-delete_topic sales_A
-delete_topic mm2-configs.A.internal
-delete_topic mm2-offsets.A.internal
-delete_topic mm2-status.A.internal
-delete_topic .checkpoints.internal
+playground topic delete --topic sales_A
+playground topic delete --topic mm2-configs.A.internal
+playground topic delete --topic mm2-offsets.A.internal
+playground topic delete --topic mm2-status.A.internal
+playground topic delete --topic .checkpoints.internal
 sleep 3
-create_topic sales_A
+playground topic create --topic sales_A
 set -e
 
 log "Start MirrorMaker2 (logs are in mirrormaker.log):"
@@ -61,4 +61,4 @@ seq -f "A_sale_%g ${RANDOM}" 20 | docker container exec -i broker1 kafka-console
 sleep 30
 
 log "Consumer with group my-consumer-group reads 10 messages in B cluster (Confluent Cloud), it should start from previous offset (sync.group.offsets.enabled = true)"
-playground topic consume --topic sales_A --min-expected-messages 10
+playground topic consume --topic sales_A --min-expected-messages 10 --timeout 60

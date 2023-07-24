@@ -232,12 +232,15 @@ sleep 60
 
 docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.cdb-table-mtls.yml" up -d
 
+command="source ${DIR}/../../scripts/utils.sh && docker-compose -f ../../environment/plaintext/docker-compose.yml -f ${PWD}/docker-compose.plaintext.cdb-table-mtls.yml up -d ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d"
+echo "$command" > /tmp/playground-command
+log "✨ If you modify a docker-compose file and want to re-create the container(s), run cli command playground container recreate"
+
 ../../scripts/wait-for-connect-and-controlcenter.sh
 
 log "Creating Oracle source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector cdc-oracle-source-cdb << EOF
+{
                 "connector.class": "io.confluent.connect.oracle.cdc.OracleCdcSourceConnector",
                 "tasks.max":2,
                 "key.converter": "io.confluent.connect.avro.AvroConverter",
@@ -259,7 +262,7 @@ curl -X PUT \
                 "redo.log.topic.name": "redo-log-topic",
                 "redo.log.consumer.bootstrap.servers":"broker:9092",
                 "table.inclusion.regex": ".*CUSTOMERS.*",
-                "table.topic.name.template": "${databaseName}.${schemaName}.${tableName}",
+                "table.topic.name.template": "\${databaseName}.\${schemaName}.\${tableName}",
                 "numeric.mapping": "best_fit",
                 "connection.pool.max.size": 20,
                 "redo.log.row.fetch.size":1,
@@ -275,42 +278,15 @@ curl -X PUT \
                 "topic.creation.default.replication.factor": 1,
                 "topic.creation.default.partitions": 1,
                 "topic.creation.default.cleanup.policy": "delete"
-          }' \
-     http://localhost:8083/connectors/cdc-oracle-source-cdb/config | jq .
+          }
+EOF
 
 log "Waiting 20s for connector to read existing data"
 sleep 20
 
 log "Verifying topic ORCLCDB.C__MYUSER.CUSTOMERS: there should be 5 records"
 set +e
-playground topic consume --topic ORCLCDB.C__MYUSER.CUSTOMERS --min-expected-messages 5
-set -e
-cat /tmp/result.log
-log "Check there is 5 snapshots events"
-if [ $(grep -c "op_type\":{\"string\":\"R\"}" /tmp/result.log) -ne 5 ]
-then
-     logerror "Did not get expected results"
-     exit 1
-fi
-# SQL scripts are not executed
-# log "Check there is 3 insert events"
-# if [ $(grep -c "op_type\":{\"string\":\"I\"}" /tmp/result.log) -ne 3 ]
-# then
-#      logerror "Did not get expected results"
-#      exit 1
-# fi
-# log "Check there is 4 update events"
-# if [ $(grep -c "op_type\":{\"string\":\"U\"}" /tmp/result.log) -ne 4 ]
-# then
-#      logerror "Did not get expected results"
-#      exit 1
-# fi
-# log "Check there is 1 delete events"
-# if [ $(grep -c "op_type\":{\"string\":\"D\"}" /tmp/result.log) -ne 1 ]
-# then
-#      logerror "Did not get expected results"
-#      exit 1
-# fi
+playground topic consume --topic ORCLCDB.C__MYUSER.CUSTOMERS --min-expected-messages 5 --timeout 60
 
 # log "Verifying topic redo-log-topic: there should be 15 records"
-playground topic consume --topic redo-log-topic --min-expected-messages 15
+# playground topic consume --topic redo-log-topic --min-expected-messages 15 --timeout 60

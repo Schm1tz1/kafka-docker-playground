@@ -11,7 +11,7 @@ then
      do
      set +e
      log "🏗 Building jar for ${component}"
-     docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${DIR}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${DIR}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
+     docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${PWD}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${PWD}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
      if [ $? != 0 ]
      then
           logerror "ERROR: failed to build java component "
@@ -53,9 +53,8 @@ GO
 EOF
 
 log "Creating JDBC SQL Server (with JTDS driver) source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector sqlserver-source << EOF
+{
               "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
               "tasks.max": "1",
               "connection.url": "jdbc:jtds:sqlserver://sqlserver:1433/testDB",
@@ -68,8 +67,8 @@ curl -X PUT \
               "validate.non.null":"false",
               "errors.log.enable": "true",
               "errors.log.include.messages": "true"
-          }' \
-     http://localhost:8083/connectors/sqlserver-source/config | jq .
+          }
+EOF
 
 sleep 5
 
@@ -80,7 +79,7 @@ GO
 EOF
 
 log "Verifying topic sqlserver-customers"
-playground topic consume --topic sqlserver-customers --min-expected-messages 5
+playground topic consume --topic sqlserver-customers --min-expected-messages 5 --timeout 60
 
 
 if [ ! -z "$SQL_DATAGEN" ]

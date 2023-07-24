@@ -19,26 +19,36 @@ ${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml
 
 
 log "Sending messages to topic mytable"
-seq -f "{\"f1\": \"value%g\"}" 10 | docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic mytable --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"f1","type":"string"}]}'
+playground topic produce -t mytable --nb-messages 10 --forced-value '{"f1":"value%g"}' << 'EOF'
+{
+  "type": "record",
+  "name": "myrecord",
+  "fields": [
+    {
+      "name": "f1",
+      "type": "string"
+    }
+  ]
+}
+EOF
 
 log "Creating Vertica sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class" : "io.confluent.vertica.VerticaSinkConnector",
-                    "tasks.max" : "1",
-                    "vertica.database": "docker",
-                    "vertica.host": "vertica",
-                    "vertica.port": "5433",
-                    "vertica.username": "dbadmin",
-                    "vertica.password": "",
-                    "auto.create": "true",
-                    "auto.evolve": "false",
-                    "topics": "mytable",
-                    "confluent.topic.bootstrap.servers": "broker:9092",
-                    "confluent.topic.replication.factor": "1"
-          }' \
-     http://localhost:8083/connectors/vertica-sink/config | jq .
+playground connector create-or-update --connector vertica-sink << EOF
+{
+  "connector.class" : "io.confluent.vertica.VerticaSinkConnector",
+  "tasks.max" : "1",
+  "vertica.database": "docker",
+  "vertica.host": "vertica",
+  "vertica.port": "5433",
+  "vertica.username": "dbadmin",
+  "vertica.password": "",
+  "auto.create": "true",
+  "auto.evolve": "false",
+  "topics": "mytable",
+  "confluent.topic.bootstrap.servers": "broker:9092",
+  "confluent.topic.replication.factor": "1"
+}
+EOF
 
 sleep 10
 

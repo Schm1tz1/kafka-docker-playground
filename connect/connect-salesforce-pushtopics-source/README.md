@@ -98,12 +98,12 @@ $ curl -X PUT \
                     "curl.logging": "true",
                     "salesforce.object" : "Lead",
                     "salesforce.push.topic.name" : "MyLeadPushTopics",
-                    "salesforce.instance" : "'"$SALESFORCE_INSTANCE"'",
-                    "salesforce.username" : "'"$SALESFORCE_USERNAME"'",
-                    "salesforce.password" : "'"$SALESFORCE_PASSWORD"'",
-                    "salesforce.password.token" : "'"$SALESFORCE_SECURITY_TOKEN"'",
-                    "salesforce.consumer.key" : "'"$SALESFORCE_CONSUMER_KEY"'",
-                    "salesforce.consumer.secret" : "'"$SALESFORCE_CONSUMER_PASSWORD"'",
+                    "salesforce.instance" : "$SALESFORCE_INSTANCE",
+                    "salesforce.username" : "$SALESFORCE_USERNAME",
+                    "salesforce.password" : "$SALESFORCE_PASSWORD",
+                    "salesforce.password.token" : "$SALESFORCE_SECURITY_TOKEN",
+                    "salesforce.consumer.key" : "$SALESFORCE_CONSUMER_KEY",
+                    "salesforce.consumer.secret" : "$SALESFORCE_CONSUMER_PASSWORD",
                     "salesforce.initial.start" : "latest",
                     "key.converter": "org.apache.kafka.connect.json.JsonConverter",
                     "value.converter": "org.apache.kafka.connect.json.JsonConverter",
@@ -118,7 +118,7 @@ $ curl -X PUT \
 Verify we have received the data in `sfdc-pushtopic-leads` topic
 
 ```bash
-playground topic consume --topic sfdc-pushtopic-leads --min-expected-messages 1
+playground topic consume --topic sfdc-pushtopic-leads --min-expected-messages 1 --timeout 60
 ```
 
 Results:

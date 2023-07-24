@@ -95,18 +95,17 @@ log "Blocking $DOMAIN IP $IP to make sure proxy is used"
 docker exec --privileged --user root connect bash -c "iptables -A INPUT -p tcp -s $IP -j DROP"
 
 log "Creating Salesforce Bulk API Source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector salesforce-bulkapi-source << EOF
+{
                     "connector.class": "io.confluent.connect.salesforce.SalesforceBulkApiSourceConnector",
                     "kafka.topic": "sfdc-bulkapi-leads",
                     "tasks.max": "1",
                     "curl.logging": "true",
                     "salesforce.object" : "Lead",
-                    "salesforce.instance" : "'"$SALESFORCE_INSTANCE"'",
-                    "salesforce.username" : "'"$SALESFORCE_USERNAME"'",
-                    "salesforce.password" : "'"$SALESFORCE_PASSWORD"'",
-                    "salesforce.password.token" : "'"$SALESFORCE_SECURITY_TOKEN"'",
+                    "salesforce.instance" : "$SALESFORCE_INSTANCE",
+                    "salesforce.username" : "$SALESFORCE_USERNAME",
+                    "salesforce.password" : "$SALESFORCE_PASSWORD",
+                    "salesforce.password.token" : "$SALESFORCE_SECURITY_TOKEN",
                     "http.proxy": "nginx-proxy:8888",
                     "connection.max.message.size": "10048576",
                     "key.converter": "org.apache.kafka.connect.json.JsonConverter",
@@ -114,29 +113,28 @@ curl -X PUT \
                     "confluent.license": "",
                     "confluent.topic.bootstrap.servers": "broker:9092",
                     "confluent.topic.replication.factor": "1"
-          }' \
-     http://localhost:8083/connectors/salesforce-bulkapi-source/config | jq .
+          }
+EOF
 
 
 
 sleep 10
 
 log "Verify we have received the data in sfdc-bulkapi-leads topic"
-playground topic consume --topic sfdc-bulkapi-leads --min-expected-messages 1
+playground topic consume --topic sfdc-bulkapi-leads --min-expected-messages 1 --timeout 60
 
 log "Creating Salesforce Bulk API Sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector salesforce-bulkapi-sink << EOF
+{
                     "connector.class": "io.confluent.connect.salesforce.SalesforceBulkApiSinkConnector",
                     "topics": "sfdc-bulkapi-leads",
                     "tasks.max": "1",
                     "curl.logging": "true",
                     "salesforce.object" : "Lead",
-                    "salesforce.instance" : "'"$SALESFORCE_INSTANCE_ACCOUNT2"'",
-                    "salesforce.username" : "'"$SALESFORCE_USERNAME_ACCOUNT2"'",
-                    "salesforce.password" : "'"$SALESFORCE_PASSWORD_ACCOUNT2"'",
-                    "salesforce.password.token" : "'"$SALESFORCE_SECURITY_TOKEN_ACCOUNT2"'",
+                    "salesforce.instance" : "$SALESFORCE_INSTANCE_ACCOUNT2",
+                    "salesforce.username" : "$SALESFORCE_USERNAME_ACCOUNT2",
+                    "salesforce.password" : "$SALESFORCE_PASSWORD_ACCOUNT2",
+                    "salesforce.password.token" : "$SALESFORCE_SECURITY_TOKEN_ACCOUNT2",
                     "http.proxy": "nginx-proxy:8888",
                     "salesforce.ignore.fields" : "CleanStatus",
                     "salesforce.ignore.reference.fields" : "true",
@@ -149,24 +147,24 @@ curl -X PUT \
                     "reporter.result.topic.name": "success-responses",
                     "reporter.result.topic.replication.factor": 1,
                     "transforms" : "InsertField",
-                    "transforms.InsertField.type" : "org.apache.kafka.connect.transforms.InsertField$Value",
+                    "transforms.InsertField.type" : "org.apache.kafka.connect.transforms.InsertField\$Value",
                     "transforms.InsertField.static.field" : "_EventType",
                     "transforms.InsertField.static.value" : "created",
                     "confluent.license": "",
                     "confluent.topic.bootstrap.servers": "broker:9092",
                     "confluent.topic.replication.factor": "1"
-          }' \
-     http://localhost:8083/connectors/salesforce-bulkapi-sink/config | jq .
+          }
+EOF
 
 
 
 sleep 10
 
 log "Verify topic success-responses"
-playground topic consume --topic success-responses --min-expected-messages 1
+playground topic consume --topic success-responses --min-expected-messages 1 --timeout 60
 
 # log "Verify topic error-responses"
-playground topic consume --topic error-responses --min-expected-messages 0
+playground topic consume --topic error-responses --min-expected-messages 0 --timeout 60
 
 log "Login with sfdx CLI on the account #2"
 docker exec sfdx-cli sh -c "sfdx sfpowerkit:auth:login -u \"$SALESFORCE_USERNAME_ACCOUNT2\" -p \"$SALESFORCE_PASSWORD_ACCOUNT2\" -r \"$SALESFORCE_INSTANCE_ACCOUNT2\" -s \"$SALESFORCE_SECURITY_TOKEN_ACCOUNT2\""

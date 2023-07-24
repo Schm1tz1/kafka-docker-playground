@@ -13,14 +13,14 @@ else
 fi
 
 set +e
-delete_topic _confluent-command
+playground topic delete --topic _confluent-command
 set -e
 
 MQTT_TOPIC=kafka_docker_pg_mqtt$TAG
 MQTT_TOPIC=${MQTT_TOPIC//[-.]/}
 
 set +e
-delete_topic $MQTT_TOPIC
+playground topic delete --topic $MQTT_TOPIC
 set -e
 
 
@@ -36,21 +36,20 @@ fi
 #############
 
 log "Creating MQTT Source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class": "io.confluent.connect.mqtt.MqttSourceConnector",
-               "tasks.max": "1",
-               "mqtt.server.uri": "tcp://mosquitto:1883",
-               "mqtt.topics":"my-mqtt-topic",
-               "kafka.topic": "'"$MQTT_TOPIC"'",
-               "mqtt.qos": "2",
-               "mqtt.username": "myuser",
-               "mqtt.password": "mypassword",
-               "topic.creation.default.replication.factor": "-1",
-               "topic.creation.default.partitions": "-1"
-          }' \
-     http://localhost:8083/connectors/mqtt-source/config | jq .
+playground connector create-or-update --connector mqtt-source << EOF
+{
+     "connector.class": "io.confluent.connect.mqtt.MqttSourceConnector",
+     "tasks.max": "1",
+     "mqtt.server.uri": "tcp://mosquitto:1883",
+     "mqtt.topics":"my-mqtt-topic",
+     "kafka.topic": "$MQTT_TOPIC",
+     "mqtt.qos": "2",
+     "mqtt.username": "myuser",
+     "mqtt.password": "mypassword",
+     "topic.creation.default.replication.factor": "-1",
+     "topic.creation.default.partitions": "-1"
+}
+EOF
 
 sleep 5
 
@@ -62,4 +61,4 @@ sleep 10
 docker container logs --tail=600 connect
 
 log "Verify we have received the data in $MQTT_TOPIC topic"
-playground topic consume --topic $MQTT_TOPIC --min-expected-messages 1
+playground topic consume --topic $MQTT_TOPIC --min-expected-messages 1 --timeout 60

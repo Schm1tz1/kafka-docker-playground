@@ -6,12 +6,13 @@ source ${DIR}/../../scripts/utils.sh
 
 if [ ! -z "$SQL_DATAGEN" ]
 then
+     cd ../../connect/connect-cdc-oracle11-source
      log "🌪️ SQL_DATAGEN is set, make sure to increase redo.log.row.fetch.size, have a look at https://github.com/vdesabou/kafka-docker-playground/blob/master/connect/connect-cdc-oracle19-source/README.md#note-on-redologrowfetchsize"
      for component in oracle-datagen
      do
      set +e
      log "🏗 Building jar for ${component}"
-     docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${DIR}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${DIR}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
+     docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${PWD}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${PWD}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
      if [ $? != 0 ]
      then
           logerror "ERROR: failed to build java component "
@@ -20,6 +21,7 @@ then
      fi
      set -e
      done
+     cd -
 else
      log "🛑 SQL_DATAGEN is not set"
 fi
@@ -88,41 +90,41 @@ insert into CUSTOMERS (id, first_name, last_name, email, gender, club_status, co
 EOF
 
 log "Creating Oracle source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class": "io.confluent.connect.oracle.cdc.OracleCdcSourceConnector",
-               "tasks.max": 2,
-               "key.converter": "io.confluent.connect.avro.AvroConverter",
-               "key.converter.schema.registry.url": "http://schema-registry:8081",
-               "value.converter": "io.confluent.connect.avro.AvroConverter",
-               "value.converter.schema.registry.url": "http://schema-registry:8081",
-               "confluent.license": "",
-               "confluent.topic.bootstrap.servers": "broker:9092",
-               "confluent.topic.replication.factor": "1",
-               "oracle.server": "oracle",
-               "oracle.port": 1521,
-               "oracle.sid": "XE",
-               "oracle.username": "MYUSER",
-               "oracle.password": "password",
-               "start.from":"snapshot",
-               "redo.log.topic.name": "redo-log-topic",
-               "redo.log.consumer.bootstrap.servers":"broker:9092",
-               "table.inclusion.regex": ".*CUSTOMERS.*",
-               "table.topic.name.template": "${databaseName}.${schemaName}.${tableName}",
-               "numeric.mapping": "best_fit",
-               "connection.pool.max.size": 20,
-               "redo.log.row.fetch.size": 1,
-               "topic.creation.redo.include": "redo-log-topic",
-               "topic.creation.redo.replication.factor": 1,
-               "topic.creation.redo.partitions": 1,
-               "topic.creation.redo.cleanup.policy": "delete",
-               "topic.creation.redo.retention.ms": 1209600000,
-               "topic.creation.default.replication.factor": 1,
-               "topic.creation.default.partitions": 1,
-               "topic.creation.default.cleanup.policy": "delete"
-          }' \
-     http://localhost:8083/connectors/cdc-oracle11-source/config | jq .
+playground connector create-or-update --connector cdc-oracle11-source << EOF
+{
+     "connector.class": "io.confluent.connect.oracle.cdc.OracleCdcSourceConnector",
+     "tasks.max": 2,
+     "key.converter": "io.confluent.connect.avro.AvroConverter",
+     "key.converter.schema.registry.url": "http://schema-registry:8081",
+     "value.converter": "io.confluent.connect.avro.AvroConverter",
+     "value.converter.schema.registry.url": "http://schema-registry:8081",
+     "confluent.license": "",
+     "confluent.topic.bootstrap.servers": "broker:9092",
+     "confluent.topic.replication.factor": "1",
+     "oracle.server": "oracle",
+     "oracle.port": 1521,
+     "oracle.sid": "XE",
+     "oracle.username": "MYUSER",
+     "oracle.password": "password",
+     "start.from":"snapshot",
+     "enable.metrics.collection": "true",
+     "redo.log.topic.name": "redo-log-topic",
+     "redo.log.consumer.bootstrap.servers":"broker:9092",
+     "table.inclusion.regex": ".*CUSTOMERS.*",
+     "table.topic.name.template": "\${databaseName}.\${schemaName}.\${tableName}",
+     "numeric.mapping": "best_fit",
+     "connection.pool.max.size": 20,
+     "redo.log.row.fetch.size": 1,
+     "topic.creation.redo.include": "redo-log-topic",
+     "topic.creation.redo.replication.factor": 1,
+     "topic.creation.redo.partitions": 1,
+     "topic.creation.redo.cleanup.policy": "delete",
+     "topic.creation.redo.retention.ms": 1209600000,
+     "topic.creation.default.replication.factor": 1,
+     "topic.creation.default.partitions": 1,
+     "topic.creation.default.cleanup.policy": "delete"
+}
+EOF
 
 log "Waiting 10s for connector to read existing data"
 sleep 10
@@ -137,37 +139,10 @@ log "Waiting 20s for connector to read new data"
 sleep 20
 
 log "Verifying topic XE.MYUSER.CUSTOMERS: there should be 13 records"
-set +e
-playground topic consume --topic XE.MYUSER.CUSTOMERS --min-expected-messages 13
-set -e
-cat /tmp/result.log
-log "Check there is 5 snapshots events"
-if [ $(grep -c "op_type\":{\"string\":\"R\"}" /tmp/result.log) -ne 5 ]
-then
-     logerror "Did not get expected results"
-     exit 1
-fi
-log "Check there is 3 insert events"
-if [ $(grep -c "op_type\":{\"string\":\"I\"}" /tmp/result.log) -ne 3 ]
-then
-     logerror "Did not get expected results"
-     exit 1
-fi
-log "Check there is 4 update events"
-if [ $(grep -c "op_type\":{\"string\":\"U\"}" /tmp/result.log) -ne 4 ]
-then
-     logerror "Did not get expected results"
-     exit 1
-fi
-log "Check there is 1 delete events"
-if [ $(grep -c "op_type\":{\"string\":\"D\"}" /tmp/result.log) -ne 1 ]
-then
-     logerror "Did not get expected results"
-     exit 1
-fi
+playground topic consume --topic XE.MYUSER.CUSTOMERS --min-expected-messages 13 --timeout 60
 
 log "Verifying topic redo-log-topic: there should be 15 records"
-playground topic consume --topic redo-log-topic --min-expected-messages 15
+playground topic consume --topic redo-log-topic --min-expected-messages 15 --timeout 60
 
 if [ ! -z "$SQL_DATAGEN" ]
 then

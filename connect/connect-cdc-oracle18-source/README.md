@@ -122,6 +122,7 @@ $ curl -X PUT \
                "oracle.username": "C##MYUSER",
                "oracle.password": "mypassword",
                "start.from":"snapshot",
+               "enable.metrics.collection": "true",
                "redo.log.topic.name": "redo-log-topic",
                "redo.log.consumer.bootstrap.servers":"broker:9092",
                "table.inclusion.regex": ".*CUSTOMERS.*",
@@ -136,7 +137,7 @@ $ curl -X PUT \
 Verify the topic `ORCLCDB.C__MYUSER.CUSTOMERS`:
 
 ```bash
-playground topic consume --topic ORCLCDB.C__MYUSER.CUSTOMERS --min-expected-messages 2
+playground topic consume --topic ORCLCDB.C__MYUSER.CUSTOMERS --min-expected-messages 2 --timeout 60
 ```
 
 Results:
@@ -179,6 +180,7 @@ $ curl -X PUT \
                "oracle.username": "C##MYUSER",
                "oracle.password": "mypassword",
                "start.from":"snapshot",
+               "enable.metrics.collection": "true",
                "redo.log.topic.name": "redo-log-topic",
                "redo.log.consumer.bootstrap.servers":"broker:9092",
                "table.inclusion.regex": "ORCLPDB1[.].*[.]CUSTOMERS",
@@ -193,7 +195,7 @@ $ curl -X PUT \
 Verify the topic `ORCLPDB1.C__MYUSER.CUSTOMERS`:
 
 ```bash
-playground topic consume --topic ORCLPDB1.C__MYUSER.CUSTOMERS --min-expected-messages 2
+playground topic consume --topic ORCLPDB1.C__MYUSER.CUSTOMERS --min-expected-messages 2 --timeout 60
 ```
 
 Results:

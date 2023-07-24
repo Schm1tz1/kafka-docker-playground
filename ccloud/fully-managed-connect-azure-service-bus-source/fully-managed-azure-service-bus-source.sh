@@ -9,7 +9,7 @@ for component in QueuesGettingStarted
 do
      set +e
      log "🏗 Building jar for ${component}"
-     docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${DIR}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${DIR}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
+     docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${PWD}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${PWD}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
      if [ $? != 0 ]
      then
           logerror "ERROR: failed to build java component $component"
@@ -78,7 +78,15 @@ docker-compose build
 docker-compose down -v --remove-orphans
 docker-compose up -d
 
-cat << EOF > connector.json
+
+connector_name="AzureServiceBusSource"
+set +e
+log "Deleting fully managed connector $connector_name, it might fail..."
+playground ccloud-connector delete --connector $connector_name
+set -e
+
+log "Creating fully managed connector"
+playground ccloud-connector create-or-update --connector $connector_name << EOF
 {
     "connector.class": "AzureServiceBusSource",
     "name": "AzureServiceBusSource",
@@ -98,18 +106,7 @@ cat << EOF > connector.json
     "tasks.max" : "1"
 }
 EOF
-
-log "Connector configuration is:"
-cat connector.json
-
-set +e
-log "Deleting fully managed connector, it might fail..."
-delete_ccloud_connector connector.json
-set -e
-
-log "Creating fully managed connector"
-create_ccloud_connector connector.json
-wait_for_ccloud_connector_up connector.json 300
+wait_for_ccloud_connector_up $connector_name 300
 
 sleep 5
 
@@ -120,7 +117,7 @@ docker exec -e SB_SAMPLES_CONNECTIONSTRING="$SB_SAMPLES_CONNECTIONSTRING" -e AZU
 sleep 180
 
 log "Verifying topic servicebus-topic"
-playground topic consume --topic servicebus-topic --min-expected-messages 5
+playground topic consume --topic servicebus-topic --min-expected-messages 5 --timeout 60
 
 # {"deliveryCount":{"long":1},"enqueuedTimeUtc":{"long":1672745480672},"contentType":null,"label":null,"correlationId":null,"messageProperties":{"string":"{}"},"partitionKey":null,"replyTo":null,"replyToSessionId":null,"deadLetterSource":null,"timeToLive":{"long":-1},"lockedUntilUtc":{"long":1672745540687},"sequenceNumber":{"long":1},"sessionId":null,"lockToken":{"string":"33067f1f-955e-4739-bcef-6e817f09c18d"},"messageBody":{"bytes":"tets"},"getTo":null}
 # {"deliveryCount":{"long":1},"enqueuedTimeUtc":{"long":1672745518954},"contentType":{"string":"application/json"},"label":null,"correlationId":null,"messageProperties":{"string":"{}"},"partitionKey":null,"replyTo":null,"replyToSessionId":null,"deadLetterSource":null,"timeToLive":{"long":-1},"lockedUntilUtc":{"long":1672745578985},"sequenceNumber":{"long":2},"sessionId":null,"lockToken":{"string":"27e486c4-d167-4720-abfb-d47bd2553776"},"messageBody":{"bytes":"{\"schema\":{\"type\":\"struct\",\"fields\":[{\"type\":\"int32\",\"optional\":false,\"field\":\"id\"},{\"type\":\"string\",\"optional\":false,\"field\":\"first_name\"},{\"type\":\"string\",\"optional\":false,\"field\":\"last_name\"},{\"type\":\"string\",\"optional\":false,\"field\":\"email\"}],\"optional\":false,\"name\":\"server1.dbo.customers.Value\"},\"payload\":{\"id\":1001,\"first_name\":\"Sally\",\"last_name\":\"Thomas\",\"email\":\"sally.thomas@acme.com\"}}"},"getTo":null}

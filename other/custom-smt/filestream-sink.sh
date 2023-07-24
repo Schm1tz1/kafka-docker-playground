@@ -1,4 +1,3 @@
-y
 #!/bin/bash
 set -e
 
@@ -10,7 +9,7 @@ for component in MyCustomSMT
 do
     set +e
     log "🏗 Building jar for ${component}"
-    docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${DIR}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${DIR}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
+    docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${PWD}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${PWD}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
     if [ $? != 0 ]
     then
         logerror "ERROR: failed to build java component "
@@ -28,9 +27,8 @@ docker exec -i broker kafka-console-producer --broker-list broker:9092 --topic f
 EOF
 
 log "Creating FileStream Sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector filestream-sink << EOF
+{
                "tasks.max": "1",
                "connector.class": "org.apache.kafka.connect.file.FileStreamSinkConnector",
                "topics": "filestream",
@@ -40,8 +38,8 @@ curl -X PUT \
                "value.converter.schemas.enable": "false",
                "transforms": "MyCustomSMT",
                "transforms.MyCustomSMT.type": "com.github.vdesabou.kafka.connect.transforms.MyCustomSMT"
-          }' \
-     http://localhost:8083/connectors/filestream-sink/config | jq .
+          }
+EOF
 
 
 sleep 5

@@ -139,9 +139,8 @@ SELECT * FROM CUSTOMERS;
 EOF
 
 log "Creating JDBC PostgreSQL source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector postgres-source-mtls << EOF
+{
                "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
                     "tasks.max": "1",
                     "connection.url": "jdbc:postgresql://postgres/postgres?user=myuser&sslmode=verify-full&sslrootcert=/tmp/ca.crt&sslcert=/tmp/client.crt&sslkey=/tmp/client.key.pk8",
@@ -153,13 +152,13 @@ curl -X PUT \
                     "validate.non.null":"false",
                     "errors.log.enable": "true",
                     "errors.log.include.messages": "true"
-          }' \
-     http://localhost:8083/connectors/postgres-source-mtls/config | jq .
+          }
+EOF
 
 
 sleep 5
 
 log "Verifying topic postgres-customers"
-playground topic consume --topic postgres-customers --min-expected-messages 5
+playground topic consume --topic postgres-customers --min-expected-messages 5 --timeout 60
 
 

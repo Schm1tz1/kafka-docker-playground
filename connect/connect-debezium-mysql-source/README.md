@@ -53,9 +53,8 @@ INSERT INTO team (   \
 Creating Debezium MySQL source connector
 
 ```bash
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector debezium-mysql-source << EOF
+{
               "connector.class": "io.debezium.connector.mysql.MySqlConnector",
               "tasks.max": "1",
               "database.hostname": "mysql",
@@ -76,17 +75,17 @@ curl -X PUT \
 
               "transforms": "RemoveDots",
               "transforms.RemoveDots.type": "org.apache.kafka.connect.transforms.RegexRouter",
-              "transforms.RemoveDots.regex": "(.*)\\.(.*)\\.(.*)",
-              "transforms.RemoveDots.replacement": "$1_$2_$3"
-          }' \
-     http://localhost:8083/connectors/debezium-mysql-source/config | jq .
+              "transforms.RemoveDots.regex": "(.*)\\\\.(.*)\\\\.(.*)",
+              "transforms.RemoveDots.replacement": "\$1_\$2_\$3"
+          }
+EOF
 ```
 
 
 Verifying topic `dbserver1_mydb_team`
 
 ```bash
-playground topic consume --topic dbserver1_mydb_team --min-expected-messages 2
+playground topic consume --topic dbserver1_mydb_team --min-expected-messages 2 --timeout 60
 ```
 
 Result:

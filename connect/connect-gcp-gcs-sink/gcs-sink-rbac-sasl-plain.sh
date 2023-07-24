@@ -58,36 +58,34 @@ log "Sending messages to topic rbac_gcs_topic"
 seq -f "{\"f1\": \"This is a message sent with RBAC SASL/PLAIN authentication %g\"}" 10 | docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic rbac_gcs_topic --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"f1","type":"string"}]}' --property schema.registry.url=http://schema-registry:8081 --property basic.auth.credentials.source=USER_INFO --property schema.registry.basic.auth.user.info=clientAvroCli:clientAvroCli --producer.config /etc/kafka/secrets/client_without_interceptors.config
 
 log "Checking messages from topic rbac_gcs_topic"
-playground topic consume --topic rbac_gcs_topic --min-expected-messages 1
+playground topic consume --topic rbac_gcs_topic --min-expected-messages 1 --timeout 60
 
 log "Creating GCS Sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     -u connectorSubmitter:connectorSubmitter \
-     --data '{
-               "connector.class": "io.confluent.connect.gcs.GcsSinkConnector",
-                    "tasks.max" : "1",
-                    "topics" : "rbac_gcs_topic",
-                    "gcs.bucket.name" : "'"$GCS_BUCKET_NAME"'",
-                    "gcs.part.size": "5242880",
-                    "flush.size": "3",
-                    "gcs.credentials.path": "/tmp/keyfile.json",
-                    "storage.class": "io.confluent.connect.gcs.storage.GcsStorage",
-                    "format.class": "io.confluent.connect.gcs.format.avro.AvroFormat",
-                    "partitioner.class": "io.confluent.connect.storage.partitioner.DefaultPartitioner",
-                    "schema.compatibility": "NONE",
-                    "confluent.topic.bootstrap.servers": "broker:9092",
-                    "confluent.topic.replication.factor": "1",
-                    "confluent.topic.sasl.mechanism": "PLAIN",
-                    "confluent.topic.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"admin\" password=\"admin-secret\";",
-                    "confluent.topic.security.protocol" : "SASL_PLAINTEXT",
-                    "value.converter": "io.confluent.connect.avro.AvroConverter",
-                    "value.converter.schema.registry.url": "http://schema-registry:8081",
-                    "value.converter.basic.auth.credentials.source": "USER_INFO",
-                    "value.converter.basic.auth.user.info": "connectorSA:connectorSA",
-                    "consumer.override.sasl.jaas.config": "org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required username=\"connectorSA\" password=\"connectorSA\" metadataServerUrls=\"http://broker:8091\";"
-          }' \
-     http://localhost:8083/connectors/my-rbac-connector/config | jq .
+playground connector create-or-update --connector my-rbac-connector << EOF
+{
+    "connector.class": "io.confluent.connect.gcs.GcsSinkConnector",
+    "tasks.max" : "1",
+    "topics" : "rbac_gcs_topic",
+    "gcs.bucket.name" : "$GCS_BUCKET_NAME",
+    "gcs.part.size": "5242880",
+    "flush.size": "3",
+    "gcs.credentials.path": "/tmp/keyfile.json",
+    "storage.class": "io.confluent.connect.gcs.storage.GcsStorage",
+    "format.class": "io.confluent.connect.gcs.format.avro.AvroFormat",
+    "partitioner.class": "io.confluent.connect.storage.partitioner.DefaultPartitioner",
+    "schema.compatibility": "NONE",
+    "confluent.topic.bootstrap.servers": "broker:9092",
+    "confluent.topic.replication.factor": "1",
+    "confluent.topic.sasl.mechanism": "PLAIN",
+    "confluent.topic.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"admin\" password=\"admin-secret\";",
+    "confluent.topic.security.protocol" : "SASL_PLAINTEXT",
+    "value.converter": "io.confluent.connect.avro.AvroConverter",
+    "value.converter.schema.registry.url": "http://schema-registry:8081",
+    "value.converter.basic.auth.credentials.source": "USER_INFO",
+    "value.converter.basic.auth.user.info": "connectorSA:connectorSA",
+    "consumer.override.sasl.jaas.config": "org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required username=\"connectorSA\" password=\"connectorSA\" metadataServerUrls=\"http://broker:8091\";"
+}
+EOF
 
 sleep 10
 

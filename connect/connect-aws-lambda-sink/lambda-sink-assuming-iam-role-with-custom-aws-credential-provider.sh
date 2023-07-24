@@ -58,7 +58,7 @@ for component in awscredentialsprovider
 do
     set +e
     log "🏗 Building jar for ${component}"
-    docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${DIR}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${DIR}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
+    docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${PWD}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${PWD}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
     if [ $? != 0 ]
     then
         logerror "ERROR: failed to build java component "
@@ -109,47 +109,61 @@ cd -
 ${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.backup-and-restore-assuming-iam-role-with-custom-aws-credential-provider.yml"
 
 log "Sending messages to topic add-topic"
-seq -f "{\"a\": %g,\"b\": 1}" 10 | docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic add-topic --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"a","type":"int"},{"name":"b","type":"int"}]}'
+playground topic produce -t add-topic --nb-messages 10 << 'EOF'
+{
+  "type": "record",
+  "name": "myrecord",
+  "fields": [
+    {
+      "name": "a",
+      "type": "int"
+    },
+    {
+      "name": "b",
+      "type": "int"
+    }
+  ]
+}
+EOF
 
 log "Creating AWS Lambda Sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class" : "io.confluent.connect.aws.lambda.AwsLambdaSinkConnector",
-               "tasks.max": "1",
-               "topics" : "add-topic",
-               "aws.lambda.function.name" : "'"$LAMBDA_FUNCTION_NAME"'",
-               "aws.lambda.invocation.type" : "sync",
-               "aws.lambda.batch.size" : "50",
-               "aws.lambda.region": "'"$AWS_REGION"'",
+playground connector create-or-update --connector aws-lambda << EOF
+{
+    "connector.class" : "io.confluent.connect.aws.lambda.AwsLambdaSinkConnector",
+    "tasks.max": "1",
+    "topics" : "add-topic",
+    "aws.lambda.function.name" : "$LAMBDA_FUNCTION_NAME",
+    "aws.lambda.invocation.type" : "sync",
+    "aws.lambda.batch.size" : "50",
+    "aws.lambda.region": "$AWS_REGION",
 
-               "aws.credentials.provider.class": "com.github.vdesabou.AwsAssumeRoleCredentialsProvider",
-               "aws.credentials.provider.sts.role.arn": "'"$AWS_STS_ROLE_ARN"'",
-               "aws.credentials.provider.sts.role.session.name": "session-name",
-               "aws.credentials.provider.sts.role.external.id": "123",
-               "aws.credentials.provider.sts.aws.access.key.id": "'"$AWS_ACCOUNT_WITH_ASSUME_ROLE_AWS_ACCESS_KEY_ID"'",
-               "aws.credentials.provider.sts.aws.secret.key.id": "'"$AWS_ACCOUNT_WITH_ASSUME_ROLE_AWS_SECRET_ACCESS_KEY"'",
-               
-               "behavior.on.error" : "fail",
-               "reporter.bootstrap.servers": "broker:9092",
-               "reporter.error.topic.name": "error-responses",
-               "reporter.error.topic.replication.factor": 1,
-               "reporter.result.topic.name": "success-responses",
-               "reporter.result.topic.replication.factor": 1,
-               "confluent.license": "",
-               "confluent.topic.bootstrap.servers": "broker:9092",
-               "confluent.topic.replication.factor": "1"
-          }' \
-     http://localhost:8083/connectors/aws-lambda/config | jq .
+    "aws.credentials.provider.class": "com.github.vdesabou.AwsAssumeRoleCredentialsProvider",
+    "aws.credentials.provider.sts.role.arn": "$AWS_STS_ROLE_ARN",
+    "aws.credentials.provider.sts.role.session.name": "session-name",
+    "aws.credentials.provider.sts.role.external.id": "123",
+    "aws.credentials.provider.sts.aws.access.key.id": "$AWS_ACCOUNT_WITH_ASSUME_ROLE_AWS_ACCESS_KEY_ID",
+    "aws.credentials.provider.sts.aws.secret.key.id": "$AWS_ACCOUNT_WITH_ASSUME_ROLE_AWS_SECRET_ACCESS_KEY",
+    
+    "behavior.on.error" : "fail",
+    "reporter.bootstrap.servers": "broker:9092",
+    "reporter.error.topic.name": "error-responses",
+    "reporter.error.topic.replication.factor": 1,
+    "reporter.result.topic.name": "success-responses",
+    "reporter.result.topic.replication.factor": 1,
+    "confluent.license": "",
+    "confluent.topic.bootstrap.servers": "broker:9092",
+    "confluent.topic.replication.factor": "1"
+}
+EOF
 
 
 sleep 10
 
 log "Verify topic success-responses"
-playground topic consume --topic success-responses --min-expected-messages 10
+playground topic consume --topic success-responses --min-expected-messages 10 --timeout 60
 
 # log "Verify topic error-responses"
-playground topic consume --topic error-responses --min-expected-messages 0
+playground topic consume --topic error-responses --min-expected-messages 0 --timeout 60
 
 log "Cleanup role and function"
 aws iam delete-role --role-name $LAMBDA_ROLE_NAME

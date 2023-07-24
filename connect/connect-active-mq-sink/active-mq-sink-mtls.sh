@@ -12,28 +12,27 @@ cd ${DIR}
 ${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.mtls.yml"
 
 log "Sending messages to topic sink-messages"
-docker exec -i broker kafka-console-producer --broker-list broker:9092 --topic sink-messages << EOF
+playground topic produce --topic sink-messages --nb-messages 1 << 'EOF'
 This is my message
 EOF
 
 log "Creating ActiveMQ sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class": "io.confluent.connect.jms.ActiveMqSinkConnector",
-               "topics": "sink-messages",
-               "activemq.url": "ssl://activemq:61617",
-               "activemq.username": "admin",
-               "activemq.password": "admin",
-               "jms.destination.name": "DEV.QUEUE.1",
-               "jms.destination.type": "queue",
-               "key.converter": "org.apache.kafka.connect.storage.StringConverter",
-               "value.converter": "org.apache.kafka.connect.storage.StringConverter",
-               "confluent.license": "",
-               "confluent.topic.bootstrap.servers": "broker:9092",
-               "confluent.topic.replication.factor": "1"
-          }' \
-     http://localhost:8083/connectors/active-mq-sink-mtls/config | jq .
+playground connector create-or-update --connector active-mq-sink-mtls << EOF
+{
+     "connector.class": "io.confluent.connect.jms.ActiveMqSinkConnector",
+     "topics": "sink-messages",
+     "activemq.url": "ssl://activemq:61617",
+     "activemq.username": "admin",
+     "activemq.password": "admin",
+     "jms.destination.name": "DEV.QUEUE.1",
+     "jms.destination.type": "queue",
+     "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+     "value.converter": "org.apache.kafka.connect.storage.StringConverter",
+     "confluent.license": "",
+     "confluent.topic.bootstrap.servers": "broker:9092",
+     "confluent.topic.replication.factor": "1"
+}
+EOF
 
 sleep 5
 

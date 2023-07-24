@@ -52,31 +52,79 @@ log "ibmdb2 DB has started!"
 
 docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d
 
+command="source ${DIR}/../../scripts/utils.sh && docker-compose -f ${DIR}/../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d"
+echo "$command" > /tmp/playground-command
+
 ../../scripts/wait-for-connect-and-controlcenter.sh
 
 # Keep it for utils.sh
 # ${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
 
 log "Sending messages to topic ORDERS"
-docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic ORDERS --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"ID","type":"int"},{"name":"PRODUCT", "type": "string"}, {"name":"QUANTITY", "type": "int"}, {"name":"PRICE","type": "float"}]}' << EOF
-{"ID": 999, "PRODUCT": "foo", "QUANTITY": 100, "PRICE": 50}
+playground topic produce -t ORDERS --nb-messages 1 << 'EOF'
+{
+  "type": "record",
+  "name": "myrecord",
+  "fields": [
+    {
+      "name": "ID",
+      "type": "int"
+    },
+    {
+      "name": "PRODUCT",
+      "type": "string"
+    },
+    {
+      "name": "QUANTITY",
+      "type": "int"
+    },
+    {
+      "name": "PRICE",
+      "type": "float"
+    }
+  ]
+}
+EOF
+
+playground topic produce -t ORDERS --nb-messages 1 --forced-value '{"ID":2,"PRODUCT":"foo","QUANTITY":2,"PRICE":0.86583304}' << 'EOF'
+{
+  "type": "record",
+  "name": "myrecord",
+  "fields": [
+    {
+      "name": "ID",
+      "type": "int"
+    },
+    {
+      "name": "PRODUCT",
+      "type": "string"
+    },
+    {
+      "name": "QUANTITY",
+      "type": "int"
+    },
+    {
+      "name": "PRICE",
+      "type": "float"
+    }
+  ]
+}
 EOF
 
 log "Creating JDBC IBM DB2 sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
-               "tasks.max": "1",
-               "connection.url":"jdbc:db2://ibmdb2:25010/sample",
-               "connection.user":"db2inst1",
-               "connection.password":"passw0rd",
-               "topics": "ORDERS",
-               "errors.log.enable": "true",
-               "errors.log.include.messages": "true",
-               "auto.create": "true"
-          }' \
-     http://localhost:8083/connectors/ibmdb2-sink/config | jq .
+playground connector create-or-update --connector ibmdb2-sink << EOF
+{
+  "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+  "tasks.max": "1",
+  "connection.url":"jdbc:db2://ibmdb2:25010/sample",
+  "connection.user":"db2inst1",
+  "connection.password":"passw0rd",
+  "topics": "ORDERS",
+  "errors.log.enable": "true",
+  "errors.log.include.messages": "true",
+  "auto.create": "true"
+}
+EOF
 
 
 sleep 15

@@ -43,7 +43,7 @@ for component in jms-receiver
 do
      set +e
      log "🏗 Building jar for ${component}"
-     docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${DIR}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${DIR}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
+     docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${PWD}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${PWD}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
      if [ $? != 0 ]
      then
           logerror "ERROR: failed to build java component $component"
@@ -57,14 +57,13 @@ ${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml
 
 
 log "Sending messages to topic sink-messages"
-docker exec -i broker kafka-console-producer --broker-list broker:9092 --topic sink-messages << EOF
+playground topic produce --topic sink-messages --nb-messages 1 << 'EOF'
 This is my message
 EOF
 
 log "Creating JMS weblogic sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector weblogic-topic-sink << EOF
+{
                "connector.class": "io.confluent.connect.jms.JmsSinkConnector",
                "topics": "sink-messages",
                "java.naming.factory.initial": "weblogic.jndi.WLInitialContextFactory",
@@ -79,8 +78,8 @@ curl -X PUT \
                "confluent.license": "",
                "confluent.topic.bootstrap.servers": "broker:9092",
                "confluent.topic.replication.factor": "1"
-          }' \
-     http://localhost:8083/connectors/weblogic-topic-sink/config | jq .
+          }
+EOF
      
 sleep 5
 

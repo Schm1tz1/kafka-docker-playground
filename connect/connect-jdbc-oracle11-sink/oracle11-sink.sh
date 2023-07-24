@@ -20,25 +20,70 @@ else
 fi
 
 log "Creating JDBC Oracle sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
-                    "tasks.max": "1",
-                    "connection.user": "myuser",
-                    "connection.password": "mypassword",
-                    "connection.url": "jdbc:oracle:thin:@oracle:1521/XE",
-                    "topics": "ORDERS",
-                    "auto.create": "true",
-                    "insert.mode":"insert",
-                    "auto.evolve":"true"
-          }' \
-     http://localhost:8083/connectors/oracle-sink/config | jq .
+playground connector create-or-update --connector oracle-sink << EOF
+{
+  "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+  "tasks.max": "1",
+  "connection.user": "myuser",
+  "connection.password": "mypassword",
+  "connection.url": "jdbc:oracle:thin:@oracle:1521/XE",
+  "topics": "ORDERS",
+  "auto.create": "true",
+  "insert.mode":"insert",
+  "auto.evolve":"true"
+}
+EOF
 
 
 log "Sending messages to topic ORDERS"
-docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic ORDERS --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"id","type":"int"},{"name":"product", "type": "string"}, {"name":"quantity", "type": "int"}, {"name":"price","type": "float"}]}' << EOF
-{"id": 999, "product": "foo", "quantity": 100, "price": 50}
+playground topic produce -t ORDERS --nb-messages 1 << 'EOF'
+{
+  "type": "record",
+  "name": "myrecord",
+  "fields": [
+    {
+      "name": "id",
+      "type": "int"
+    },
+    {
+      "name": "product",
+      "type": "string"
+    },
+    {
+      "name": "quantity",
+      "type": "int"
+    },
+    {
+      "name": "price",
+      "type": "float"
+    }
+  ]
+}
+EOF
+
+playground topic produce -t ORDERS --nb-messages 1 --forced-value '{"id":2,"product":"foo","quantity":2,"price":0.86583304}' << 'EOF'
+{
+  "type": "record",
+  "name": "myrecord",
+  "fields": [
+    {
+      "name": "id",
+      "type": "int"
+    },
+    {
+      "name": "product",
+      "type": "string"
+    },
+    {
+      "name": "quantity",
+      "type": "int"
+    },
+    {
+      "name": "price",
+      "type": "float"
+    }
+  ]
+}
 EOF
 
 sleep 5

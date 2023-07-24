@@ -46,25 +46,28 @@ db.customers.find().pretty();
 EOF
 
 log "Creating Debezium MongoDB source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class" : "io.debezium.connector.mongodb.MongoDbConnector",
-               "tasks.max" : "1",
-               "mongodb.hosts" : "debezium/mongodb:27017",
+playground connector create-or-update --connector debezium-mongodb-source << EOF
+{
+    "connector.class" : "io.debezium.connector.mongodb.MongoDbConnector",
+    "tasks.max" : "1",
+    "mongodb.hosts" : "debezium/mongodb:27017",
 
-               "_comment": "old version before 2.x",
-               "mongodb.name": "dbserver1",
-               "_comment": "new version since 2.x",
-               "topic.prefix": "dbserver1",
+    "_comment": "old version before 2.x",
+    "mongodb.name": "dbserver1",
+    "_comment": "new version since 2.x",
+    "topic.prefix": "dbserver1",
 
-               "mongodb.user" : "debezium",
-               "mongodb.password" : "dbz"
-          }' \
-     http://localhost:8083/connectors/debezium-mongodb-source/config | jq .
+    "mongodb.user" : "debezium",
+    "mongodb.password" : "dbz",
+
+    "_comment:": "remove _ to use ExtractNewRecordState smt",
+    "_transforms": "unwrap",
+    "_transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState"
+}
+EOF
 
 
 sleep 5
 
 log "Verifying topic dbserver1.inventory.customers"
-playground topic consume --topic dbserver1.inventory.customers --min-expected-messages 1
+playground topic consume --topic dbserver1.inventory.customers --min-expected-messages 1 --timeout 60

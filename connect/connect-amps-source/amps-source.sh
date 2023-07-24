@@ -45,23 +45,22 @@ docker exec -i amps /AMPS/bin/spark publish -server localhost:9007 -topic Orders
 EOF
 
 log "Creating AMPS source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class": "io.confluent.connect.amps.AmpsSourceConnector",
-               "tasks.max": "1",
-               "kafka.topic": "AMPS_Orders",
-               "amps.servers": "tcp://amps:9007",
-               "amps.topic": "Orders",
-               "amps.topic.type": "sow",
-               "amps.command": "sow_and_subscribe",
-               "confluent.topic.bootstrap.servers": "broker:9092",
-               "confluent.topic.replication.factor": "1"
-          }' \
-     http://localhost:8083/connectors/amps-source/config | jq .
+playground connector create-or-update --connector amps-source << EOF
+{
+     "connector.class": "io.confluent.connect.amps.AmpsSourceConnector",
+     "tasks.max": "1",
+     "kafka.topic": "AMPS_Orders",
+     "amps.servers": "tcp://amps:9007",
+     "amps.topic": "Orders",
+     "amps.topic.type": "sow",
+     "amps.command": "sow_and_subscribe",
+     "confluent.topic.bootstrap.servers": "broker:9092",
+     "confluent.topic.replication.factor": "1"
+}
+EOF
 
 sleep 5
 
 
 log "Verify we have received the data in AMPS_Orders topic"
-playground topic consume --topic AMPS_Orders --min-expected-messages 2
+playground topic consume --topic AMPS_Orders --min-expected-messages 2 --timeout 60

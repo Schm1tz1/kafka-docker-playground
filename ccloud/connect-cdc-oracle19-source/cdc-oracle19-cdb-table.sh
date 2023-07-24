@@ -21,8 +21,8 @@ set +e
 # delete subject as required
 curl -X DELETE -u $SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO $SCHEMA_REGISTRY_URL/subjects/ORCLCDB.C__MYUSER.CUSTOMERS-key
 curl -X DELETE -u $SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO $SCHEMA_REGISTRY_URL/subjects/ORCLCDB.C__MYUSER.CUSTOMERS-value
-delete_topic ORCLCDB.C__MYUSER.CUSTOMERS
-delete_topic redo-log-topic
+playground topic delete --topic ORCLCDB.C__MYUSER.CUSTOMERS
+playground topic delete --topic redo-log-topic
 set -e
 
 # Verify Oracle DB has started within MAX_WAIT seconds
@@ -134,28 +134,27 @@ EOF
 
 log "Creating _confluent-monitoring topic in Confluent Cloud (auto.create.topics.enable=false)"
 set +e
-create_topic _confluent-monitoring
+playground topic create --topic _confluent-monitoring
 set -e
 
 log "Creating Oracle source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector cdc-oracle-source-cdb-cloud << EOF
+{
                "connector.class": "io.confluent.connect.oracle.cdc.OracleCdcSourceConnector",
                "tasks.max":2,
                "key.converter" : "io.confluent.connect.avro.AvroConverter",
-               "key.converter.schema.registry.url": "'"$SCHEMA_REGISTRY_URL"'",
-               "key.converter.basic.auth.user.info": "${file:/data:schema.registry.basic.auth.user.info}",
+               "key.converter.schema.registry.url": "$SCHEMA_REGISTRY_URL",
+               "key.converter.basic.auth.user.info": "\${file:/data:schema.registry.basic.auth.user.info}",
                "key.converter.basic.auth.credentials.source": "USER_INFO",
                "value.converter" : "io.confluent.connect.avro.AvroConverter",
-               "value.converter.schema.registry.url": "'"$SCHEMA_REGISTRY_URL"'",
-               "value.converter.basic.auth.user.info": "${file:/data:schema.registry.basic.auth.user.info}",
+               "value.converter.schema.registry.url": "$SCHEMA_REGISTRY_URL",
+               "value.converter.basic.auth.user.info": "\${file:/data:schema.registry.basic.auth.user.info}",
                "value.converter.basic.auth.credentials.source": "USER_INFO",
 
                "confluent.topic.ssl.endpoint.identification.algorithm" : "https",
                "confluent.topic.sasl.mechanism" : "PLAIN",
-               "confluent.topic.bootstrap.servers": "${file:/data:bootstrap.servers}",
-               "confluent.topic.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/data:sasl.username}\" password=\"${file:/data:sasl.password}\";",
+               "confluent.topic.bootstrap.servers": "\${file:/data:bootstrap.servers}",
+               "confluent.topic.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"\${file:/data:sasl.username}\" password=\"\${file:/data:sasl.password}\";",
                "confluent.topic.security.protocol" : "SASL_SSL",
                "confluent.topic.replication.factor": "3",
 
@@ -177,19 +176,19 @@ curl -X PUT \
                "start.from":"snapshot",
 
                "redo.log.topic.name": "redo-log-topic",
-               "redo.log.consumer.bootstrap.servers": "${file:/data:bootstrap.servers}",
-               "redo.log.consumer.sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/data:sasl.username}\" password=\"${file:/data:sasl.password}\";",
+               "redo.log.consumer.bootstrap.servers": "\${file:/data:bootstrap.servers}",
+               "redo.log.consumer.sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"\${file:/data:sasl.username}\" password=\"\${file:/data:sasl.password}\";",
                "redo.log.consumer.security.protocol":"SASL_SSL",
                "redo.log.consumer.sasl.mechanism":"PLAIN",
 
                "table.inclusion.regex": ".*CUSTOMERS.*",
-               "table.topic.name.template": "${databaseName}.${schemaName}.${tableName}",
+               "table.topic.name.template": "\${databaseName}.\${schemaName}.\${tableName}",
                "numeric.mapping": "best_fit",
                "connection.pool.max.size": 20,
                "redo.log.row.fetch.size":1,
                "oracle.dictionary.mode": "auto"
-          }' \
-     http://localhost:8083/connectors/cdc-oracle-source-cdb-cloud/config | jq .
+          }
+EOF
 
 log "Waiting 20s for connector to read existing data"
 sleep 20
@@ -204,9 +203,9 @@ log "Waiting 20s for connector to read new data"
 sleep 20
 
 log "Verifying topic ORCLCDB.C__MYUSER.CUSTOMERS: there should be 13 records"
-playground topic consume --topic ORCLCDB.C__MYUSER.CUSTOMERS --min-expected-messages 13
+playground topic consume --topic ORCLCDB.C__MYUSER.CUSTOMERS --min-expected-messages 13 --timeout 60
 
 log "Verifying topic redo-log-topic: there should be 15 records"
-playground topic consume --topic redo-log-topic --min-expected-messages 15
+playground topic consume --topic redo-log-topic --min-expected-messages 15 --timeout 60
 
 log "🚚 If you're planning to inject more data, have a look at https://github.com/vdesabou/kafka-docker-playground/blob/master/connect/connect-cdc-oracle19-source/README.md#note-on-redologrowfetchsize"

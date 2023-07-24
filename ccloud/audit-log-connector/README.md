@@ -41,9 +41,8 @@ Note: you can also export these values as environment variable
 Creating FileStream Sink connector reading confluent-audit-log-events from the audit log cluster:
 
 ```bash
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector filestream-sink << EOF
+{
                "tasks.max": "1",
                "connector.class": "org.apache.kafka.connect.file.FileStreamSinkConnector",
                "topics": "confluent-audit-log-events",
@@ -54,15 +53,15 @@ curl -X PUT \
                "consumer.override.bootstrap.servers": "${file:/data_audit_cluster:bootstrap.servers}",
                "consumer.override.sasl.mechanism": "PLAIN",
                "consumer.override.security.protocol": "SASL_SSL",
-               "consumer.override.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/data_audit_cluster:sasl.username}\" password=\"${file:/data_audit_cluster:sasl.password}\";",
+               "consumer.override.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"\${file:/data_audit_cluster:sasl.username}\" password=\"\${file:/data_audit_cluster:sasl.password}\";",
                "consumer.override.client.dns.lookup": "use_all_dns_ips",
                "consumer.override.interceptor.classes": "io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor",
                "consumer.override.confluent.monitoring.interceptor.bootstrap.servers": "${file:/data:bootstrap.servers}",
-               "consumer.override.confluent.monitoring.interceptor.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/data:sasl.username}\" password=\"${file:/data:sasl.password}\";",
+               "consumer.override.confluent.monitoring.interceptor.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"\${file:/data:sasl.username}\" password=\"\${file:/data:sasl.password}\";",
                "consumer.override.confluent.monitoring.interceptor.sasl.mechanism": "PLAIN",
                "consumer.override.confluent.monitoring.interceptor.security.protocol": "SASL_SSL"
-          }' \
-     http://localhost:8083/connectors/filestream-sink/config | jq .
+          }
+EOF
 ```
 
 The trick is to use consumer override to bootstrap audit log cluster (`data_audit_cluster` file contains parameters for audit log cluster):
@@ -71,7 +70,7 @@ The trick is to use consumer override to bootstrap audit log cluster (`data_audi
      "consumer.override.bootstrap.servers": "${file:/data_audit_cluster:bootstrap.servers}",
      "consumer.override.sasl.mechanism": "PLAIN",
      "consumer.override.security.protocol": "SASL_SSL",
-     "consumer.override.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/data_audit_cluster:sasl.username}\" password=\"${file:/data_audit_cluster:sasl.password}\";",
+     "consumer.override.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"\${file:/data_audit_cluster:sasl.username}\" password=\"\${file:/data_audit_cluster:sasl.password}\";",
 ```
 
 Note that we also need to override monitoring interceptors to use the confluent cloud cluster, otherwise it tries to use the audit log cluster  (`data` file contains parameters for confluent cloud cluster):
@@ -79,7 +78,7 @@ Note that we also need to override monitoring interceptors to use the confluent 
 ```json
      "consumer.override.interceptor.classes": "io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor",
      "consumer.override.confluent.monitoring.interceptor.bootstrap.servers": "${file:/data:bootstrap.servers}",
-     "consumer.override.confluent.monitoring.interceptor.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/data:sasl.username}\" password=\"${file:/data:sasl.password}\";",
+     "consumer.override.confluent.monitoring.interceptor.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"\${file:/data:sasl.username}\" password=\"\${file:/data:sasl.password}\";",
      "consumer.override.confluent.monitoring.interceptor.sasl.mechanism": "PLAIN",
      "consumer.override.confluent.monitoring.interceptor.security.protocol": "SASL_SSL"
 ```

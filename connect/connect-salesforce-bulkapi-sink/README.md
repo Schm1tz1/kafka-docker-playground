@@ -95,10 +95,10 @@ $ curl -X PUT \
                     "tasks.max": "1",
                     "curl.logging": "true",
                     "salesforce.object" : "Lead",
-                    "salesforce.instance" : "'"$SALESFORCE_INSTANCE"'",
-                    "salesforce.username" : "'"$SALESFORCE_USERNAME"'",
-                    "salesforce.password" : "'"$SALESFORCE_PASSWORD"'",
-                    "salesforce.password.token" : "'"$SALESFORCE_SECURITY_TOKEN"'",
+                    "salesforce.instance" : "$SALESFORCE_INSTANCE",
+                    "salesforce.username" : "$SALESFORCE_USERNAME",
+                    "salesforce.password" : "$SALESFORCE_PASSWORD",
+                    "salesforce.password.token" : "$SALESFORCE_SECURITY_TOKEN",
                     "key.converter": "org.apache.kafka.connect.json.JsonConverter",
                     "value.converter": "org.apache.kafka.connect.json.JsonConverter",
                     "confluent.license": "",
@@ -111,7 +111,7 @@ $ curl -X PUT \
 Verify we have received the data in `sfdc-bulkapi-leads` topic
 
 ```bash
-playground topic consume --topic sfdc-bulkapi-leads --min-expected-messages 1
+playground topic consume --topic sfdc-bulkapi-leads --min-expected-messages 1 --timeout 60
 ```
 
 Creating Salesforce Bulk API Sink connector
@@ -125,10 +125,10 @@ $ curl -X PUT \
                     "tasks.max": "1",
                     "curl.logging": "true",
                     "salesforce.object" : "Lead",
-                    "salesforce.instance" : "'"$SALESFORCE_INSTANCE_ACCOUNT2"'",
-                    "salesforce.username" : "'"$SALESFORCE_USERNAME_ACCOUNT2"'",
-                    "salesforce.password" : "'"$SALESFORCE_PASSWORD_ACCOUNT2"'",
-                    "salesforce.password.token" : "'"$SALESFORCE_SECURITY_TOKEN_ACCOUNT2"'",
+                    "salesforce.instance" : "$SALESFORCE_INSTANCE_ACCOUNT2",
+                    "salesforce.username" : "$SALESFORCE_USERNAME_ACCOUNT2",
+                    "salesforce.password" : "$SALESFORCE_PASSWORD_ACCOUNT2",
+                    "salesforce.password.token" : "$SALESFORCE_SECURITY_TOKEN_ACCOUNT2",
                     "salesforce.ignore.fields" : "CleanStatus",
                     "salesforce.ignore.reference.fields" : "true",
                     "key.converter": "org.apache.kafka.connect.json.JsonConverter",
@@ -152,7 +152,7 @@ $ curl -X PUT \
 Verify topic `success-responses`
 
 ```bash
-playground topic consume --topic success-responses --min-expected-messages 1
+playground topic consume --topic success-responses --min-expected-messages 1 --timeout 60
 ```
 
 ```

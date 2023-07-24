@@ -42,9 +42,8 @@ GO
 EOF
 
 log "Creating Debezium SQL Server source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector debezium-sqlserver-source << EOF
+{
               "connector.class": "io.debezium.connector.sqlserver.SqlServerConnector",
               "tasks.max": "1",
               "database.hostname": "sqlserver",
@@ -65,11 +64,11 @@ curl -X PUT \
 
               "transforms": "unwrap,RemoveDots",
               "transforms.RemoveDots.type": "org.apache.kafka.connect.transforms.RegexRouter",
-              "transforms.RemoveDots.regex": "(.*)\\.(.*)\\.(.*)",
+              "transforms.RemoveDots.regex": "(.*)\\\\.(.*)\\\\.(.*)",
               "transforms.RemoveDots.replacement": "mytable",
               "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState"
-          }' \
-     http://localhost:8083/connectors/debezium-sqlserver-source/config | jq .
+          }
+EOF
 
 sleep 5
 
@@ -80,7 +79,7 @@ GO
 EOF
 
 log "Verifying topic mytable"
-playground topic consume --topic mytable --min-expected-messages 5
+playground topic consume --topic mytable --min-expected-messages 5 --timeout 60
 # {"id":1001,"first_name":"Sally","last_name":"Thomas","email":"sally.thomas@acme.com"}
 # {"id":1002,"first_name":"George","last_name":"Bailey","email":"gbailey@foobar.com"}
 # {"id":1003,"first_name":"Edward","last_name":"Walker","email":"ed@walker.com"}
@@ -88,19 +87,18 @@ playground topic consume --topic mytable --min-expected-messages 5
 # {"id":1005,"first_name":"Pam","last_name":"Thomas","email":"pam@office.com"}
 
 log "Creating JDBC PostgreSQL sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector postgres-sink << EOF
+{
                "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
                "tasks.max": "1",
                "connection.url": "jdbc:postgresql://postgres/postgres?user=myuser&password=mypassword&ssl=false",
                "topics": "mytable",
                "auto.create": "true",
                "transforms": "flatten",
-               "transforms.flatten.type": "org.apache.kafka.connect.transforms.Flatten$Value",
+               "transforms.flatten.type": "org.apache.kafka.connect.transforms.Flatten\$Value",
                "transforms.flatten.delimiter": "."
-          }' \
-     http://localhost:8083/connectors/postgres-sink/config | jq .
+          }
+EOF
 
 
 

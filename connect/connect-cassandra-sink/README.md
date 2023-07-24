@@ -30,7 +30,18 @@ DATACENTER=$(docker exec cassandra cqlsh -e 'SELECT data_center FROM system.loca
 Sending messages to topic topic1
 
 ```bash
-$ seq -f "{\"f1\": \"value%g\"}" 10 | docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic topic1 --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"f1","type":"string"}]}'
+$ playground topic produce -t topic1 --nb-messages 10 --forced-value '{"f1": "value1"}' << 'EOF'
+{
+  "type": "record",
+  "name": "myrecord",
+  "fields": [
+    {
+      "name": "f1",
+      "type": "string"
+    }
+  ]
+}
+EOF
 ```
 
 Creating Cassandra Sink connector
@@ -45,7 +56,7 @@ $ curl -X PUT \
                     "cassandra.contact.points" : "cassandra",
                     "cassandra.keyspace" : "test",
                     "cassandra.consistency.level": "ONE",
-                    "cassandra.local.datacenter":"'"$DATACENTER"'",
+                    "cassandra.local.datacenter":"$DATACENTER",
                     "confluent.license": "",
                     "confluent.topic.bootstrap.servers": "broker:9092",
                     "confluent.topic.replication.factor": "1",

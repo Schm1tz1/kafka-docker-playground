@@ -53,9 +53,9 @@ TOPIC="$LOG_GROUP.$LOG_STREAM"
 
 log "Creating $TOPIC topic"
 set +e
-delete_topic $TOPIC
+playground topic delete --topic $TOPIC
 sleep 3
-create_topic $TOPIC
+playground topic create --topic $TOPIC
 set -e
 
 # cleanup
@@ -81,7 +81,14 @@ do
      aws logs put-log-events --log-group $LOG_GROUP --log-stream $LOG_STREAM --log-events timestamp=`date +%s000`,message="This is a log #${i}" --sequence-token ${token}
 done
 
-cat << EOF > connector.json
+connector_name="CloudWatchLogsSource"
+set +e
+log "Deleting fully managed connector $connector_name, it might fail..."
+playground ccloud-connector delete --connector $connector_name
+set -e
+
+log "Creating fully managed connector"
+playground ccloud-connector create-or-update --connector $connector_name << EOF
 {
     "connector.class": "CloudWatchLogsSource",
     "name": "CloudWatchLogsSource",
@@ -97,21 +104,10 @@ cat << EOF > connector.json
     "tasks.max" : "1"
 }
 EOF
-
-log "Connector configuration is:"
-cat connector.json
-
-set +e
-log "Deleting fully managed connector, it might fail..."
-delete_ccloud_connector connector.json
-set -e
-
-log "Creating fully managed connector"
-create_ccloud_connector connector.json
-wait_for_ccloud_connector_up connector.json 300
+wait_for_ccloud_connector_up $connector_name 300
 
 log "Verify we have received the data in $TOPIC topic"
-playground topic consume --topic $TOPIC --min-expected-messages 10
+playground topic consume --topic $TOPIC --min-expected-messages 10 --timeout 60
 
 # Struct{logGroupName=myloggroup731,logStreamName=mylogstream731,timestamp=1675092839000} "This is a log #0"
 # Struct{logGroupName=myloggroup731,logStreamName=mylogstream731,timestamp=1675092841000} "This is a log #1"

@@ -14,80 +14,35 @@ else
      exit 1
 fi
 
-log "Initialize MongoDB replica set"
-docker exec -i mongodb mongosh --eval 'rs.initiate({_id: "myuser", members:[{_id: 0, host: "mongodb:27017"}]})'
-
-sleep 5
-
-log "Create a user profile"
-docker exec -i mongodb mongosh << EOF
-use admin
-db.createUser(
-{
-user: "myuser",
-pwd: "mypassword",
-roles: ["dbOwner"]
-}
-)
-EOF
-
-sleep 2
 
 log "Creating MongoDB source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class" : "com.mongodb.kafka.connect.MongoSourceConnector",
-                    "tasks.max" : "1",
-                    "connection.uri" : "mongodb://myuser:mypassword@mongodb:27017",
-                    "database":"inventory",
-                    "collection":"customers",
-                    "topic.prefix":"mongo"
-          }' \
-     http://localhost:8083/connectors/mongodb-source/config | jq .
+playground ccloud-connector create-or-update --connector mongodb-source2 << EOF
+{
+     "connector.class" : "MongoDbAtlasSource",
+     "name": "mongodb-source2",
+     "kafka.auth.mode": "KAFKA_API_KEY",
+     "kafka.api.key": "$CLOUD_KEY",
+     "kafka.api.secret": "$CLOUD_SECRET",
+     "tasks.max" : "1",
+     "topic.prefix":"mongo",
+     "connection.host": "<>",
+     "connection.user": "<>",
+     "connection.password": "<>",
+     "database": "sample_mflix",
+     "_collection": "movies",
 
-sleep 5
+     "pipeline": "[{\"\$match\": {\"ns.coll\": {\"\$regex\": /^(movies|sessions)$/}}}]",
 
-# using pipeline:
-
-# {
-#     "connection.uri": "mongodb://myuser:mypassword@mongodb:27017",
-#     "connector.class": "com.mongodb.kafka.connect.MongoSourceConnector",
-#     "pipeline":"[{\"$match\": {\"ns.coll\": {\"$regex\": \"^(customers|goals)$\"}}}]",
-#     "database":"inventory",
-#     "tasks.max": "1",
-#     "topic.prefix": "mongo"
-# }
-
-log "Insert a record"
-docker exec -i mongodb mongosh << EOF
-use inventory
-db.customers.insert([
-{ _id : 1, first_name : 'Bob', last_name : 'Hopper', email : 'thebob@example.com' }
-]);
-EOF
-
-# log "Update a record"
-# docker exec -i mongodb mongosh << EOF
-# use inventory
-# db.customers.updateOne(
-#      { _id: 1 },
-#      {
-#            \$set: {
-#                 email : "thebob2@example.com"
-#                 }
-#      }
-     
-# );
-# EOF
-
-log "View record"
-docker exec -i mongodb mongosh << EOF
-use inventory
-db.customers.find().pretty();
+     "poll.await.time.ms": "1000",
+     "poll.max.batch.size": "1000",
+     "startup.mode": "copy_existing",
+     "output.data.format": "JSON",
+     "change.stream.full.document": "updateLookup"
+}
 EOF
 
 sleep 5
 
-log "Verifying topic mongo.inventory.customers"
-playground topic consume --topic mongo.inventory.customers --min-expected-messages 1
+playground topic consume
+
+exit 0

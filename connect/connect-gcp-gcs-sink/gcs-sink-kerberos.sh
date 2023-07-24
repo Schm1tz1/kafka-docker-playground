@@ -58,28 +58,27 @@ docker exec -i client kinit -k -t /var/lib/secret/kafka-client.key kafka_produce
 seq -f "{\"f1\": \"This is a message sent with Kerberos GSSAPI authentication %g\"}" 10 | docker exec -i client kafka-avro-console-producer --broker-list broker:9092 --topic gcs_topic --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"f1","type":"string"}]}' --property schema.registry.url=http://schema-registry:8081 --producer.config /etc/kafka/producer.properties
 
 log "Creating GCS Sink connector with Kerberos GSSAPI authentication"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class": "io.confluent.connect.gcs.GcsSinkConnector",
-                    "tasks.max" : "1",
-                    "topics" : "gcs_topic",
-                    "gcs.bucket.name" : "'"$GCS_BUCKET_NAME"'",
-                    "gcs.part.size": "5242880",
-                    "flush.size": "3",
-                    "gcs.credentials.path": "/tmp/keyfile.json",
-                    "storage.class": "io.confluent.connect.gcs.storage.GcsStorage",
-                    "format.class": "io.confluent.connect.gcs.format.avro.AvroFormat",
-                    "partitioner.class": "io.confluent.connect.storage.partitioner.DefaultPartitioner",
-                    "schema.compatibility": "NONE",
-                    "confluent.topic.bootstrap.servers": "broker:9092",
-                    "confluent.topic.replication.factor": "1",
-                    "confluent.topic.sasl.mechanism": "GSSAPI",
-                    "confluent.topic.sasl.kerberos.service.name": "kafka",
-                    "confluent.topic.sasl.jaas.config" : "com.sun.security.auth.module.Krb5LoginModule required useKeyTab=true storeKey=true keyTab=\"/var/lib/secret/kafka-connect.key\" principal=\"connect@TEST.CONFLUENT.IO\";",
-                    "confluent.topic.security.protocol" : "SASL_PLAINTEXT"
-          }' \
-     http://localhost:8083/connectors/gcs-sink/config | jq .
+playground connector create-or-update --connector gcs-sink << EOF
+{
+    "connector.class": "io.confluent.connect.gcs.GcsSinkConnector",
+    "tasks.max" : "1",
+    "topics" : "gcs_topic",
+    "gcs.bucket.name" : "$GCS_BUCKET_NAME",
+    "gcs.part.size": "5242880",
+    "flush.size": "3",
+    "gcs.credentials.path": "/tmp/keyfile.json",
+    "storage.class": "io.confluent.connect.gcs.storage.GcsStorage",
+    "format.class": "io.confluent.connect.gcs.format.avro.AvroFormat",
+    "partitioner.class": "io.confluent.connect.storage.partitioner.DefaultPartitioner",
+    "schema.compatibility": "NONE",
+    "confluent.topic.bootstrap.servers": "broker:9092",
+    "confluent.topic.replication.factor": "1",
+    "confluent.topic.sasl.mechanism": "GSSAPI",
+    "confluent.topic.sasl.kerberos.service.name": "kafka",
+    "confluent.topic.sasl.jaas.config" : "com.sun.security.auth.module.Krb5LoginModule required useKeyTab=true storeKey=true keyTab=\"/var/lib/secret/kafka-connect.key\" principal=\"connect@TEST.CONFLUENT.IO\";",
+    "confluent.topic.security.protocol" : "SASL_PLAINTEXT"
+}
+EOF
 
 sleep 10
 

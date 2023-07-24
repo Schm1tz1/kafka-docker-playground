@@ -40,24 +40,23 @@ log "Sending messages to topic sink-messages"
 seq 10 | docker exec -i broker kafka-console-producer --broker-list broker:9092 --topic sink-messages
 
 log "Creating Solace sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class": "io.confluent.connect.jms.SolaceSinkConnector",
-               "tasks.max": "1",
-               "topics": "sink-messages",
-               "solace.host": "smf://solace:55555",
-               "solace.username": "admin",
-               "solace.password": "admin",
-               "solace.dynamic.durables": "true",
-               "jms.destination.type": "queue",
-               "jms.destination.name": "connector-quickstart",
-               "key.converter": "org.apache.kafka.connect.storage.StringConverter",
-               "value.converter": "org.apache.kafka.connect.storage.StringConverter",
-               "confluent.topic.bootstrap.servers": "broker:9092",
-               "confluent.topic.replication.factor": "1"
-          }' \
-     http://localhost:8083/connectors/SolaceSinkConnector/config | jq .
+playground connector create-or-update --connector SolaceSinkConnector << EOF
+{
+     "connector.class": "io.confluent.connect.jms.SolaceSinkConnector",
+     "tasks.max": "1",
+     "topics": "sink-messages",
+     "solace.host": "smf://solace:55555",
+     "solace.username": "admin",
+     "solace.password": "admin",
+     "solace.dynamic.durables": "true",
+     "jms.destination.type": "queue",
+     "jms.destination.name": "connector-quickstart",
+     "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+     "value.converter": "org.apache.kafka.connect.storage.StringConverter",
+     "confluent.topic.bootstrap.servers": "broker:9092",
+     "confluent.topic.replication.factor": "1"
+}
+EOF
 
 sleep 30
 

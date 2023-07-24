@@ -14,8 +14,16 @@ Quickly test [MongoDB](https://docs.mongodb.com/ecosystem/connectors/kafka/) con
 Simply run:
 
 ```
-$ playground run -f mongo<tab>
+$ playground run -f mongo-source<tab>
 ```
+
+or with SSL encryption:
+
+```
+$ playground run -f mongo-source-ssl<tab>
+```
+
+mongo-express UI is available at [http://localhost:18081/](http://localhost:18081/)
 
 ## Details of what the script is doing
 
@@ -81,7 +89,7 @@ EOF
 Verifying topic `mongo.inventory.customers`:
 
 ```bash
-playground topic consume --topic mongo.inventory.customers --min-expected-messages 1
+playground topic consume --topic mongo.inventory.customers --min-expected-messages 1 --timeout 60
 ```
 
 Result is:

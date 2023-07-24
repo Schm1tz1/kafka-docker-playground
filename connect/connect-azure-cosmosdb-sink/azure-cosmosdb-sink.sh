@@ -86,30 +86,30 @@ sed -e "s|:AZURE_COSMOSDB_DB_ENDPOINT_URI:|$AZURE_COSMOSDB_DB_ENDPOINT_URI|g" \
 ${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
 
 log "Write data to topic hotels"
-docker exec -i broker kafka-console-producer --broker-list broker:9092 --topic hotels << EOF
+playground topic produce -t hotels --nb-messages 3 << 'EOF'
 {"id": "h1", "HotelName": "Marriott", "Description": "Marriott description"}
 {"id": "h2", "HotelName": "HolidayInn", "Description": "HolidayInn description"}
 {"id": "h3", "HotelName": "Motel8", "Description": "Motel8 description"}
 EOF
 
+
 # https://github.com/microsoft/kafka-connect-cosmosdb/blob/dev/doc/README_Sink.md
 log "Creating Azure Cosmos DB Sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-                "connector.class": "com.azure.cosmos.kafka.connect.sink.CosmosDBSinkConnector",
-                "tasks.max": "1",
-                "topics": "hotels",
-                "key.converter": "org.apache.kafka.connect.json.JsonConverter",
-                "value.converter": "org.apache.kafka.connect.json.JsonConverter",
-                "value.converter.schemas.enable": "false",
-                "key.converter.schemas.enable": "false",
-                "connect.cosmos.connection.endpoint": "${file:/data:AZURE_COSMOSDB_DB_ENDPOINT_URI}",
-                "connect.cosmos.master.key": "${file:/data:AZURE_COSMOSDB_PRIMARY_CONNECTION_KEY}",
-                "connect.cosmos.databasename": "${file:/data:AZURE_COSMOSDB_DB_NAME}",
-                "connect.cosmos.containers.topicmap": "${file:/data:TOPIC_MAP}"
-          }' \
-     http://localhost:8083/connectors/azure-cosmosdb-sink/config | jq .
+playground connector create-or-update --connector azure-cosmosdb-sink << EOF
+{
+    "connector.class": "com.azure.cosmos.kafka.connect.sink.CosmosDBSinkConnector",
+    "tasks.max": "1",
+    "topics": "hotels",
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false",
+    "key.converter.schemas.enable": "false",
+    "connect.cosmos.connection.endpoint": "\${file:/data:AZURE_COSMOSDB_DB_ENDPOINT_URI}",
+    "connect.cosmos.master.key": "\${file:/data:AZURE_COSMOSDB_PRIMARY_CONNECTION_KEY}",
+    "connect.cosmos.databasename": "\${file:/data:AZURE_COSMOSDB_DB_NAME}",
+    "connect.cosmos.containers.topicmap": "\${file:/data:TOPIC_MAP}"
+}
+EOF
 
 sleep 10
 

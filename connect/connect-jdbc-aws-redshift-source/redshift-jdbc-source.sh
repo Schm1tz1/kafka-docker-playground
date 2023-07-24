@@ -4,9 +4,13 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
-if [ ! -f ${DIR}/RedshiftJDBC4-1.2.20.1043.jar ]
+if [ ! -f ${PWD}/redshift-jdbc42-2.1.0.17/redshift-jdbc42-2.1.0.17.jar ]
 then
-     wget https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.20.1043/RedshiftJDBC4-1.2.20.1043.jar
+     mkdir -p redshift-jdbc42-2.1.0.17
+     cd redshift-jdbc42-2.1.0.17
+     wget https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/2.1.0.17/redshift-jdbc42-2.1.0.17.zip
+     unzip redshift-jdbc42-2.1.0.17.zip
+     cd -
 fi
 
 if [ ! -f $HOME/.aws/credentials ] && ( [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ] )
@@ -106,25 +110,40 @@ SELECT * from CUSTOMERS;
 EOF
 
 log "Creating JDBC AWS Redshift source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
-               "tasks.max": "1",
-               "connection.url": "jdbc:postgresql://'"$CLUSTER"':'"$PORT"'/dev?user=masteruser&password=myPassword1&ssl=false",
-               "table.whitelist": "customers",
-               "mode": "timestamp+incrementing",
-               "timestamp.column.name": "update_ts",
-               "incrementing.column.name": "id",
-               "topic.prefix": "redshift-",
-               "validate.non.null":"false",
-               "errors.log.enable": "true",
-               "errors.log.include.messages": "true"
-          }' \
-     http://localhost:8083/connectors/redshift-jdbc-source/config | jq .
+playground connector create-or-update --connector redshift-jdbc-source << EOF
+{
+     "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
+     "tasks.max": "1",
+     "connection.url": "jdbc:postgresql://$CLUSTER:5439/dev?user=masteruser&password=myPassword1&ssl=false",
+     "table.whitelist": "customers",
+     "mode": "timestamp+incrementing",
+     "timestamp.column.name": "update_ts",
+     "incrementing.column.name": "id",
+     "topic.prefix": "redshift-",
+     "validate.non.null":"false",
+     "errors.log.enable": "true",
+     "errors.log.include.messages": "true"
+}
+EOF
+
+# [2023-07-24 16:31:50,676] ERROR [redshift-jdbc-source|worker] Error while trying to get updated table list, ignoring and waiting for next table poll interval (io.confluent.connect.jdbc.source.TableMonitorThread:178)
+# org.postgresql.util.PSQLException: ERROR: type "e" does not exist
+#         at org.postgresql.core.v3.QueryExecutorImpl.receiveErrorResponse(QueryExecutorImpl.java:2676)
+#         at org.postgresql.core.v3.QueryExecutorImpl.processResults(QueryExecutorImpl.java:2366)
+#         at org.postgresql.core.v3.QueryExecutorImpl.execute(QueryExecutorImpl.java:356)
+#         at org.postgresql.jdbc.PgStatement.executeInternal(PgStatement.java:496)
+#         at org.postgresql.jdbc.PgStatement.execute(PgStatement.java:413)
+#         at org.postgresql.jdbc.PgStatement.executeWithFlags(PgStatement.java:333)
+#         at org.postgresql.jdbc.PgStatement.executeCachedSql(PgStatement.java:319)
+#         at org.postgresql.jdbc.PgStatement.executeWithFlags(PgStatement.java:295)
+#         at org.postgresql.jdbc.PgStatement.executeQuery(PgStatement.java:244)
+#         at org.postgresql.jdbc.PgDatabaseMetaData.getTables(PgDatabaseMetaData.java:1343)
+#         at io.confluent.connect.jdbc.dialect.GenericDatabaseDialect.tableIds(GenericDatabaseDialect.java:428)
+#         at io.confluent.connect.jdbc.source.TableMonitorThread.updateTables(TableMonitorThread.java:175)
+#         at io.confluent.connect.jdbc.source.TableMonitorThread.run(TableMonitorThread.java:85)
 
 
 sleep 5
 
 log "Verifying topic redshift-customers"
-playground topic consume --topic redshift-customers --min-expected-messages 5
+playground topic consume --topic redshift-customers --min-expected-messages 5 --timeout 60

@@ -26,31 +26,29 @@ docker cp csv-sftp-source.csv sftp-server:/chroot/home/foo/upload/input/
 rm -f csv-sftp-source.csv
 
 log "Creating CSV SFTP Source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "topics": "test_sftp_sink",
-               "tasks.max": "1",
-               "connector.class": "io.confluent.connect.sftp.SftpCsvSourceConnector",
-               "cleanup.policy":"NONE",
-               "behavior.on.error":"IGNORE",
-               "input.path": "/home/foo/upload/input",
-               "error.path": "/home/foo/upload/error",
-               "finished.path": "/home/foo/upload/finished",
-               "input.file.pattern": ".*\\.csv",
-               "sftp.username":"foo",
-               "sftp.password": "",
-               "tls.pemfile": "/tmp/ssh_host_rsa_key.pem",
-               "tls.passphrase": "mypassword",
-               "sftp.host":"sftp-server",
-               "sftp.port":"22",
-               "kafka.topic": "sftp-testing-topic",
-               "csv.first.row.as.header": "true",
-               "schema.generation.enabled": "true"
-          }' \
-     http://localhost:8083/connectors/sftp-source-ssh-pem-file/config | jq .
+playground connector create-or-update --connector sftp-source-ssh-pem-file << EOF
+{
+     "tasks.max": "1",
+     "connector.class": "io.confluent.connect.sftp.SftpCsvSourceConnector",
+     "cleanup.policy":"NONE",
+     "behavior.on.error":"IGNORE",
+     "input.path": "/home/foo/upload/input",
+     "error.path": "/home/foo/upload/error",
+     "finished.path": "/home/foo/upload/finished",
+     "input.file.pattern": ".*\\\\.csv",
+     "sftp.username":"foo",
+     "sftp.password": "",
+     "tls.pemfile": "/tmp/ssh_host_rsa_key.pem",
+     "tls.passphrase": "mypassword",
+     "sftp.host":"sftp-server",
+     "sftp.port":"22",
+     "kafka.topic": "sftp-testing-topic",
+     "csv.first.row.as.header": "true",
+     "schema.generation.enabled": "true"
+}
+EOF
 
-sleep 5
+sleep 15
 
 log "Verifying topic sftp-testing-topic"
-playground topic consume --topic sftp-testing-topic --min-expected-messages 2
+playground topic consume --topic sftp-testing-topic --min-expected-messages 2 --timeout 60

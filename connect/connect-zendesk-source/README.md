@@ -44,11 +44,11 @@ $ curl -X PUT \
                "tasks.max": "1",
                "poll.interval.ms": 1000,
                "zendesk.auth.type": "basic",
-               "zendesk.url": "'"$ZENDESK_URL"'",
-               "zendesk.user": "'"$ZENDESK_USERNAME"'",
-               "zendesk.password": "'"$ZENDESK_PASSWORD"'",
+               "zendesk.url": "$ZENDESK_URL",
+               "zendesk.user": "$ZENDESK_USERNAME",
+               "zendesk.password": "$ZENDESK_PASSWORD",
                "zendesk.tables": "organizations",
-               "zendesk.since": "'"$SINCE"'",
+               "zendesk.since": "$SINCE",
                "key.converter": "org.apache.kafka.connect.storage.StringConverter",
                "value.converter": "org.apache.kafka.connect.json.JsonConverter",
                "value.converter.schemas.enable": "false",
@@ -65,7 +65,7 @@ $ curl -X PUT \
 Verify we have received the data in `zendesk-topic-organizations` topic:
 
 ```bash
-playground topic consume --topic zendesk-topic-organizations --min-expected-messages 1
+playground topic consume --topic zendesk-topic-organizations --min-expected-messages 1 --timeout 60
 ```
 
 Results:

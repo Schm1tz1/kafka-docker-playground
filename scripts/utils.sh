@@ -6,7 +6,7 @@ source ${DIR_UTILS}/../scripts/cli/src/lib/utils_function.sh
 if [ -z "$TAG" ]
 then
     # TAG is not set, use default:
-    export TAG=7.4.0
+    export TAG=7.4.1
     # to handle ubi8 images
     export TAG_BASE=$TAG
     if [ -z "$CP_KAFKA_IMAGE" ]
@@ -197,9 +197,10 @@ then
           then
               if [[ "$OSTYPE" == "darwin"* ]]
               then
-                  rm -rf ${DIR_UTILS}/../confluent-hub
+                rm -rf ${DIR_UTILS}/../confluent-hub
               else
-                  sudo rm -rf ${DIR_UTILS}/../confluent-hub
+                log "Using sudo to remove ${DIR_UTILS}/../confluent-hub"
+                sudo rm -rf ${DIR_UTILS}/../confluent-hub
               fi
           fi
           log "🎱 Installing connector $owner/$name:$CONNECTOR_VERSION"
@@ -301,13 +302,20 @@ else
         if [ -z "$CONNECT_TAG" ]
         then
           export CONNECT_TAG="$TAG"
+          maybe_create_image
         fi
       else
         ###
         #  Loop on all connectors in CONNECT_PLUGIN_PATH and install latest version from Confluent Hub (except for JDBC and replicator)
         ###
         first_loop=true
-        rm -rf ${DIR_UTILS}/../confluent-hub
+        if [[ "$OSTYPE" == "darwin"* ]]
+        then
+          rm -rf ${DIR_UTILS}/../confluent-hub
+        else
+          log "Using sudo to remove ${DIR_UTILS}/../confluent-hub"
+          sudo rm -rf ${DIR_UTILS}/../confluent-hub
+        fi
 
         for connector_path in ${connector_paths//,/ }
         do
@@ -321,6 +329,7 @@ else
             if [ -z "$CONNECT_TAG" ]
             then
               export CONNECT_TAG="$TAG"
+              maybe_create_image
             fi
           else
             if [ -z "$CONNECT_TAG" ]

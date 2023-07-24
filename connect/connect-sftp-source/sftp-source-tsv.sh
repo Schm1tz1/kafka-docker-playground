@@ -20,30 +20,28 @@ docker cp tsv-sftp-source.tsv sftp-server:/chroot/home/foo/upload/input/
 rm -f tsv-sftp-source.tsv
 
 log "Creating TSV SFTP Source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-        "topics": "test_sftp_sink",
-               "tasks.max": "1",
-               "connector.class": "io.confluent.connect.sftp.SftpCsvSourceConnector",
-               "cleanup.policy":"NONE",
-               "behavior.on.error":"IGNORE",
-               "input.path": "/home/foo/upload/input",
-               "error.path": "/home/foo/upload/error",
-               "finished.path": "/home/foo/upload/finished",
-               "input.file.pattern": "tsv-sftp-source.tsv",
-               "sftp.username":"foo",
-               "sftp.password":"pass",
-               "sftp.host":"sftp-server",
-               "sftp.port":"22",
-               "kafka.topic": "sftp-testing-topic",
-               "csv.first.row.as.header": "true",
-               "schema.generation.enabled": "true",
-               "csv.separator.char": "9"
-          }' \
-     http://localhost:8083/connectors/sftp-source-tsv/config | jq .
+playground connector create-or-update --connector sftp-source-tsv << EOF
+{
+     "tasks.max": "1",
+     "connector.class": "io.confluent.connect.sftp.SftpCsvSourceConnector",
+     "cleanup.policy":"NONE",
+     "behavior.on.error":"IGNORE",
+     "input.path": "/home/foo/upload/input",
+     "error.path": "/home/foo/upload/error",
+     "finished.path": "/home/foo/upload/finished",
+     "input.file.pattern": "tsv-sftp-source.tsv",
+     "sftp.username":"foo",
+     "sftp.password":"pass",
+     "sftp.host":"sftp-server",
+     "sftp.port":"22",
+     "kafka.topic": "sftp-testing-topic",
+     "csv.first.row.as.header": "true",
+     "schema.generation.enabled": "true",
+     "csv.separator.char": "9"
+}
+EOF
 
-sleep 5
+sleep 15
 
 log "Verifying topic sftp-testing-topic"
-playground topic consume --topic sftp-testing-topic --min-expected-messages 2
+playground topic consume --topic sftp-testing-topic --min-expected-messages 2 --timeout 60

@@ -57,9 +57,9 @@ $ curl -X PUT \
                     "value.converter":"org.apache.kafka.connect.storage.StringConverter",
                     "confluent.topic.bootstrap.servers": "broker:9092",
                     "confluent.topic.replication.factor":1,
-                    "function.name": "'"$FUNCTION"'",
-                    "project.id": "'"$GCP_PROJECT"'",
-                    "region": "'"$REGION"'",
+                    "function.name": "$FUNCTION",
+                    "project.id": "$GCP_PROJECT",
+                    "region": "$REGION",
                     "reporter.bootstrap.servers": "broker:9092",
                     "reporter.error.topic.name": "test-error",
                     "reporter.error.topic.replication.factor": 1,
@@ -76,7 +76,7 @@ $ curl -X PUT \
 Confirm that the messages were delivered to the result topic in Kafka
 
 ```bash
-playground topic consume --topic test-result --min-expected-messages 3
+playground topic consume --topic test-result --min-expected-messages 3 --timeout 60
 ```
 
 Result:

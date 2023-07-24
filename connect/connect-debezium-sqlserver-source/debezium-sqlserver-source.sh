@@ -17,7 +17,7 @@ then
      do
      set +e
      log "🏗 Building jar for ${component}"
-     docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${DIR}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${DIR}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
+     docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${PWD}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${PWD}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
      if [ $? != 0 ]
      then
           logerror "ERROR: failed to build java component "
@@ -61,28 +61,31 @@ GO
 EOF
 
 log "Creating Debezium SQL Server source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-              "connector.class": "io.debezium.connector.sqlserver.SqlServerConnector",
-              "tasks.max": "1",
-              "database.hostname": "sqlserver",
-              "database.port": "1433",
-              "database.user": "sa",
-              "database.password": "Password!",
-              "database.names" : "testDB",
-              
-              "_comment": "old version before 2.x",
-              "database.server.name": "server1",
-              "database.history.kafka.bootstrap.servers": "broker:9092",
-              "database.history.kafka.topic": "schema-changes.inventory",
-              "_comment": "new version since 2.x",
-              "database.encrypt": "false",
-              "topic.prefix": "server1",
-              "schema.history.internal.kafka.bootstrap.servers": "broker:9092",
-              "schema.history.internal.kafka.topic": "schema-changes.inventory"
-          }' \
-     http://localhost:8083/connectors/debezium-sqlserver-source/config | jq .
+playground connector create-or-update --connector debezium-sqlserver-source << EOF
+{
+  "connector.class": "io.debezium.connector.sqlserver.SqlServerConnector",
+  "tasks.max": "1",
+  "database.hostname": "sqlserver",
+  "database.port": "1433",
+  "database.user": "sa",
+  "database.password": "Password!",
+  "database.names" : "testDB",
+  
+  "_comment": "old version before 2.x",
+  "database.server.name": "server1",
+  "database.history.kafka.bootstrap.servers": "broker:9092",
+  "database.history.kafka.topic": "schema-changes.inventory",
+  "_comment": "new version since 2.x",
+  "database.encrypt": "false",
+  "topic.prefix": "server1",
+  "schema.history.internal.kafka.bootstrap.servers": "broker:9092",
+  "schema.history.internal.kafka.topic": "schema-changes.inventory",
+
+  "_comment:": "remove _ to use ExtractNewRecordState smt",
+  "_transforms": "unwrap",
+  "_transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState"
+}
+EOF
 
 sleep 5
 
@@ -93,7 +96,7 @@ GO
 EOF
 
 log "Verifying topic server1.testDB.dbo.customers"
-playground topic consume --topic server1.testDB.dbo.customers --min-expected-messages 5
+playground topic consume --topic server1.testDB.dbo.customers --min-expected-messages 5 --timeout 60
 
 if [ ! -z "$SQL_DATAGEN" ]
 then

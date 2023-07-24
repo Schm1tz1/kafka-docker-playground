@@ -14,14 +14,13 @@ ${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml
 
 
 log "Sending messages to topic sink-messages"
-docker exec -i broker kafka-console-producer --broker-list broker:9092 --topic sink-messages << EOF
+playground topic produce --topic sink-messages --nb-messages 1 << 'EOF'
 This is my message
 EOF
 
 log "Creating JMS ActiveMQ sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector jms-active-mq-sink << EOF
+{
                "connector.class": "io.confluent.connect.jms.JmsSinkConnector",
                     "topics": "sink-messages",
                     "java.naming.factory.initial": "org.apache.activemq.jndi.ActiveMQInitialContextFactory",
@@ -36,8 +35,8 @@ curl -X PUT \
                     "confluent.license": "",
                     "confluent.topic.bootstrap.servers": "broker:9092",
                     "confluent.topic.replication.factor": "1"
-          }' \
-     http://localhost:8083/connectors/jms-active-mq-sink/config | jq .
+          }
+EOF
 
 sleep 5
 

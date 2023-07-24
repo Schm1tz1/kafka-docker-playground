@@ -9,7 +9,7 @@ for component in simple-send
 do
      set +e
      log "🏗 Building jar for ${component}"
-     docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${DIR}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${DIR}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
+     docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${PWD}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${PWD}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
      if [ $? != 0 ]
      then
           logerror "ERROR: failed to build java component $component"
@@ -80,25 +80,24 @@ sed -e "s|:AZURE_SAS_KEY:|$AZURE_SAS_KEY|g" \
 ${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
 
 log "Creating Azure Event Hubs Source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-                "connector.class": "io.confluent.connect.azure.eventhubs.EventHubsSourceConnector",
-                "kafka.topic": "event_hub_topic",
-                "tasks.max": "1",
-                "max.events": "1",
-                "azure.eventhubs.sas.keyname": "RootManageSharedAccessKey",
-                "azure.eventhubs.sas.key": "${file:/data:AZURE_SAS_KEY}",
-                "azure.eventhubs.namespace": "${file:/data:AZURE_EVENT_HUBS_NAMESPACE}",
-                "azure.eventhubs.hub.name": "${file:/data:AZURE_EVENT_HUBS_NAME}",
-                "confluent.license": "",
-                "confluent.topic.bootstrap.servers": "broker:9092",
-                "confluent.topic.replication.factor": "1",
-                "errors.tolerance": "all",
-                "errors.log.enable": "true",
-                "errors.log.include.messages": "true"
-          }' \
-     http://localhost:8083/connectors/azure-event-hubs-source/config | jq .
+playground connector create-or-update --connector azure-event-hubs-source << EOF
+{
+    "connector.class": "io.confluent.connect.azure.eventhubs.EventHubsSourceConnector",
+    "kafka.topic": "event_hub_topic",
+    "tasks.max": "1",
+    "max.events": "1",
+    "azure.eventhubs.sas.keyname": "RootManageSharedAccessKey",
+    "azure.eventhubs.sas.key": "\${file:/data:AZURE_SAS_KEY}",
+    "azure.eventhubs.namespace": "\${file:/data:AZURE_EVENT_HUBS_NAMESPACE}",
+    "azure.eventhubs.hub.name": "\${file:/data:AZURE_EVENT_HUBS_NAME}",
+    "confluent.license": "",
+    "confluent.topic.bootstrap.servers": "broker:9092",
+    "confluent.topic.replication.factor": "1",
+    "errors.tolerance": "all",
+    "errors.log.enable": "true",
+    "errors.log.include.messages": "true"
+}
+EOF
 
 sleep 5
 
@@ -108,7 +107,7 @@ docker exec -d -e AZURE_EVENT_HUBS_NAME="$AZURE_EVENT_HUBS_NAME" -e AZURE_EVENT_
 sleep 5
 
 log "Verifying topic event_hub_topic"
-playground topic consume --topic event_hub_topic --min-expected-messages 2
+playground topic consume --topic event_hub_topic --min-expected-messages 2 --timeout 60
 
 log "Deleting resource group"
 az group delete --name $AZURE_RESOURCE_GROUP --yes --no-wait

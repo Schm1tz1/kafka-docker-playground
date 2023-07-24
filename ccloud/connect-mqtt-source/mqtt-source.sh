@@ -20,14 +20,14 @@ MQTT_TOPIC=kafka_docker_pg_mqtt$TAG
 MQTT_TOPIC=${MQTT_TOPIC//[-.]/}
 
 set +e
-delete_topic $MQTT_TOPIC
+playground topic delete --topic $MQTT_TOPIC
 set -e
 
 if ! version_gt $TAG_BASE "5.9.9"; then
      # note: for 6.x CONNECT_TOPIC_CREATION_ENABLE=true
      log "Creating topic in Confluent Cloud (auto.create.topics.enable=false)"
      set +e
-     create_topic $MQTT_TOPIC
+     playground topic create --topic $MQTT_TOPIC
      set -e
 
      sleep 30
@@ -39,14 +39,13 @@ docker exec mosquitto sh -c 'mosquitto_pub -h localhost -p 1883 -u "myuser" -P "
 sleep 5
 
 log "Creating MQTT Source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector mqtt-source << EOF
+{
                "connector.class": "io.confluent.connect.mqtt.MqttSourceConnector",
                "tasks.max": "1",
                "mqtt.server.uri": "tcp://mosquitto:1883",
                "mqtt.topics":"my-mqtt-topic",
-               "kafka.topic": "'"$MQTT_TOPIC"'",
+               "kafka.topic": "$MQTT_TOPIC",
                "mqtt.qos": "2",
                "mqtt.username": "myuser",
                "mqtt.password": "mypassword",
@@ -54,12 +53,12 @@ curl -X PUT \
                "topic.creation.default.partitions": "-1",
                "confluent.topic.ssl.endpoint.identification.algorithm" : "https",
                "confluent.topic.sasl.mechanism" : "PLAIN",
-               "confluent.topic.bootstrap.servers": "${file:/data:bootstrap.servers}",
-               "confluent.topic.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/data:sasl.username}\" password=\"${file:/data:sasl.password}\";",
+               "confluent.topic.bootstrap.servers": "\${file:/data:bootstrap.servers}",
+               "confluent.topic.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"\${file:/data:sasl.username}\" password=\"\${file:/data:sasl.password}\";",
                "confluent.topic.security.protocol" : "SASL_SSL",
                "confluent.topic.replication.factor": "3"
-          }' \
-     http://localhost:8083/connectors/mqtt-source/config | jq .
+          }
+EOF
 
 sleep 5
 
@@ -71,4 +70,4 @@ done
 sleep 30
 
 log "Verify we have received the data in $MQTT_TOPIC topic"
-playground topic consume --topic $MQTT_TOPIC --min-expected-messages 2
+playground topic consume --topic $MQTT_TOPIC --min-expected-messages 2 --timeout 60

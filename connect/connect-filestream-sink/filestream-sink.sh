@@ -7,23 +7,42 @@ source ${DIR}/../../scripts/utils.sh
 ${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
 
 log "Sending messages to topic filestream"
-docker exec -i broker kafka-console-producer --broker-list broker:9092 --topic filestream << EOF
-{"customer_name":"Ed", "complaint_type":"Dirty car", "trip_cost": 29.10, "new_customer": false, "number_of_rides": 22}
+playground topic produce -t filestream --nb-messages 5 << 'EOF'
+[
+    {
+        "_meta": {
+            "topic": "",
+            "key": "",
+            "relationships": [
+            ]
+        },
+        "nested": {
+            "phone": "faker.phone.imei()",
+            "website": "faker.internet.domainName()"
+        },
+        "id": "iteration.index",
+        "name": "faker.internet.userName()",
+        "email": "faker.internet.exampleEmail()",
+        "phone": "faker.phone.imei()",
+        "website": "faker.internet.domainName()",
+        "city": "faker.address.city()",
+        "company": "faker.company.name()"
+    }
+]
 EOF
 
 log "Creating FileStream Sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "tasks.max": "1",
-               "connector.class": "org.apache.kafka.connect.file.FileStreamSinkConnector",
-               "topics": "filestream",
-               "file": "/tmp/output.json",
-               "key.converter": "org.apache.kafka.connect.storage.StringConverter",
-               "value.converter": "org.apache.kafka.connect.json.JsonConverter",
-               "value.converter.schemas.enable": "false"
-          }' \
-     http://localhost:8083/connectors/filestream-sink/config | jq .
+playground connector create-or-update --connector filestream-sink << EOF
+{
+     "tasks.max": "1",
+     "connector.class": "org.apache.kafka.connect.file.FileStreamSinkConnector",
+     "topics": "filestream",
+     "file": "/tmp/output.json",
+     "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+     "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+     "value.converter.schemas.enable": "false"
+}
+EOF
 
 
 sleep 5

@@ -74,7 +74,18 @@ else
 fi
 
 log "Sending messages to topic test_hdfs"
-seq -f "{\"f1\": \"value%g\"}" 10 | docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic test_hdfs --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"f1","type":"string"}]}'
+playground topic produce -t test_hdfs --nb-messages 10 --forced-value '{"f1":"value%g"}' << 'EOF'
+{
+  "type": "record",
+  "name": "myrecord",
+  "fields": [
+    {
+      "name": "f1",
+      "type": "string"
+    }
+  ]
+}
+EOF
 
 sleep 10
 
@@ -106,9 +117,8 @@ fi
 
 
 log "Creating HDFS Source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector hdfs3-source << EOF
+{
           "connector.class":"io.confluent.connect.hdfs3.Hdfs3SourceConnector",
           "tasks.max":"1",
           "hdfs.url":"hdfs://namenode:9000",
@@ -120,11 +130,11 @@ curl -X PUT \
           "transforms" : "AddPrefix",
           "transforms.AddPrefix.type" : "org.apache.kafka.connect.transforms.RegexRouter",
           "transforms.AddPrefix.regex" : ".*",
-          "transforms.AddPrefix.replacement" : "copy_of_$0"
-          }' \
-     http://localhost:8083/connectors/hdfs3-source/config | jq .
+          "transforms.AddPrefix.replacement" : "copy_of_\$0"
+          }
+EOF
 
 sleep 10
 
 log "Verifying topic copy_of_test_hdfs"
-playground topic consume --topic copy_of_test_hdfs --min-expected-messages 9
+playground topic consume --topic copy_of_test_hdfs --min-expected-messages 9 --timeout 60

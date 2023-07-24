@@ -77,7 +77,7 @@ $ curl -X PUT \
                "connector.class" : "io.confluent.connect.gcp.pubsub.PubSubSourceConnector",
                     "tasks.max" : "1",
                     "kafka.topic" : "pubsub-topic",
-                    "gcp.pubsub.project.id" : "'"$GCP_PROJECT"'",
+                    "gcp.pubsub.project.id" : "$GCP_PROJECT",
                     "gcp.pubsub.topic.id" : "topic-1",
                     "gcp.pubsub.subscription.id" : "subscription-1",
                     "gcp.pubsub.credentials.path" : "/tmp/keyfile.json",
@@ -90,7 +90,7 @@ $ curl -X PUT \
 Verify messages are in topic `pubsub-topic`
 
 ```bash
-playground topic consume --topic pubsub-topic --min-expected-messages 3
+playground topic consume --topic pubsub-topic --min-expected-messages 3 --timeout 60
 ```
 
 Results:

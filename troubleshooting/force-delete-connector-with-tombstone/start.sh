@@ -19,9 +19,8 @@ log "Sending messages to topic http-messages"
 seq 10 | docker exec -i broker kafka-console-producer --broker-list broker:9092 --topic http-messages
 
 log "Creating http-sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector http-sink << EOF
+{
           "topics": "http-messages",
                "tasks.max": "1",
                "connector.class": "io.confluent.connect.http.HttpSinkConnector",
@@ -36,8 +35,8 @@ curl -X PUT \
                "reporter.result.topic.replication.factor": 1,
                "http.api.url": "http://http-service-no-auth:8080/api/messages",
                "batch.max.size": "10"
-          }' \
-     http://localhost:8083/connectors/http-sink/config | jq .
+          }
+EOF
 
 
 sleep 10
@@ -48,7 +47,7 @@ cat /tmp/result.log
 grep "10" /tmp/result.log
 
 log "Check the success-responses topic"
-playground topic consume --topic success-responses --min-expected-messages 10
+playground topic consume --topic success-responses --min-expected-messages 10 --timeout 60
 
 log "Show connect-configs"
 docker exec -i broker kafka-console-consumer --bootstrap-server localhost:9092 --topic connect-configs --from-beginning --property print.key=true --timeout-ms 10000 1> /tmp/connect-configs.backup
@@ -87,9 +86,8 @@ docker exec -i broker kafka-console-consumer --bootstrap-server localhost:9092 -
 cat /tmp/connect-configs.backup
 
 log "re-create connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector http-sink << EOF
+{
           "topics": "http-messages",
                "tasks.max": "1",
                "connector.class": "io.confluent.connect.http.HttpSinkConnector",
@@ -104,8 +102,8 @@ curl -X PUT \
                "reporter.result.topic.replication.factor": 1,
                "http.api.url": "http://http-service-no-auth:8080/api/messages",
                "batch.max.size": "10"
-          }' \
-     http://localhost:8083/connectors/http-sink/config | jq .
+          }
+EOF
 
 sleep 5
 
@@ -116,7 +114,7 @@ log "Sending messages to topic http-messages"
 seq 10 | docker exec -i broker kafka-console-producer --broker-list broker:9092 --topic http-messages
 
 log "Check the success-responses topic"
-playground topic consume --topic success-responses --min-expected-messages 20
+playground topic consume --topic success-responses --min-expected-messages 20 --timeout 60
 
 log "Show connect-configs"
 docker exec -i broker kafka-console-consumer --bootstrap-server localhost:9092 --topic connect-configs --from-beginning --property print.key=true --timeout-ms 10000 1> /tmp/connect-configs.backup

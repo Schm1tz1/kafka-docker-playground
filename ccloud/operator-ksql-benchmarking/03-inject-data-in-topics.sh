@@ -78,13 +78,13 @@ kubectl exec -i connectors-0 -- curl -s -X PUT \
       -H "Content-Type: application/json" \
       --data '{
                 "connector.class": "io.confluent.kafka.connect.datagen.DatagenConnector",
-                "kafka.topic": "'"${topic}"'",
+                "kafka.topic": "\${topic}",
                 "key.converter": "org.apache.kafka.connect.storage.StringConverter",
                 "value.converter": "org.apache.kafka.connect.json.JsonConverter",
                 "value.converter.schemas.enable": "false",
                 "max.interval": 1,
-                "iterations": "'"$iterations_per_task"'",
-                "tasks.max": "'"$datagen_tasks"'",
+                "iterations": "$iterations_per_task",
+                "tasks.max": "$datagen_tasks",
                 "schema.filename" : "'"/tmp/schemas/${topic}.avro"'",
                 "schema.keyfield" : "orderid"
             }' \
@@ -93,7 +93,7 @@ kubectl exec -i connectors-0 -- curl -s -X PUT \
 wait_for_datagen_connector_to_inject_data "${topic}-${random_value}" "${datagen_tasks}" "kubectl exec -i connectors-0 --"
 
 log "Verify we have received data in topic ${topic}"
-playground topic consume --topic ${topic} --min-expected-messages 1
+playground topic consume --topic ${topic} --min-expected-messages 1 --timeout 60
 
 #######
 # shipments
@@ -106,13 +106,13 @@ kubectl exec -i connectors-0 -- curl -s -X PUT \
       -H "Content-Type: application/json" \
       --data '{
                 "connector.class": "io.confluent.kafka.connect.datagen.DatagenConnector",
-                "kafka.topic": "'"${topic}"'",
+                "kafka.topic": "\${topic}",
                 "key.converter": "org.apache.kafka.connect.storage.StringConverter",
                 "value.converter": "org.apache.kafka.connect.json.JsonConverter",
                 "value.converter.schemas.enable": "false",
                 "max.interval": 1,
-                "iterations": "'"$iterations_per_task"'",
-                "tasks.max": "'"$datagen_tasks"'",
+                "iterations": "$iterations_per_task",
+                "tasks.max": "$datagen_tasks",
                 "schema.filename" : "'"/tmp/schemas/${topic}.avro"'"
             }' \
       http://localhost:8083/connectors/datagen-${topic}-${random_value}/config | jq
@@ -120,7 +120,7 @@ kubectl exec -i connectors-0 -- curl -s -X PUT \
 wait_for_datagen_connector_to_inject_data "${topic}-${random_value}" "${datagen_tasks}" "kubectl exec -i connectors-0 --"
 
 log "Verify we have received data in topic ${topic}"
-playground topic consume --topic ${topic} --min-expected-messages 1
+playground topic consume --topic ${topic} --min-expected-messages 1 --timeout 60
 
 #######
 # products
@@ -133,13 +133,13 @@ kubectl exec -i connectors-0 -- curl -s -X PUT \
       -H "Content-Type: application/json" \
       --data '{
                 "connector.class": "io.confluent.kafka.connect.datagen.DatagenConnector",
-                "kafka.topic": "'"$topic"'",
+                "kafka.topic": "$topic",
                 "key.converter": "org.apache.kafka.connect.storage.StringConverter",
                 "value.converter": "org.apache.kafka.connect.json.JsonConverter",
                 "value.converter.schemas.enable": "false",
                 "max.interval": 1,
-                "iterations": "'"$iterations_per_task"'",
-                "tasks.max": "'"$datagen_tasks"'",
+                "iterations": "$iterations_per_task",
+                "tasks.max": "$datagen_tasks",
                 "schema.filename" : "'"/tmp/schemas/${topic}.avro"'",
                 "schema.keyfield" : "productid"
             }' \
@@ -147,7 +147,7 @@ kubectl exec -i connectors-0 -- curl -s -X PUT \
 
 wait_for_datagen_connector_to_inject_data "${topic}-${random_value}" "${datagen_tasks}" "kubectl exec -i connectors-0 --"
 log "Verify we have received data in topic ${topic}"
-playground topic consume --topic ${topic} --min-expected-messages 1
+playground topic consume --topic ${topic} --min-expected-messages 1 --timeout 60
 
 #######
 # customers
@@ -160,13 +160,13 @@ kubectl exec -i connectors-0 -- curl -s -X PUT \
       -H "Content-Type: application/json" \
       --data '{
                 "connector.class": "io.confluent.kafka.connect.datagen.DatagenConnector",
-                "kafka.topic": "'"$topic"'",
+                "kafka.topic": "$topic",
                 "key.converter": "org.apache.kafka.connect.storage.StringConverter",
                 "value.converter": "org.apache.kafka.connect.json.JsonConverter",
                 "value.converter.schemas.enable": "false",
                 "max.interval": 1,
-                "iterations": "'"$iterations_per_task"'",
-                "tasks.max": "'"$datagen_tasks"'",
+                "iterations": "$iterations_per_task",
+                "tasks.max": "$datagen_tasks",
                 "schema.filename" : "'"/tmp/schemas/${topic}.avro"'",
                 "schema.keyfield" : "customerid"
             }' \
@@ -174,6 +174,6 @@ kubectl exec -i connectors-0 -- curl -s -X PUT \
 
 wait_for_datagen_connector_to_inject_data "${topic}-${random_value}" "${datagen_tasks}" "kubectl exec -i connectors-0 --"
 log "Verify we have received data in topic ${topic}"
-playground topic consume --topic ${topic} --min-expected-messages 1
+playground topic consume --topic ${topic} --min-expected-messages 1 --timeout 60
 
 rm ${CONFIG_FILE}

@@ -17,7 +17,7 @@ then
      do
      set +e
      log "🏗 Building jar for ${component}"
-     docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${DIR}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${DIR}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
+     docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${PWD}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${PWD}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
      if [ $? != 0 ]
      then
           logerror "ERROR: failed to build java component "
@@ -98,39 +98,42 @@ SELECT * FROM CUSTOMERS;
 EOF
 
 log "Creating Debezium PostgreSQL source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-                "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
-                "tasks.max": "1",
-                "database.hostname": "postgres",
-                "database.port": "5432",
-                "database.user": "myuser",
-                "database.password": "mypassword",
-                "database.dbname" : "postgres",
+playground connector create-or-update --connector debezium-postgres-source << EOF
+{
+     "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+     "tasks.max": "1",
+     "database.hostname": "postgres",
+     "database.port": "5432",
+     "database.user": "myuser",
+     "database.password": "mypassword",
+     "database.dbname" : "postgres",
 
-                "_comment": "old version before 2.x",
-                "database.server.name": "asgard",
-                "_comment": "new version since 2.x",
-                "topic.prefix": "asgard",
+     "_comment": "old version before 2.x",
+     "database.server.name": "asgard",
+     "_comment": "new version since 2.x",
+     "topic.prefix": "asgard",
 
-                "key.converter" : "io.confluent.connect.avro.AvroConverter",
-                "key.converter.schema.registry.url": "http://schema-registry:8081",
-                "value.converter" : "io.confluent.connect.avro.AvroConverter",
-                "value.converter.schema.registry.url": "http://schema-registry:8081",
-                "transforms": "addTopicSuffix",
-                "transforms.addTopicSuffix.type":"org.apache.kafka.connect.transforms.RegexRouter",
-                "transforms.addTopicSuffix.regex":"(.*)",
-                "transforms.addTopicSuffix.replacement":"$1-raw"
-          }' \
-     http://localhost:8083/connectors/debezium-postgres-source/config | jq .
+     "key.converter" : "io.confluent.connect.avro.AvroConverter",
+     "key.converter.schema.registry.url": "http://schema-registry:8081",
+     "value.converter" : "io.confluent.connect.avro.AvroConverter",
+     "value.converter.schema.registry.url": "http://schema-registry:8081",
+     "transforms": "addTopicSuffix",
+     "transforms.addTopicSuffix.type":"org.apache.kafka.connect.transforms.RegexRouter",
+     "transforms.addTopicSuffix.regex":"(.*)",
+     "transforms.addTopicSuffix.replacement": "\$1-raw",
+
+     "_comment:": "remove _ to use ExtractNewRecordState smt",
+     "_transforms": "unwrap,addTopicSuffix",
+     "_transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState"
+}
+EOF
 
 
 
 sleep 5
 
 log "Verifying topic asgard.public.customers-raw"
-playground topic consume --topic asgard.public.customers-raw --min-expected-messages 5
+playground topic consume --topic asgard.public.customers-raw --min-expected-messages 5 --timeout 60
 
 if [ ! -z "$SQL_DATAGEN" ]
 then

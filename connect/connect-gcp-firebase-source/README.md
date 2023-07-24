@@ -82,7 +82,7 @@ $ curl -X PUT \
                "connector.class" : "io.confluent.connect.firebase.FirebaseSourceConnector",
                     "tasks.max" : "1",
                     "gcp.firebase.credentials.path": "/tmp/keyfile.json",
-                    "gcp.firebase.database.reference": "https://'"$GCP_PROJECT"'.firebaseio.com/musicBlog",
+                    "gcp.firebase.database.reference": "https://$GCP_PROJECT.firebaseio.com/musicBlog",
                     "gcp.firebase.snapshot":"true",
                     "confluent.topic.bootstrap.servers": "broker:9092",
                     "confluent.topic.replication.factor": "1"
@@ -93,7 +93,7 @@ $ curl -X PUT \
 Verify messages are in topic `artists`
 
 ```bash
-playground topic consume --topic artists --min-expected-messages 3
+playground topic consume --topic artists --min-expected-messages 3 --timeout 60
 ```
 
 Results:
@@ -107,7 +107,7 @@ Results:
 Verify messages are in topic `songs`
 
 ```bash
-playground topic consume --topic songs --min-expected-messages 3
+playground topic consume --topic songs --min-expected-messages 3 --timeout 60
 ```
 
 Results:

@@ -20,7 +20,7 @@ if ! version_gt $TAG_BASE "5.9.9"; then
      # note: for 6.x CONNECT_TOPIC_CREATION_ENABLE=true
      log "Creating topic in Confluent Cloud (auto.create.topics.enable=false)"
      set +e
-     create_topic test-travel-sample
+     playground topic create --topic test-travel-sample
      set -e
 fi
 
@@ -32,9 +32,8 @@ docker exec couchbase bash -c "/opt/couchbase/bin/cbdocloader -c localhost:8091 
 set -e
 
 log "Creating Couchbase Source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector couchbase-source << EOF
+{
                "connector.class": "com.couchbase.connect.kafka.CouchbaseSourceConnector",
                "tasks.max": "2",
                "couchbase.topic": "test-travel-sample",
@@ -51,11 +50,11 @@ curl -X PUT \
                "couchbase.persistence.polling.interval": "100ms",
                "topic.creation.default.replication.factor": "-1",
                "topic.creation.default.partitions": "-1"
-          }' \
-     http://localhost:8083/connectors/couchbase-source/config | jq .
+          }
+EOF
 
 sleep 10
 
 log "Verifying topic test-travel-sample"
-playground topic consume --topic test-travel-sample --min-expected-messages 2
+playground topic consume --topic test-travel-sample --min-expected-messages 2 --timeout 60
 

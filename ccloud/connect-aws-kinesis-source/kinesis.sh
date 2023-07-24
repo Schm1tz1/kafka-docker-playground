@@ -61,14 +61,14 @@ KINESIS_STREAM_NAME=${KINESIS_STREAM_NAME//[-.]/}
 KINESIS_TOPIC=$KINESIS_STREAM_NAME
 
 set +e
-delete_topic $KINESIS_TOPIC
+playground topic delete --topic $KINESIS_TOPIC
 set -e
 
 if ! version_gt $TAG_BASE "5.9.9"; then
      # note: for 6.x CONNECT_TOPIC_CREATION_ENABLE=true
      log "Creating topic in Confluent Cloud (auto.create.topics.enable=false)"
      set +e
-     create_topic $KINESIS_TOPIC
+     playground topic create --topic $KINESIS_TOPIC
      set -e
 fi
 
@@ -92,32 +92,31 @@ aws kinesis put-record --stream-name $KINESIS_STREAM_NAME --partition-key 123 --
 
 
 log "Creating Kinesis Source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector kinesis-source << EOF
+{
                "connector.class":"io.confluent.connect.kinesis.KinesisSourceConnector",
                "tasks.max": "1",
-               "kafka.topic": "'"$KINESIS_TOPIC"'",
-               "kinesis.stream": "'"$KINESIS_STREAM_NAME"'",
-               "kinesis.region": "'"$AWS_REGION"'",
-               "aws.access.key.id" : "'"$AWS_ACCESS_KEY_ID"'",
-               "aws.secret.key.id": "'"$AWS_SECRET_ACCESS_KEY"'",
+               "kafka.topic": "$KINESIS_TOPIC",
+               "kinesis.stream": "$KINESIS_STREAM_NAME",
+               "kinesis.region": "$AWS_REGION",
+               "aws.access.key.id" : "$AWS_ACCESS_KEY_ID",
+               "aws.secret.key.id": "$AWS_SECRET_ACCESS_KEY",
                "confluent.license": "",
                "topic.creation.default.replication.factor": "-1",
                "topic.creation.default.partitions": "-1",
                "confluent.topic.ssl.endpoint.identification.algorithm" : "https",
                "confluent.topic.sasl.mechanism" : "PLAIN",
-               "confluent.topic.bootstrap.servers": "${file:/data:bootstrap.servers}",
-               "confluent.topic.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/data:sasl.username}\" password=\"${file:/data:sasl.password}\";",
+               "confluent.topic.bootstrap.servers": "\${file:/data:bootstrap.servers}",
+               "confluent.topic.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"\${file:/data:sasl.username}\" password=\"\${file:/data:sasl.password}\";",
                "confluent.topic.security.protocol" : "SASL_SSL",
                "confluent.topic.replication.factor": "3"
-          }' \
-     http://localhost:8083/connectors/kinesis-source/config | jq .
+          }
+EOF
 
 sleep 10
 
 log "Verify we have received the data in $KINESIS_TOPIC topic"
-playground topic consume --topic $KINESIS_TOPIC --min-expected-messages 1
+playground topic consume --topic $KINESIS_TOPIC --min-expected-messages 1 --timeout 60
 
 log "Delete the stream"
 aws kinesis delete-stream --stream-name $KINESIS_STREAM_NAME

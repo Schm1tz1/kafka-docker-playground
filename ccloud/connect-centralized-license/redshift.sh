@@ -4,9 +4,13 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
-if [ ! -f ${DIR}/RedshiftJDBC4-1.2.20.1043.jar ]
+if [ ! -f ${PWD}/redshift-jdbc42-2.1.0.17/redshift-jdbc42-2.1.0.17.jar ]
 then
-     wget https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/1.2.20.1043/RedshiftJDBC4-1.2.20.1043.jar
+     mkdir -p redshift-jdbc42-2.1.0.17
+     cd redshift-jdbc42-2.1.0.17
+     wget https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/2.1.0.17/redshift-jdbc42-2.1.0.17.zip
+     unzip redshift-jdbc42-2.1.0.17.zip
+     cd -
 fi
 
 if [ ! -f $HOME/.aws/credentials ] && ( [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ] )
@@ -57,9 +61,9 @@ fi
 
 log "Creating topic in Confluent Cloud (auto.create.topics.enable=false)"
 set +e
-delete_topic orders
+playground topic delete --topic orders
 sleep 3
-create_topic orders
+playground topic create --topic orders
 set -e
 
 CLUSTER_NAME=pg${USER}redshift${TAG}
@@ -110,23 +114,22 @@ docker exec -i -e BOOTSTRAP_SERVERS="$BOOTSTRAP_SERVERS" -e SASL_JAAS_CONFIG="$S
 EOF
 
 log "Creating AWS Redshift Sink connector with cluster url $CLUSTER"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class": "io.confluent.connect.aws.redshift.RedshiftSinkConnector",
-               "tasks.max": "1",
-               "topics": "orders",
-               "aws.redshift.domain": "'"$CLUSTER"'",
-               "aws.redshift.port": "5439",
-               "aws.redshift.database": "dev",
-               "aws.redshift.user": "masteruser",
-               "aws.redshift.password": "myPassword1",
-               "aws.access.key.id" : "'"$AWS_ACCESS_KEY_ID"'",
-               "aws.secret.key.id": "'"$AWS_SECRET_ACCESS_KEY"'",
-               "auto.create": "true",
-               "pk.mode": "kafka"
-          }' \
-     http://localhost:8083/connectors/redshift-sink/config | jq .
+playground connector create-or-update --connector redshift-sink << EOF
+{
+     "connector.class": "io.confluent.connect.aws.redshift.RedshiftSinkConnector",
+     "tasks.max": "1",
+     "topics": "orders",
+     "aws.redshift.domain": "$CLUSTER",
+     "aws.redshift.port": "5439",
+     "aws.redshift.database": "dev",
+     "aws.redshift.user": "masteruser",
+     "aws.redshift.password": "myPassword1",
+     "aws.access.key.id" : "$AWS_ACCESS_KEY_ID",
+     "aws.secret.key.id": "$AWS_SECRET_ACCESS_KEY",
+     "auto.create": "true",
+     "pk.mode": "kafka"
+}
+EOF
 
 sleep 20
 

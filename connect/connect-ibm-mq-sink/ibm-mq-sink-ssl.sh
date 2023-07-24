@@ -44,14 +44,13 @@ DISPLAY CHANNEL(DEV.APP.SVRCONN)
 EOF
 
 log "Sending messages to topic sink-messages"
-docker exec -i broker kafka-console-producer --broker-list broker:9092 --topic sink-messages << EOF
+playground topic produce --topic sink-messages --nb-messages 1 << 'EOF'
 This is my message
 EOF
 
 log "Creating IBM MQ sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector ibm-mq-sink-ssl << EOF
+{
                "connector.class": "io.confluent.connect.jms.IbmMqSinkConnector",
                "topics": "sink-messages",
                "mq.hostname": "ibmmq",
@@ -71,8 +70,8 @@ curl -X PUT \
                "confluent.license": "",
                "confluent.topic.bootstrap.servers": "broker:9092",
                "confluent.topic.replication.factor": "1"
-          }' \
-     http://localhost:8083/connectors/ibm-mq-sink-ssl/config | jq .
+          }
+EOF
 
 sleep 10
 

@@ -49,28 +49,38 @@ docker run -i --volumes-from gcloud-config google/cloud-sdk:latest gsutil -m rm 
 set -e
 
 log "Sending messages to topic gcs_topic"
-seq -f "{\"f1\": \"value%g\"}" 10 | docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic gcs_topic --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"f1","type":"string"}]}'
+playground topic produce -t gcs_topic --nb-messages 10 --forced-value '{"f1":"value%g"}' << 'EOF'
+{
+  "type": "record",
+  "name": "myrecord",
+  "fields": [
+    {
+      "name": "f1",
+      "type": "string"
+    }
+  ]
+}
+EOF
 
 
 log "Creating GCS Sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class": "io.confluent.connect.gcs.GcsSinkConnector",
-               "tasks.max" : "1",
-               "topics" : "gcs_topic",
-               "gcs.bucket.name" : "'"$GCS_BUCKET_NAME"'",
-               "gcs.part.size": "5242880",
-               "flush.size": "3",
-               "gcs.credentials.path": "/tmp/keyfile.json",
-               "storage.class": "io.confluent.connect.gcs.storage.GcsStorage",
-               "format.class": "io.confluent.connect.gcs.format.avro.AvroFormat",
-               "partitioner.class": "io.confluent.connect.storage.partitioner.DefaultPartitioner",
-               "schema.compatibility": "NONE",
-               "confluent.topic.bootstrap.servers": "broker:9092",
-               "confluent.topic.replication.factor": "1"
-          }' \
-     http://localhost:8083/connectors/gcs-sink/config | jq .
+playground connector create-or-update --connector gcs-sink << EOF
+{
+    "connector.class": "io.confluent.connect.gcs.GcsSinkConnector",
+    "tasks.max" : "1",
+    "topics" : "gcs_topic",
+    "gcs.bucket.name" : "$GCS_BUCKET_NAME",
+    "gcs.part.size": "5242880",
+    "flush.size": "3",
+    "gcs.credentials.path": "/tmp/keyfile.json",
+    "storage.class": "io.confluent.connect.gcs.storage.GcsStorage",
+    "format.class": "io.confluent.connect.gcs.format.avro.AvroFormat",
+    "partitioner.class": "io.confluent.connect.storage.partitioner.DefaultPartitioner",
+    "schema.compatibility": "NONE",
+    "confluent.topic.bootstrap.servers": "broker:9092",
+    "confluent.topic.replication.factor": "1"
+}
+EOF
 
 sleep 10
 

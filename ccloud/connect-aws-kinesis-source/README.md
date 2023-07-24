@@ -67,13 +67,13 @@ $ curl -X PUT \
         "connector.class":"io.confluent.connect.kinesis.KinesisSourceConnector",
                "tasks.max": "1",
                "kafka.topic": "kinesis_topic",
-               "kinesis.stream": "'"$KINESIS_STREAM_NAME"'",
+               "kinesis.stream": "$KINESIS_STREAM_NAME",
                "confluent.license": "",
                "name": "kinesis-source",
                "confluent.topic.ssl.endpoint.identification.algorithm" : "https",
                "confluent.topic.sasl.mechanism" : "PLAIN",
                "confluent.topic.bootstrap.servers": "${file:/data:bootstrap.servers}",
-               "confluent.topic.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/data:sasl.username}\" password=\"${file:/data:sasl.password}\";",
+               "confluent.topic.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"\${file:/data:sasl.username}\" password=\"\${file:/data:sasl.password}\";",
                "confluent.topic.security.protocol" : "SASL_SSL",
                "confluent.topic.replication.factor": "3"
           }' \
@@ -83,7 +83,7 @@ $ curl -X PUT \
 Verify we have received the data in kinesis_topic topic:
 
 ```
-playground topic consume --topic kinesis_topic --min-expected-messages 1
+playground topic consume --topic kinesis_topic --min-expected-messages 1 --timeout 60
 ```
 
 Delete your stream and clean up resources to avoid incurring any unintended charges:

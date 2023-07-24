@@ -120,25 +120,24 @@ $ aws sqs send-message-batch --queue-url $QUEUE_URL --entries file://send-messag
 The connector is created with:
 
 ```bash
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector sqs-source << EOF
+{
         "connector.class": "io.confluent.connect.sqs.source.SqsSourceConnector",
                "tasks.max": "1",
                "kafka.topic": "test-sqs-source",
-               "sqs.url": "'"$QUEUE_URL"'",
+               "sqs.url": "$QUEUE_URL",
                "confluent.license": "",
                "name": "sqs-source",
                "confluent.topic.bootstrap.servers": "broker:9092",
                "confluent.topic.replication.factor": "1"
-          }' \
-     http://localhost:8083/connectors/sqs-source/config | jq .
+          }
+EOF
 ```
 
 Verify we have received the data in test-sqs-source topic:
 
 ```bash
-playground topic consume --topic test-sqs-source --min-expected-messages 2
+playground topic consume --topic test-sqs-source --min-expected-messages 2 --timeout 60
 
 {
   "ApproximateFirstReceiveTimestamp": 1569859344138,
@@ -180,14 +179,12 @@ $ aws sqs send-message-batch --queue-url $QUEUE_URL --entries file://send-messag
 The connector is created with:
 
 ```bash
-curl -X PUT \
-     --cert ../../environment/2way-ssl/security/connect.certificate.pem --key ../../environment/2way-ssl/security/connect.key --tlsv1.2 --cacert ../../environment/2way-ssl/security/snakeoil-ca-1.crt \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector sqs-source-ssl << EOF
+{
                     "connector.class": "io.confluent.connect.sqs.source.SqsSourceConnector",
                     "tasks.max": "1",
                     "kafka.topic": "test-sqs-source-ssl",
-                    "sqs.url": "'"$QUEUE_URL"'",
+                    "sqs.url": "$QUEUE_URL",
                     "confluent.license": "",
                     "confluent.topic.bootstrap.servers": "broker:9092",
                     "confluent.topic.replication.factor": "1",
@@ -199,14 +196,14 @@ curl -X PUT \
                     "confluent.topic.ssl.keystore.type" : "JKS",
                     "confluent.topic.ssl.truststore.type" : "JKS",
                     "confluent.topic.security.protocol" : "SSL"
-          }' \
-     https://localhost:8083/connectors/sqs-source-ssl/config | jq .
+          }
+EOF
 ```
 
 Verify we have received the data in test-sqs-source topic:
 
 ```bash
-playground topic consume --topic test-sqs-source-ssl --min-expected-messages 2
+playground topic consume --topic test-sqs-source-ssl --min-expected-messages 2 --timeout 60
 ```
 
 ### With SASL_SSL authentication:
@@ -227,14 +224,12 @@ $ aws sqs send-message-batch --queue-url $QUEUE_URL --entries file://send-messag
 The connector is created with:
 
 ```bash
-curl -X PUT \
-     --cert ../../environment/sasl-ssl/security/connect.certificate.pem --key ../../environment/sasl-ssl/security/connect.key --tlsv1.2 --cacert ../../environment/sasl-ssl/security/snakeoil-ca-1.crt \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector sqs-source-sasl-ssl << EOF
+{
                     "connector.class": "io.confluent.connect.sqs.source.SqsSourceConnector",
                     "tasks.max": "1",
                     "kafka.topic": "test-sqs-source-sasl-ssl",
-                    "sqs.url": "'"$QUEUE_URL"'",
+                    "sqs.url": "$QUEUE_URL",
                     "confluent.license": "",
                     "confluent.topic.bootstrap.servers": "broker:9092",
                     "confluent.topic.replication.factor": "1",
@@ -246,14 +241,14 @@ curl -X PUT \
                     "confluent.topic.security.protocol" : "SASL_SSL",
                     "confluent.topic.sasl.mechanism": "PLAIN",
                     "confluent.topic.sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required  username=\"client\" password=\"client-secret\";"
-          }' \
-     https://localhost:8083/connectors/sqs-source-sasl-ssl/config | jq .
+          }
+EOF
 ```
 
 Verify we have received the data in test-sqs-source topic:
 
 ```bash
-playground topic consume --topic test-sqs-source-sasl-ssl --min-expected-messages 2
+playground topic consume --topic test-sqs-source-sasl-ssl --min-expected-messages 2 --timeout 60
 ```
 
 N.B: Control Center is reachable at [http://127.0.0.1:9021](http://127.0.0.1:9021])

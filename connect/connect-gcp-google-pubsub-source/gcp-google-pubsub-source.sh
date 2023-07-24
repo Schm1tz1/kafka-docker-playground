@@ -52,7 +52,7 @@ log "Create a Pub/Sub topic called topic-1"
 docker run -i --volumes-from gcloud-config google/cloud-sdk:latest gcloud pubsub --project ${GCP_PROJECT} topics create topic-1
 
 log "Create a Pub/Sub subscription called subscription-1"
-docker run -i --volumes-from gcloud-config google/cloud-sdk:latest gcloud pubsub --project ${GCP_PROJECT} subscriptions create --topic topic-1 subscription-1
+docker run -i --volumes-from gcloud-config google/cloud-sdk:latest gcloud pubsub --project ${GCP_PROJECT} subscriptions create --topic topic-1 subscription-1 --ack-deadline 60
 
 log "Publish three messages to topic-1"
 docker run -i --volumes-from gcloud-config google/cloud-sdk:latest gcloud pubsub --project ${GCP_PROJECT} topics publish topic-1 --message "Peter"
@@ -62,26 +62,25 @@ docker run -i --volumes-from gcloud-config google/cloud-sdk:latest gcloud pubsub
 sleep 10
 
 log "Creating Google Cloud Pub/Sub Group Kafka Source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class" : "com.google.pubsub.kafka.source.CloudPubSubSourceConnector",
-               "tasks.max" : "1",
-               "kafka.topic" : "pubsub-topic",
-               "cps.project" : "'"$GCP_PROJECT"'",
-               "cps.topic" : "topic-1",
-               "cps.subscription" : "subscription-1",
-               "gcp.credentials.file.path" : "/tmp/keyfile.json",
-               "errors.tolerance": "all",
-               "errors.log.enable": "true",
-               "errors.log.include.messages": "true"
-          }' \
-     http://localhost:8083/connectors/pubsub-source/config | jq .
+playground connector create-or-update --connector pubsub-source << EOF
+{
+     "connector.class" : "com.google.pubsub.kafka.source.CloudPubSubSourceConnector",
+     "tasks.max" : "1",
+     "kafka.topic" : "pubsub-topic",
+     "cps.project" : "$GCP_PROJECT",
+     "cps.topic" : "topic-1",
+     "cps.subscription" : "subscription-1",
+     "gcp.credentials.file.path" : "/tmp/keyfile.json",
+     "errors.tolerance": "all",
+     "errors.log.enable": "true",
+     "errors.log.include.messages": "true"
+}
+EOF
 
 sleep 10
 
 log "Verify messages are in topic pubsub-topic"
-playground topic consume --topic pubsub-topic --min-expected-messages 3
+playground topic consume --topic pubsub-topic --min-expected-messages 3 --timeout 60
 
 log "Delete topic and subscription"
 docker run -i --volumes-from gcloud-config google/cloud-sdk:latest gcloud pubsub --project ${GCP_PROJECT} topics delete topic-1

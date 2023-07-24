@@ -17,6 +17,8 @@ Simply run:
 $ playground run -f mongo<tab>
 ```
 
+mongo-express UI is available at [http://localhost:18081/](http://localhost:18081/)
+
 ## Details of what the script is doing
 
 
@@ -86,7 +88,7 @@ $ curl -X PUT \
 Verifying topic dbserver1.inventory.customers
 
 ```bash
-playground topic consume --topic dbserver1.inventory.customers --min-expected-messages 1
+playground topic consume --topic dbserver1.inventory.customers --min-expected-messages 1 --timeout 60
 ```
 
 Result is:

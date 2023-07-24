@@ -42,26 +42,25 @@ fi
 ${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
 
 log "Creating GCP Firebase Source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class" : "io.confluent.connect.firebase.FirebaseSourceConnector",
-               "tasks.max" : "1",
-               "gcp.firebase.credentials.path": "/tmp/keyfile.json",
-               "gcp.firebase.database.reference": "https://'"$GCP_PROJECT"'.firebaseio.com/musicBlog",
-               "gcp.firebase.snapshot":"true",
-               "confluent.topic.bootstrap.servers": "broker:9092",
-               "confluent.topic.replication.factor": "1",
-               "errors.tolerance": "all",
-               "errors.log.enable": "true",
-               "errors.log.include.messages": "true"
-          }' \
-     http://localhost:8083/connectors/firebase-source/config | jq .
+playground connector create-or-update --connector firebase-source << EOF
+{
+     "connector.class" : "io.confluent.connect.firebase.FirebaseSourceConnector",
+     "tasks.max" : "1",
+     "gcp.firebase.credentials.path": "/tmp/keyfile.json",
+     "gcp.firebase.database.reference": "https://$GCP_PROJECT.firebaseio.com/musicBlog",
+     "gcp.firebase.snapshot":"true",
+     "confluent.topic.bootstrap.servers": "broker:9092",
+     "confluent.topic.replication.factor": "1",
+     "errors.tolerance": "all",
+     "errors.log.enable": "true",
+     "errors.log.include.messages": "true"
+}
+EOF
 
 sleep 10
 
 log "Verify messages are in topic artists"
-playground topic consume --topic artists --min-expected-messages 3
+playground topic consume --topic artists --min-expected-messages 3 --timeout 60
 
 log "Verify messages are in topic songs"
-playground topic consume --topic songs --min-expected-messages 3
+playground topic consume --topic songs --min-expected-messages 3 --timeout 60

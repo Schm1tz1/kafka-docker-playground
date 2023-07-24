@@ -44,9 +44,9 @@ $ curl -X PUT \
      --data '{
                 "connector.class": "io.confluent.connect.azure.blob.storage.AzureBlobStorageSourceConnector",
                 "tasks.max": "1",
-                "azblob.account.name": "'"$AZURE_ACCOUNT_NAME"'",
-                "azblob.account.key": "'"$AZURE_ACCOUNT_KEY"'",
-                "azblob.container.name": "'"$AZURE_CONTAINER_NAME"'",
+                "azblob.account.name": "$AZURE_ACCOUNT_NAME",
+                "azblob.account.key": "$AZURE_ACCOUNT_KEY",
+                "azblob.container.name": "$AZURE_CONTAINER_NAME",
                 "format.class": "io.confluent.connect.cloud.storage.source.format.CloudStorageAvroFormat",
                 "confluent.license": "",
                 "confluent.topic.bootstrap.servers": "broker:9092",
@@ -54,7 +54,7 @@ $ curl -X PUT \
                 "transforms" : "AddPrefix",
                 "transforms.AddPrefix.type" : "org.apache.kafka.connect.transforms.RegexRouter",
                 "transforms.AddPrefix.regex" : ".*",
-                "transforms.AddPrefix.replacement" : "copy_of_$0"
+                "transforms.AddPrefix.replacement" : "copy_of_\$0"
           }' \
      http://localhost:8083/connectors/azure-blob-source/config | jq .
 ```
@@ -62,7 +62,7 @@ $ curl -X PUT \
 Verifying topic copy_of_blob_topic
 
 ```bash
-playground topic consume --topic copy_of_blob_topic --min-expected-messages 3
+playground topic consume --topic copy_of_blob_topic --min-expected-messages 3 --timeout 60
 ```
 
 
@@ -78,14 +78,13 @@ az storage blob upload --account-name "${AZURE_ACCOUNT_NAME}" --account-key "${A
 Creating Generalized Azure Blob Storage Source connector:
 
 ```
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector azure-blob-source << EOF
+{
                 "connector.class": "io.confluent.connect.azure.blob.storage.AzureBlobStorageSourceConnector",
                 "tasks.max": "1",
-                "azblob.account.name": "'"$AZURE_ACCOUNT_NAME"'",
-                "azblob.account.key": "'"$AZURE_ACCOUNT_KEY"'",
-                "azblob.container.name": "'"$AZURE_CONTAINER_NAME"'",
+                "azblob.account.name": "$AZURE_ACCOUNT_NAME",
+                "azblob.account.key": "$AZURE_ACCOUNT_KEY",
+                "azblob.container.name": "$AZURE_CONTAINER_NAME",
                 "format.class": "io.confluent.connect.azure.blob.storage.format.json.JsonFormat",
                 "value.converter": "org.apache.kafka.connect.json.JsonConverter",
                 "value.converter.schemas.enable": "false",
@@ -96,14 +95,14 @@ curl -X PUT \
                 "confluent.license": "",
                 "confluent.topic.bootstrap.servers": "broker:9092",
                 "confluent.topic.replication.factor": "1"
-          }' \
-     http://localhost:8083/connectors/azure-blob-source/config | jq .
+          }
+EOF
 ```
 
 Verifying topic `quick-start-topic`:
 
 ```bash
-playground topic consume --topic quick-start-topic --min-expected-messages 9
+playground topic consume --topic quick-start-topic --min-expected-messages 9 --timeout 60
 ```
 
 Results:

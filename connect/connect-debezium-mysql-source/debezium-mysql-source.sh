@@ -17,7 +17,7 @@ then
      do
      set +e
      log "🏗 Building jar for ${component}"
-     docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${DIR}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${DIR}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
+     docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${PWD}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${PWD}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
      if [ $? != 0 ]
      then
           logerror "ERROR: failed to build java component "
@@ -75,38 +75,41 @@ INSERT INTO team (
 EOF
 
 log "Creating Debezium MySQL source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-              "connector.class": "io.debezium.connector.mysql.MySqlConnector",
-              "tasks.max": "1",
-              "database.hostname": "mysql",
-              "database.port": "3306",
-              "database.user": "debezium",
-              "database.password": "dbz",
-              "database.server.id": "223344",
+playground connector create-or-update --connector debezium-mysql-source << EOF
+{
+  "connector.class": "io.debezium.connector.mysql.MySqlConnector",
+  "tasks.max": "1",
+  "database.hostname": "mysql",
+  "database.port": "3306",
+  "database.user": "debezium",
+  "database.password": "dbz",
+  "database.server.id": "223344",
 
-              "database.names" : "mydb",
-              "_comment": "old version before 2.x",
-              "database.server.name": "server1",
-              "database.history.kafka.bootstrap.servers": "broker:9092",
-              "database.history.kafka.topic": "schema-changes.mydb",
-              "_comment": "new version since 2.x",
-              "topic.prefix": "server1",
-              "schema.history.internal.kafka.bootstrap.servers": "broker:9092",
-              "schema.history.internal.kafka.topic": "schema-changes.mydb",
+  "database.names" : "mydb",
+  "_comment": "old version before 2.x",
+  "database.server.name": "server1",
+  "database.history.kafka.bootstrap.servers": "broker:9092",
+  "database.history.kafka.topic": "schema-changes.mydb",
+  "_comment": "new version since 2.x",
+  "topic.prefix": "server1",
+  "schema.history.internal.kafka.bootstrap.servers": "broker:9092",
+  "schema.history.internal.kafka.topic": "schema-changes.mydb",
 
-              "transforms": "RemoveDots",
-              "transforms.RemoveDots.type": "org.apache.kafka.connect.transforms.RegexRouter",
-              "transforms.RemoveDots.regex": "(.*)\\.(.*)\\.(.*)",
-              "transforms.RemoveDots.replacement": "$1_$2_$3"
-          }' \
-     http://localhost:8083/connectors/debezium-mysql-source/config | jq .
+  "transforms": "RemoveDots",
+  "transforms.RemoveDots.type": "org.apache.kafka.connect.transforms.RegexRouter",
+  "transforms.RemoveDots.regex": "(.*)\\\\.(.*)\\\\.(.*)",
+  "transforms.RemoveDots.replacement": "\$1_\$2_\$3",
+
+  "_comment:": "remove _ to use ExtractNewRecordState smt",
+  "_transforms": "unwrap,RemoveDots",
+  "_transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState"
+}
+EOF
 
 sleep 5
 
 log "Verifying topic server1_mydb_team"
-playground topic consume --topic server1_mydb_team --min-expected-messages 2
+playground topic consume --topic server1_mydb_team --min-expected-messages 2 --timeout 60
 
 if [ ! -z "$SQL_DATAGEN" ]
 then

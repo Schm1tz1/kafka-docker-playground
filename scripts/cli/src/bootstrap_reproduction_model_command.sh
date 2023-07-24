@@ -113,6 +113,12 @@ then
     logerror "example <$base1> must be source connector example when building a pipeline !"
     exit 1
   fi
+
+  if [[ "$dir2" != connect* ]]
+  then
+    logerror "example <$dir2> is not from connect folder, only connect in connect folder are supported"
+    exit 1
+  fi
 fi
 
 if [ "$producer" != "none" ]
@@ -163,6 +169,38 @@ else
   cp $test_file $repro_test_file
 fi
 
+tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
+trap 'rm -rf $tmp_dir' EXIT
+echo "#!/bin/bash" > $tmp_dir/intro
+echo "###############################################" >> $tmp_dir/intro
+echo "# 🗓️ date: `date`" >> $tmp_dir/intro
+echo "# 👤 author: `whoami`" >> $tmp_dir/intro
+echo "# 💡 description: $description" >> $tmp_dir/intro
+if [[ $description =~ ^[0-9]{6} ]]
+then
+  numbers="${BASH_REMATCH[0]}"
+  echo "# 🔮 ticket: https://confluent.zendesk.com/agent/tickets/$numbers" >> $tmp_dir/intro
+fi
+echo "# 🙋 how to use: https://github.com/confluentinc/kafka-docker-playground-internal/tree/master#how-to-use" >> $tmp_dir/intro
+string=$(grep "Quickly test " README.md)
+url=$(echo "$string" | grep -oE 'https?://[^ ]+')
+url=${url//)/}
+
+if [[ $url =~ "http" ]]
+then
+  short_url=$(echo $url | cut -d '#' -f 1)
+  echo "# 🌐 documentation: $short_url" >> $tmp_dir/intro
+fi
+echo "# 🐳 playground website: https://kafka-docker-playground.io" >> $tmp_dir/intro
+echo "# 💬 comments:" >> $tmp_dir/intro
+echo "#" >> $tmp_dir/intro
+echo "###############################################" >> $tmp_dir/intro
+echo "" >> $tmp_dir/intro
+
+cat $tmp_dir/intro > $tmp_dir/tmp_file
+cat $repro_test_file | grep -v "#!/bin/bash" >> $tmp_dir/tmp_file
+mv $tmp_dir/tmp_file $repro_test_file
+
 for file in README.md docker-compose*.yml keyfile.json stop.sh .gitignore sql-datagen
 do
   if [ -f $file ]
@@ -172,10 +210,9 @@ do
     cd - > /dev/null
   fi
 done
-  
+
 if [ "$producer" != "none" ]
 then
-  tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
   case "${producer}" in
     avro)
       echo "               \"key.converter\": \"org.apache.kafka.connect.storage.StringConverter\"," > $tmp_dir/key_converter
@@ -487,7 +524,7 @@ then
   kafka_cli_producer_error=0
   kafka_cli_producer_eof=0
   line_kafka_cli_producer=$(egrep -n "kafka-console-producer|kafka-avro-console-producer|kafka-json-schema-console-producer|kafka-protobuf-console-producer" $repro_test_file | cut -d ":" -f 1 | tail -n1)
-  if [ $? != 0 ]
+  if [ $? != 0 ] || [ "$line_kafka_cli_producer" == "" ]
   then
       logwarn "Could not find kafka cli producer!"
       kafka_cli_producer_error=1
@@ -633,8 +670,6 @@ then
   mkdir -p $repro_dir/$custom_smt_name/
   cp -Ra ../../other/custom-smt/MyCustomSMT/* $repro_dir/$custom_smt_name/
 
-  tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
-
   get_custom_smt_build_heredoc
   # log "✨ Adding command to build jar for $custom_smt_name to $repro_test_file"
   cp $repro_test_file $tmp_dir/tmp_file
@@ -700,8 +735,6 @@ fi
 #### pipeline
 if [[ -n "$sink_file" ]]
 then
-  tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
-
   if [[ $sink_file == *"@"* ]]
   then
     sink_file=$(echo "$sink_file" | cut -d "@" -f 2)
@@ -934,6 +967,28 @@ then
   fi
 fi
 
+cat $repro_test_file > $tmp_dir/tmp_file
+
+
+echo "" >> $tmp_dir/tmp_file
+echo "exit 0" >> $tmp_dir/tmp_file
+echo "" >> $tmp_dir/tmp_file
+echo "" >> $tmp_dir/tmp_file
+# echo ": '" >> $tmp_dir/tmp_file
+
+echo "#################################################################################################" >> $tmp_dir/tmp_file
+echo "# 🚀 below is a list of snippets that can help you to build your example !" >> $tmp_dir/tmp_file
+echo "# 🚀 for full documentation, visit https://kafka-docker-playground.io/#/ !" >> $tmp_dir/tmp_file
+echo "#################################################################################################" >> $tmp_dir/tmp_file
+
+if [[ "$base1" == *sink ]]
+then
+  cat $root_folder/scripts/cli/snippets/sink.sh | grep -v "#!/bin/bash" >> $tmp_dir/tmp_file
+fi
+
+# echo "'" >> $tmp_dir/tmp_file
+mv $tmp_dir/tmp_file $repro_test_file
+
 chmod u+x $repro_test_file
 repro_test_filename=$(basename -- "$repro_test_file")
 
@@ -990,47 +1045,50 @@ fi
 
 if [[ -n "$enable_ksqldb" ]]
 then
-  flag_list="$flag_list --enable-ksqldb"
+  force_enable --enable_ksqldb ENABLE_KSQLDB
 fi
 
 if [[ -n "$enable_c3" ]]
 then
-  flag_list="$flag_list --enable-control-center"
+  force_enable --enable-control-center ENABLE_CONTROL_CENTER
 fi
 
 if [[ -n "$enable_conduktor" ]]
 then
-  flag_list="$flag_list --enable-conduktor"
+  force_enable --enable-conduktor ENABLE_CONDUKTOR
 fi
 
 if [[ -n "$enable_multiple_brokers" ]]
 then
-  flag_list="$flag_list --enable-multiple-broker"
+  force_enable --enable-multiple-broker ENABLE_KAFKA_NODES
 fi
 
 if [[ -n "$enable_multiple_connect_workers" ]]
 then
-  flag_list="$flag_list --enable-multiple-connect-workers"
+  force_enable --enable-multiple-connect-workers ENABLE_CONNECT_NODES
+
+  yq -i '.services.connect2 = .services.connect' $docker_compose_test_file
+  yq -i '.services.connect3 = .services.connect' $docker_compose_test_file
 fi
 
 if [[ -n "$enable_jmx_grafana" ]]
 then
-  flag_list="$flag_list --enable-jmx-grafana"
+  force_enable --enable-jmx-grafana ENABLE_JMX_GRAFANA
 fi
 
 if [[ -n "$enable_kcat" ]]
 then
-  flag_list="$flag_list --enable-kcat"
+  force_enable --enable-kcat ENABLE_KCAT
 fi
 
 if [[ -n "$enable_sr_maven_plugin_app" ]]
 then
-  flag_list="$flag_list --enable-sr-maven-plugin-app"
+  force_enable --enable-sr-maven-plugin-app ENABLE_SR_MAVEN_PLUGIN_NODE
 fi
 
 if [[ -n "$enable_sql_datagen" ]]
 then
-  flag_list="$flag_list --enable-sql-datagen"
+  force_enable --enable-sql-datagen SQL_DATAGEN
 fi
 
 log "🕹️ Ready? Run it now?"

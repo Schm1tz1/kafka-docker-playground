@@ -75,38 +75,36 @@ log "##  SSL authentication"
 log "########"
 
 log "Creating SQS Source connector with SSL authentication"
-curl -X PUT \
-     --cert ../../environment/2way-ssl/security/connect.certificate.pem --key ../../environment/2way-ssl/security/connect.key --tlsv1.2 --cacert ../../environment/2way-ssl/security/snakeoil-ca-1.crt \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class": "io.confluent.connect.sqs.source.SqsSourceConnector",
-               "tasks.max": "1",
-               "kafka.topic": "test-sqs-source-ssl",
-               "sqs.url": "'"$QUEUE_URL"'",
-               "aws.access.key.id" : "'"$AWS_ACCESS_KEY_ID"'",
-               "aws.secret.key.id": "'"$AWS_SECRET_ACCESS_KEY"'",
-               "confluent.license": "",
-               "confluent.topic.bootstrap.servers": "broker:9092",
-               "confluent.topic.replication.factor": "1",
-               "confluent.topic.ssl.keystore.location" : "/etc/kafka/secrets/kafka.connect.keystore.jks",
-               "confluent.topic.ssl.keystore.password" : "confluent",
-               "confluent.topic.ssl.key.password" : "confluent",
-               "confluent.topic.ssl.truststore.location" : "/etc/kafka/secrets/kafka.connect.truststore.jks",
-               "confluent.topic.ssl.truststore.password" : "confluent",
-               "confluent.topic.ssl.keystore.type" : "JKS",
-               "confluent.topic.ssl.truststore.type" : "JKS",
-               "confluent.topic.security.protocol" : "SSL",
-               "errors.tolerance": "all",
-               "errors.log.enable": "true",
-               "errors.log.include.messages": "true"
-          }' \
-     https://localhost:8083/connectors/sqs-source-ssl/config | jq .
+playground connector create-or-update --connector sqs-source-ssl << EOF
+{
+    "connector.class": "io.confluent.connect.sqs.source.SqsSourceConnector",
+    "tasks.max": "1",
+    "kafka.topic": "test-sqs-source-ssl",
+    "sqs.url": "$QUEUE_URL",
+    "aws.access.key.id" : "$AWS_ACCESS_KEY_ID",
+    "aws.secret.key.id": "$AWS_SECRET_ACCESS_KEY",
+    "confluent.license": "",
+    "confluent.topic.bootstrap.servers": "broker:9092",
+    "confluent.topic.replication.factor": "1",
+    "confluent.topic.ssl.keystore.location" : "/etc/kafka/secrets/kafka.connect.keystore.jks",
+    "confluent.topic.ssl.keystore.password" : "confluent",
+    "confluent.topic.ssl.key.password" : "confluent",
+    "confluent.topic.ssl.truststore.location" : "/etc/kafka/secrets/kafka.connect.truststore.jks",
+    "confluent.topic.ssl.truststore.password" : "confluent",
+    "confluent.topic.ssl.keystore.type" : "JKS",
+    "confluent.topic.ssl.truststore.type" : "JKS",
+    "confluent.topic.security.protocol" : "SSL",
+    "errors.tolerance": "all",
+    "errors.log.enable": "true",
+    "errors.log.include.messages": "true"
+}
+EOF
 
 
 sleep 10
 
 log "Verify we have received the data in test-sqs-source-ssl topic"
-playground topic consume --topic test-sqs-source-ssl --min-expected-messages 2
+playground topic consume --topic test-sqs-source-ssl --min-expected-messages 2 --timeout 60
 
 log "Delete queue ${QUEUE_URL}"
 aws sqs delete-queue --queue-url ${QUEUE_URL}

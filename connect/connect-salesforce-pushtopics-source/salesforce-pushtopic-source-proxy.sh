@@ -71,21 +71,20 @@ log "Blocking $DOMAIN IP $IP to make sure proxy is used"
 docker exec --privileged --user root connect bash -c "iptables -A INPUT -p tcp -s $IP -j DROP"
 
 log "Creating Salesforce PushTopics Source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector salesforce-pushtopic-source << EOF
+{
                     "connector.class": "io.confluent.salesforce.SalesforcePushTopicSourceConnector",
                     "kafka.topic": "sfdc-pushtopic-leads",
                     "tasks.max": "1",
                     "curl.logging": "true",
                     "salesforce.object" : "Lead",
-                    "salesforce.push.topic.name" : "'"$PUSH_TOPICS_NAME"'",
-                    "salesforce.instance" : "'"$SALESFORCE_INSTANCE"'",
-                    "salesforce.username" : "'"$SALESFORCE_USERNAME"'",
-                    "salesforce.password" : "'"$SALESFORCE_PASSWORD"'",
-                    "salesforce.password.token" : "'"$SALESFORCE_SECURITY_TOKEN"'",
-                    "salesforce.consumer.key" : "'"$SALESFORCE_CONSUMER_KEY"'",
-                    "salesforce.consumer.secret" : "'"$SALESFORCE_CONSUMER_PASSWORD"'",
+                    "salesforce.push.topic.name" : "$PUSH_TOPICS_NAME",
+                    "salesforce.instance" : "$SALESFORCE_INSTANCE",
+                    "salesforce.username" : "$SALESFORCE_USERNAME",
+                    "salesforce.password" : "$SALESFORCE_PASSWORD",
+                    "salesforce.password.token" : "$SALESFORCE_SECURITY_TOKEN",
+                    "salesforce.consumer.key" : "$SALESFORCE_CONSUMER_KEY",
+                    "salesforce.consumer.secret" : "$SALESFORCE_CONSUMER_PASSWORD",
                     "http.proxy": "nginx-proxy:8888",
                     "salesforce.initial.start" : "latest",
                     "connection.max.message.size": "10048576",
@@ -94,8 +93,8 @@ curl -X PUT \
                     "confluent.license": "",
                     "confluent.topic.bootstrap.servers": "broker:9092",
                     "confluent.topic.replication.factor": "1"
-          }' \
-     http://localhost:8083/connectors/salesforce-pushtopic-source/config | jq .
+          }
+EOF
 
 sleep 5
 
@@ -107,4 +106,4 @@ docker exec sfdx-cli sh -c "sfdx data:create:record  --target-org \"$SALESFORCE_
 sleep 30
 
 log "Verify we have received the data in sfdc-pushtopic-leads topic"
-playground topic consume --topic sfdc-pushtopic-leads --min-expected-messages 1
+playground topic consume --topic sfdc-pushtopic-leads --min-expected-messages 1 --timeout 60

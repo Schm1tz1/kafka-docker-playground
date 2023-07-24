@@ -91,48 +91,50 @@ EOF
 
 
 log "Creating Debezium MySQL source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class": "io.debezium.connector.mysql.MySqlConnector",
-                    "tasks.max": "1",
-                    "database.hostname": "mysql",
-                    "database.port": "3306",
-                    "database.user": "debezium",
-                    "database.password": "dbz",
-                    "database.server.id": "223344",
+playground connector create-or-update --connector debezium-mysql-source << EOF
+{
+  "connector.class": "io.debezium.connector.mysql.MySqlConnector",
+  "tasks.max": "1",
+  "database.hostname": "mysql",
+  "database.port": "3306",
+  "database.user": "debezium",
+  "database.password": "dbz",
+  "database.server.id": "223344",
 
-                    "database.names" : "mydb",
-                    "_comment": "old version before 2.x",
-                    "database.server.name": "server1",
-                    "database.history.kafka.bootstrap.servers": "broker:9092",
-                    "database.history.kafka.topic": "schema-changes.mydb",
-                    "_comment": "new version since 2.x",
-                    "topic.prefix": "server1",
-                    "schema.history.internal.kafka.bootstrap.servers": "broker:9092",
-                    "schema.history.internal.kafka.topic": "schema-changes.mydb",
+  "database.names" : "mydb",
+  "_comment": "old version before 2.x",
+  "database.server.name": "server1",
+  "database.history.kafka.bootstrap.servers": "broker:9092",
+  "database.history.kafka.topic": "schema-changes.mydb",
+  "_comment": "new version since 2.x",
+  "topic.prefix": "server1",
+  "schema.history.internal.kafka.bootstrap.servers": "broker:9092",
+  "schema.history.internal.kafka.topic": "schema-changes.mydb",
 
-                    "table.include.list": "mydb.team",
-                    "transforms": "RemoveDots",
-                    "transforms.RemoveDots.type": "org.apache.kafka.connect.transforms.RegexRouter",
-                    "transforms.RemoveDots.regex": "(.*)\\.(.*)\\.(.*)",
-                    "transforms.RemoveDots.replacement": "$1_$2_$3"
-          }' \
-     http://localhost:8083/connectors/debezium-mysql-source/config | jq .
+  "table.include.list": "mydb.team",
+  "transforms": "RemoveDots",
+  "transforms.RemoveDots.type": "org.apache.kafka.connect.transforms.RegexRouter",
+  "transforms.RemoveDots.regex": "(.*)\\\\.(.*)\\\\.(.*)",
+  "transforms.RemoveDots.replacement": "\$1_\$2_\$3",
+
+  "_comment:": "remove _ to use ExtractNewRecordState smt",
+  "_transforms": "unwrap,RemoveDots",
+  "_transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState"
+}
+EOF
 
 sleep 5
 
 log "Verifying topic server1_mydb_team"
-playground topic consume --topic server1_mydb_team --min-expected-messages 2
+playground topic consume --topic server1_mydb_team --min-expected-messages 2 --timeout 60
 
 log "Show content of customer table:"
 docker exec mysql bash -c "mysql --user=root --password=password --database=mydb -e 'select * from customers'"
 
 log "Adding customers table to the connector"
 
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector debezium-mysql-source << EOF
+{
                "connector.class": "io.debezium.connector.mysql.MySqlConnector",
                     "tasks.max": "1",
                     "database.hostname": "mysql",
@@ -158,10 +160,10 @@ curl -X PUT \
                     "signal.kafka.bootstrap.servers": "broker:9092",
                     "transforms": "RemoveDots",
                     "transforms.RemoveDots.type": "org.apache.kafka.connect.transforms.RegexRouter",
-                    "transforms.RemoveDots.regex": "(.*)\\.(.*)\\.(.*)",
-                    "transforms.RemoveDots.replacement": "$1_$2_$3"
-          }' \
-     http://localhost:8083/connectors/debezium-mysql-source/config | jq .
+                    "transforms.RemoveDots.regex": "(.*)\\\\.(.*)\\\\.(.*)",
+                    "transforms.RemoveDots.replacement": "\$1_\$2_\$3"
+          }
+EOF
 
 log "insert a record in customers"
 docker exec -i mysql mysql --user=root --password=password --database=mydb << EOF
@@ -178,7 +180,7 @@ EOF
 
 set +e
 log "Verifying topic server1_mydb_customers : there will be only the new record"
-playground topic consume --topic server1_mydb_customers --min-expected-messages 3
+playground topic consume --topic server1_mydb_customers --min-expected-messages 3 --timeout 60
 set -e
 
 log "Send Signal to the topic to start incremental snapshot"
@@ -189,4 +191,4 @@ EOF
 sleep 20
 
 log "Verifying topic server1_mydb_customer again, the 3 records are there"
-playground topic consume --topic server1_mydb_customers --min-expected-messages 3
+playground topic consume --topic server1_mydb_customers --min-expected-messages 3 --timeout 60

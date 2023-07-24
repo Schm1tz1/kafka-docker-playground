@@ -56,7 +56,7 @@ then
 fi
 
 set +e
-delete_topic _confluent-command
+playground topic delete --topic _confluent-command
 set -e
 
 ${DIR}/../../ccloud/environment/start.sh "${PWD}/docker-compose.servicenow-source.yml"
@@ -74,30 +74,29 @@ if ! version_gt $TAG_BASE "5.9.9"; then
      # note: for 6.x CONNECT_TOPIC_CREATION_ENABLE=true
      log "Creating topic in Confluent Cloud (auto.create.topics.enable=false)"
      set +e
-     create_topic topic-servicenow
+     playground topic create --topic topic-servicenow
      set -e
 fi
 
 TODAY=$(date -u '+%Y-%m-%d')
 
 log "Creating ServiceNow Source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class": "io.confluent.connect.servicenow.ServiceNowSourceConnector",
-               "kafka.topic": "topic-servicenow",
-               "servicenow.url": "'"$SERVICENOW_URL"'",
-               "tasks.max": "1",
-               "servicenow.table": "incident",
-               "servicenow.user": "admin",
-               "servicenow.password": "'"$SERVICENOW_PASSWORD"'",
-               "servicenow.since": "'"$TODAY"'",
-               "topic.creation.default.replication.factor": "-1",
-               "topic.creation.default.partitions": "-1",
-               "key.converter": "org.apache.kafka.connect.json.JsonConverter",
-               "value.converter": "org.apache.kafka.connect.json.JsonConverter"
-          }' \
-     http://localhost:8083/connectors/servicenow-source/config | jq .
+playground connector create-or-update --connector servicenow-source << EOF
+{
+     "connector.class": "io.confluent.connect.servicenow.ServiceNowSourceConnector",
+     "kafka.topic": "topic-servicenow",
+     "servicenow.url": "$SERVICENOW_URL",
+     "tasks.max": "1",
+     "servicenow.table": "incident",
+     "servicenow.user": "admin",
+     "servicenow.password": "$SERVICENOW_PASSWORD",
+     "servicenow.since": "$TODAY",
+     "topic.creation.default.replication.factor": "-1",
+     "topic.creation.default.partitions": "-1",
+     "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+     "value.converter": "org.apache.kafka.connect.json.JsonConverter"
+}
+EOF
 
 sleep 10
 
@@ -114,5 +113,5 @@ docker exec -e SERVICENOW_URL="$SERVICENOW_URL" -e SERVICENOW_PASSWORD="$SERVICE
 sleep 5
 
 log "Verify we have received the data in topic-servicenow topic"
-playground topic consume --topic topic-servicenow --min-expected-messages 1
+playground topic consume --topic topic-servicenow --min-expected-messages 1 --timeout 60
 

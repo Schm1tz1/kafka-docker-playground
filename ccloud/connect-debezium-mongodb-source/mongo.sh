@@ -20,8 +20,8 @@ if ! version_gt $TAG_BASE "5.9.9"; then
      # note: for 6.x CONNECT_TOPIC_CREATION_ENABLE=true
      log "Creating topic in Confluent Cloud (auto.create.topics.enable=false)"
      set +e
-     create_topic dbserver1.inventory.customers
-     create_topic dbserver1.config.system.sessions
+     playground topic create --topic dbserver1.inventory.customers
+     playground topic create --topic dbserver1.config.system.sessions
      set -e
 fi
 
@@ -59,9 +59,8 @@ db.customers.find().pretty();
 EOF
 
 log "Creating Debezium MongoDB source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector debezium-mongodb-source << EOF
+{
                "connector.class" : "io.debezium.connector.mongodb.MongoDbConnector",
                "tasks.max" : "1",
                "mongodb.hosts" : "debezium/mongodb:27017",
@@ -75,11 +74,11 @@ curl -X PUT \
 
                "topic.creation.default.replication.factor": "-1",
                "topic.creation.default.partitions": "-1"
-          }' \
-     http://localhost:8083/connectors/debezium-mongodb-source/config | jq .
+          }
+EOF
 
 
 sleep 5
 
 log "Verifying topic dbserver1.inventory.customers"
-playground topic consume --topic dbserver1.inventory.customers --min-expected-messages 1
+playground topic consume --topic dbserver1.inventory.customers --min-expected-messages 1 --timeout 60

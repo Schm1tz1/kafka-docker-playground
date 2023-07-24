@@ -39,7 +39,7 @@ $ curl -X PUT \
                "transforms" : "AddPrefix",
                "transforms.AddPrefix.type" : "org.apache.kafka.connect.transforms.RegexRouter",
                "transforms.AddPrefix.regex" : ".*",
-               "transforms.AddPrefix.replacement" : "copy_of_$0"
+               "transforms.AddPrefix.replacement" : "copy_of_\$0"
           }' \
      http://localhost:8083/connectors/hdfs3-source/config | jq .
 ```
@@ -47,7 +47,7 @@ $ curl -X PUT \
 Verifying topic `copy_of_test_hdfs`:
 
 ```bash
-playground topic consume --topic copy_of_test_hdfs --min-expected-messages 9
+playground topic consume --topic copy_of_test_hdfs --min-expected-messages 9 --timeout 60
 ```
 
 Results:

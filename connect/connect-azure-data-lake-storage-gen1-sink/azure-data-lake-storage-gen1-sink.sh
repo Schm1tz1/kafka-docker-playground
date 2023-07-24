@@ -49,6 +49,16 @@ log "Registering active directory App $AZURE_AD_APP_NAME"
 AZURE_DATALAKE_CLIENT_ID=$(az ad app create --display-name "$AZURE_AD_APP_NAME" --is-fallback-public-client false --sign-in-audience AzureADandPersonalMicrosoftAccount --query appId -o tsv)
 AZURE_DATALAKE_CLIENT_PASSWORD=$(az ad app credential reset --id $AZURE_DATALAKE_CLIENT_ID | jq -r '.password')
 
+if [ "$AZURE_DATALAKE_CLIENT_PASSWORD" == "" ]
+then
+  logerror "password could not be retrieved"
+  if [ -z "$CI" ]
+  then
+    az ad app credential reset --id $AZURE_DATALAKE_CLIENT_ID
+  fi
+  exit 1
+fi
+
 log "Creating Service Principal associated to the App"
 SERVICE_PRINCIPAL_ID=$(az ad sp create --id $AZURE_DATALAKE_CLIENT_ID | jq -r '.id')
 
@@ -72,27 +82,36 @@ sed -e "s|:AZURE_DATALAKE_CLIENT_ID:|$AZURE_DATALAKE_CLIENT_ID|g" \
 ${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
 
 log "Creating Data Lake Storage Gen1 Sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-            "connector.class": "io.confluent.connect.azure.datalake.gen1.AzureDataLakeGen1StorageSinkConnector",
-            "tasks.max": "1",
-            "topics": "datalake_topic",
-            "flush.size": "3",
-            "azure.datalake.client.id": "${file:/data:AZURE_DATALAKE_CLIENT_ID}",
-            "azure.datalake.client.key": "${file:/data:AZURE_DATALAKE_CLIENT_PASSWORD}",
-            "azure.datalake.account.name": "${file:/data:AZURE_DATALAKE_ACCOUNT_NAME}",
-            "azure.datalake.token.endpoint": "${file:/data:AZURE_DATALAKE_TOKEN_ENDPOINT}",
-            "format.class": "io.confluent.connect.azure.storage.format.avro.AvroFormat",
-            "confluent.license": "",
-            "confluent.topic.bootstrap.servers": "broker:9092",
-            "confluent.topic.replication.factor": "1"
-          }' \
-     http://localhost:8083/connectors/azure-datalake-gen1-sink/config | jq .
+playground connector create-or-update --connector azure-datalake-gen1-sink << EOF
+{
+    "connector.class": "io.confluent.connect.azure.datalake.gen1.AzureDataLakeGen1StorageSinkConnector",
+    "tasks.max": "1",
+    "topics": "datalake_topic",
+    "flush.size": "3",
+    "azure.datalake.client.id": "\${file:/data:AZURE_DATALAKE_CLIENT_ID}",
+    "azure.datalake.client.key": "\${file:/data:AZURE_DATALAKE_CLIENT_PASSWORD}",
+    "azure.datalake.account.name": "\${file:/data:AZURE_DATALAKE_ACCOUNT_NAME}",
+    "azure.datalake.token.endpoint": "\${file:/data:AZURE_DATALAKE_TOKEN_ENDPOINT}",
+    "format.class": "io.confluent.connect.azure.storage.format.avro.AvroFormat",
+    "confluent.license": "",
+    "confluent.topic.bootstrap.servers": "broker:9092",
+    "confluent.topic.replication.factor": "1"
+}
+EOF
 
 
-log "Sending messages to topic datalake_topic"
-seq -f "{\"f1\": \"value%g\"}" 10 | docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic datalake_topic --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"f1","type":"string"}]}'
+playground topic produce -t datalake_topic --nb-messages 10 --forced-value '{"f1":"value%g"}' << 'EOF'
+{
+  "type": "record",
+  "name": "myrecord",
+  "fields": [
+    {
+      "name": "f1",
+      "type": "string"
+    }
+  ]
+}
+EOF
 
 sleep 20
 

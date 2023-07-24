@@ -138,8 +138,15 @@ sleep 60
 
 if ! version_gt $JDBC_CONNECTOR_VERSION "9.9.9"; then
      docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.ssl.yml" up -d
+
+     command="source ${DIR}/../../scripts/utils.sh && docker-compose -f ../../environment/plaintext/docker-compose.yml -f ${PWD}/docker-compose.plaintext.ssl.yml up -d ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d"
+     echo "$command" > /tmp/playground-command
+     log "✨ If you modify a docker-compose file and want to re-create the container(s), run cli command playground container recreate"
 else
      docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.no-ojdbc-ssl.yml" up -d
+
+     command="source ${DIR}/../../scripts/utils.sh && docker-compose -f ../../environment/plaintext/docker-compose.yml -f ${PWD}/docker-compose.plaintext.no-ojdbc-ssl.yml up -d ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d"
+     echo "$command" > /tmp/playground-command
 fi
 
 ../../scripts/wait-for-connect-and-controlcenter.sh
@@ -148,26 +155,71 @@ sleep 10
 
 log "Creating Oracle sink connector"
 
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
-               "tasks.max": "1",
-               "connection.user": "C##MYUSER",
-               "connection.password": "mypassword",
-               "connection.oracle.net.ssl_server_dn_match": "true",
-               "connection.url": "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCPS)(HOST=oracle)(PORT=1532))(CONNECT_DATA=(SERVICE_NAME=ORCLCDB))(SECURITY=(SSL_SERVER_CERT_DN=\"CN=server,C=US\")))",
-               "topics": "ORDERS",
-               "auto.create": "true",
-               "insert.mode":"insert",
-               "auto.evolve":"true"
-          }' \
-     http://localhost:8083/connectors/oracle-sink-ssl/config | jq .
+playground connector create-or-update --connector oracle-sink-ssl << EOF
+{
+  "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+  "tasks.max": "1",
+  "connection.user": "C##MYUSER",
+  "connection.password": "mypassword",
+  "connection.oracle.net.ssl_server_dn_match": "true",
+  "connection.url": "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCPS)(HOST=oracle)(PORT=1532))(CONNECT_DATA=(SERVICE_NAME=ORCLCDB))(SECURITY=(SSL_SERVER_CERT_DN=\"CN=server,C=US\")))",
+  "topics": "ORDERS",
+  "auto.create": "true",
+  "insert.mode":"insert",
+  "auto.evolve":"true"
+}
+EOF
 
 
 log "Sending messages to topic ORDERS"
-docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic ORDERS --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"id","type":"int"},{"name":"product", "type": "string"}, {"name":"quantity", "type": "int"}, {"name":"price","type": "float"}]}' << EOF
-{"id": 999, "product": "foo", "quantity": 100, "price": 50}
+playground topic produce -t ORDERS --nb-messages 1 << 'EOF'
+{
+  "type": "record",
+  "name": "myrecord",
+  "fields": [
+    {
+      "name": "id",
+      "type": "int"
+    },
+    {
+      "name": "product",
+      "type": "string"
+    },
+    {
+      "name": "quantity",
+      "type": "int"
+    },
+    {
+      "name": "price",
+      "type": "float"
+    }
+  ]
+}
+EOF
+
+playground topic produce -t ORDERS --nb-messages 1 --forced-value '{"id":2,"product":"foo","quantity":2,"price":0.86583304}' << 'EOF'
+{
+  "type": "record",
+  "name": "myrecord",
+  "fields": [
+    {
+      "name": "id",
+      "type": "int"
+    },
+    {
+      "name": "product",
+      "type": "string"
+    },
+    {
+      "name": "quantity",
+      "type": "int"
+    },
+    {
+      "name": "price",
+      "type": "float"
+    }
+  ]
+}
 EOF
 
 sleep 10

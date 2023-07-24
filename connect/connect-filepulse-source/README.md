@@ -60,7 +60,7 @@ $ curl -X PUT \
 Verify we have received the data in `connect-file-pulse-quickstart-csv` topic
 
 ```bash
-playground topic consume --topic connect-file-pulse-quickstart-csv --min-expected-messages 10
+playground topic consume --topic connect-file-pulse-quickstart-csv --min-expected-messages 10 --timeout 60
 ```
 
 Results:
@@ -137,7 +137,7 @@ $ curl -X PUT \
 Verify we have received the data in `playlists-filepulse-xml-00` topic
 
 ```bash
-playground topic consume --topic playlists-filepulse-xml-00 --min-expected-messages 2
+playground topic consume --topic playlists-filepulse-xml-00 --min-expected-messages 2 --timeout 60
 ```
 
 Results:
@@ -201,7 +201,7 @@ $   curl -X PUT \
 Verify we have received the data in `tracks-filepulse-json-00` topic
 
 ```bash
-playground topic consume --topic tracks-filepulse-json-00 --min-expected-messages 1
+playground topic consume --topic tracks-filepulse-json-00 --min-expected-messages 1 --timeout 60
 ```
 
 Results:
@@ -219,8 +219,8 @@ $ curl -X PUT \
           "connector.class":"io.streamthoughts.kafka.connect.filepulse.source.FilePulseSourceConnector",
           "aws.access.key.id": "${file:/data:aws.access.key.id}",
           "aws.secret.access.key": "${file:/data:aws.secret.key.id}",
-          "aws.s3.bucket.name": "'"$AWS_BUCKET_NAME"'",
-          "aws.s3.region": "'"$AWS_REGION"'",
+          "aws.s3.bucket.name": "$AWS_BUCKET_NAME",
+          "aws.s3.region": "$AWS_REGION",
           "fs.listing.class": "io.streamthoughts.kafka.connect.filepulse.fs.AmazonS3FileSystemListing",
           "fs.listing.filters":"io.streamthoughts.kafka.connect.filepulse.fs.filter.RegexFileListFilter",
           "fs.listing.interval.ms": "10000",
@@ -256,8 +256,8 @@ $ curl -X PUT \
           "connector.class":"io.streamthoughts.kafka.connect.filepulse.source.FilePulseSourceConnector",
           "aws.access.key.id": "${file:/data:aws.access.key.id}",
           "aws.secret.access.key": "${file:/data:aws.secret.key.id}",
-          "aws.s3.bucket.name": "'"$AWS_BUCKET_NAME"'",
-          "aws.s3.region": "'"$AWS_REGION"'",
+          "aws.s3.bucket.name": "$AWS_BUCKET_NAME",
+          "aws.s3.region": "$AWS_REGION",
           "fs.listing.class": "io.streamthoughts.kafka.connect.filepulse.fs.AmazonS3FileSystemListing",
           "fs.listing.filters":"io.streamthoughts.kafka.connect.filepulse.fs.filter.RegexFileListFilter",
           "fs.listing.interval.ms": "10000",

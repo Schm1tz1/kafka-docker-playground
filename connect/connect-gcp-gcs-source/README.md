@@ -62,7 +62,7 @@ $ curl -X PUT \
      -H "Content-Type: application/json" \
      --data '{
                "connector.class": "io.confluent.connect.gcs.GcsSourceConnector",
-                    "gcs.bucket.name" : "'"$GCS_BUCKET_NAME"'",
+                    "gcs.bucket.name" : "$GCS_BUCKET_NAME",
                     "gcs.credentials.path" : "/tmp/keyfile.json",
                     "format.class": "io.confluent.connect.gcs.format.avro.AvroFormat",
                     "tasks.max" : "1",
@@ -71,7 +71,7 @@ $ curl -X PUT \
                     "transforms" : "AddPrefix",
                     "transforms.AddPrefix.type" : "org.apache.kafka.connect.transforms.RegexRouter",
                     "transforms.AddPrefix.regex" : ".*",
-                    "transforms.AddPrefix.replacement" : "copy_of_$0"
+                    "transforms.AddPrefix.replacement" : "copy_of_\$0"
           }' \
      http://localhost:8083/connectors/GCSSourceConnector/config | jq .
 ```
@@ -79,7 +79,7 @@ $ curl -X PUT \
 Verify messages are in topic `copy_of_gcs_topic`
 
 ```bash
-playground topic consume --topic copy_of_gcs_topic --min-expected-messages 9
+playground topic consume --topic copy_of_gcs_topic --min-expected-messages 9 --timeout 60
 ```
 
 Results:
@@ -107,11 +107,10 @@ $ docker run -i -v ${PWD}:/tmp/ --volumes-from gcloud-config google/cloud-sdk:la
 Creating Generalized GCS Source connector:
 
 ```bash
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector gcs-source << EOF
+{
                "connector.class": "io.confluent.connect.gcs.GcsSourceConnector",
-               "gcs.bucket.name" : "'"$GCS_BUCKET_NAME"'",
+               "gcs.bucket.name" : "$GCS_BUCKET_NAME",
                "gcs.credentials.path" : "/tmp/keyfile.json",
                "format.class": "io.confluent.connect.gcs.format.json.JsonFormat",
                "value.converter": "org.apache.kafka.connect.json.JsonConverter",
@@ -121,14 +120,14 @@ curl -X PUT \
                "tasks.max" : "1",
                "confluent.topic.bootstrap.servers" : "broker:9092",
                "confluent.topic.replication.factor" : "1"
-          }' \
-     http://localhost:8083/connectors/gcs-source/config | jq .
+          }
+EOF
 ```
 
 Verifying topic `quick-start-topic`:
 
 ```bash
-playground topic consume --topic quick-start-topic --min-expected-messages 9
+playground topic consume --topic quick-start-topic --min-expected-messages 9 --timeout 60
 ```
 
 Results:

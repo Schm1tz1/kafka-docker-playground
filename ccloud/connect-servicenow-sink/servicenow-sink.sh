@@ -68,7 +68,7 @@ fi
 
 log "Creating topic in Confluent Cloud"
 set +e
-create_topic test_table
+playground topic create --topic test_table
 set -e
 
 log "Sending messages to topic test_table"
@@ -79,32 +79,31 @@ docker exec -i -e BOOTSTRAP_SERVERS="$BOOTSTRAP_SERVERS" -e SASL_JAAS_CONFIG="$S
 EOF
 
 log "Creating ServiceNow Sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector servicenow-sink << EOF
+{
                "connector.class": "io.confluent.connect.servicenow.ServiceNowSinkConnector",
                "topics": "test_table",
-               "servicenow.url": "'"$SERVICENOW_URL"'",
+               "servicenow.url": "$SERVICENOW_URL",
                "tasks.max": "1",
                "servicenow.table": "u_test_table",
                "servicenow.user": "admin",
-               "servicenow.password": "'"$SERVICENOW_PASSWORD"'",
+               "servicenow.password": "$SERVICENOW_PASSWORD",
                "key.converter" : "io.confluent.connect.avro.AvroConverter",
-               "key.converter.schema.registry.url": "'"$SCHEMA_REGISTRY_URL"'",
-               "key.converter.basic.auth.user.info": "${file:/data:schema.registry.basic.auth.user.info}",
+               "key.converter.schema.registry.url": "$SCHEMA_REGISTRY_URL",
+               "key.converter.basic.auth.user.info": "\${file:/data:schema.registry.basic.auth.user.info}",
                "key.converter.basic.auth.credentials.source": "USER_INFO",
                "value.converter" : "io.confluent.connect.avro.AvroConverter",
-               "value.converter.schema.registry.url": "'"$SCHEMA_REGISTRY_URL"'",
-               "value.converter.basic.auth.user.info": "${file:/data:schema.registry.basic.auth.user.info}",
+               "value.converter.schema.registry.url": "$SCHEMA_REGISTRY_URL",
+               "value.converter.basic.auth.user.info": "\${file:/data:schema.registry.basic.auth.user.info}",
                "value.converter.basic.auth.credentials.source": "USER_INFO",
-               "reporter.bootstrap.servers": "${file:/data:bootstrap.servers}",
+               "reporter.bootstrap.servers": "\${file:/data:bootstrap.servers}",
                "reporter.admin.ssl.endpoint.identification.algorithm" : "https",
                "reporter.admin.sasl.mechanism" : "PLAIN",
-               "reporter.admin.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/data:sasl.username}\" password=\"${file:/data:sasl.password}\";",
+               "reporter.admin.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"\${file:/data:sasl.username}\" password=\"\${file:/data:sasl.password}\";",
                "reporter.admin.security.protocol" : "SASL_SSL",
                "reporter.producer.ssl.endpoint.identification.algorithm" : "https",
                "reporter.producer.sasl.mechanism" : "PLAIN",
-               "reporter.producer.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/data:sasl.username}\" password=\"${file:/data:sasl.password}\";",
+               "reporter.producer.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"\${file:/data:sasl.username}\" password=\"\${file:/data:sasl.password}\";",
                "reporter.producer.security.protocol" : "SASL_SSL",
                "reporter.error.topic.name": "test-error",
                "reporter.error.topic.replication.factor": 3,
@@ -116,12 +115,12 @@ curl -X PUT \
                "reporter.result.topic.replication.factor": 3,
                "confluent.topic.ssl.endpoint.identification.algorithm" : "https",
                "confluent.topic.sasl.mechanism" : "PLAIN",
-               "confluent.topic.bootstrap.servers": "${file:/data:bootstrap.servers}",
-               "confluent.topic.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/data:sasl.username}\" password=\"${file:/data:sasl.password}\";",
+               "confluent.topic.bootstrap.servers": "\${file:/data:bootstrap.servers}",
+               "confluent.topic.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"\${file:/data:sasl.username}\" password=\"\${file:/data:sasl.password}\";",
                "confluent.topic.security.protocol" : "SASL_SSL",
                "confluent.topic.replication.factor": "3"
-          }' \
-     http://localhost:8083/connectors/servicenow-sink/config | jq .
+          }
+EOF
 
 
 sleep 15

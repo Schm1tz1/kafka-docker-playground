@@ -37,36 +37,35 @@ fi
 
 log "Creating topic in Confluent Cloud (auto.create.topics.enable=false)"
 set +e
-create_topic artists
-create_topic songs
+playground topic create --topic artists
+playground topic create --topic songs
 set -e
 
 log "Creating GCP Firebase Sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector firebase-sink << EOF
+{
                "connector.class" : "io.confluent.connect.firebase.FirebaseSinkConnector",
                "tasks.max" : "1",
                "topics":"artists,songs",
                "gcp.firebase.credentials.path": "/tmp/keyfile.json",
-               "gcp.firebase.database.reference": "https://'"$GCP_PROJECT"'.firebaseio.com/musicBlog",
+               "gcp.firebase.database.reference": "https://$GCP_PROJECT.firebaseio.com/musicBlog",
                "insert.mode":"update",
                "key.converter" : "io.confluent.connect.avro.AvroConverter",
-               "key.converter.schema.registry.url": "'"$SCHEMA_REGISTRY_URL"'",
-               "key.converter.basic.auth.user.info": "${file:/data:schema.registry.basic.auth.user.info}",
+               "key.converter.schema.registry.url": "$SCHEMA_REGISTRY_URL",
+               "key.converter.basic.auth.user.info": "\${file:/data:schema.registry.basic.auth.user.info}",
                "key.converter.basic.auth.credentials.source": "USER_INFO",
                "value.converter" : "io.confluent.connect.avro.AvroConverter",
-               "value.converter.schema.registry.url": "'"$SCHEMA_REGISTRY_URL"'",
-               "value.converter.basic.auth.user.info": "${file:/data:schema.registry.basic.auth.user.info}",
+               "value.converter.schema.registry.url": "$SCHEMA_REGISTRY_URL",
+               "value.converter.basic.auth.user.info": "\${file:/data:schema.registry.basic.auth.user.info}",
                "value.converter.basic.auth.credentials.source": "USER_INFO",
                "confluent.topic.ssl.endpoint.identification.algorithm" : "https",
                "confluent.topic.sasl.mechanism" : "PLAIN",
-               "confluent.topic.bootstrap.servers": "${file:/data:bootstrap.servers}",
-               "confluent.topic.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/data:sasl.username}\" password=\"${file:/data:sasl.password}\";",
+               "confluent.topic.bootstrap.servers": "\${file:/data:bootstrap.servers}",
+               "confluent.topic.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"\${file:/data:sasl.username}\" password=\"\${file:/data:sasl.password}\";",
                "confluent.topic.security.protocol" : "SASL_SSL",
                "confluent.topic.replication.factor": "3"
-          }' \
-     http://localhost:8083/connectors/firebase-sink/config | jq .
+          }
+EOF
 
 
 log "Produce Avro data to topic artists"

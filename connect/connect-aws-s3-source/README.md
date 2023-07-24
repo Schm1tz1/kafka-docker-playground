@@ -57,8 +57,8 @@ $ curl -X PUT \
      --data '{
                "tasks.max": "1",
                "connector.class": "io.confluent.connect.s3.source.S3SourceConnector",
-               "s3.region": "'"$AWS_REGION"'",
-               "s3.bucket.name": "'"$AWS_BUCKET_NAME"'",
+               "s3.region": "$AWS_REGION",
+               "s3.bucket.name": "$AWS_BUCKET_NAME",
                "format.class": "io.confluent.connect.s3.format.avro.AvroFormat",
                "confluent.license": "",
                "confluent.topic.bootstrap.servers": "broker:9092",
@@ -66,7 +66,7 @@ $ curl -X PUT \
                "transforms": "AddPrefix",
                "transforms.AddPrefix.type": "org.apache.kafka.connect.transforms.RegexRouter",
                "transforms.AddPrefix.regex": ".*",
-               "transforms.AddPrefix.replacement": "copy_of_$0"
+               "transforms.AddPrefix.replacement": "copy_of_\$0"
           }' \
      http://localhost:8083/connectors/s3-source/config | jq .
 ```
@@ -74,7 +74,7 @@ $ curl -X PUT \
 Verifying topic `copy_of_s3_topic`
 
 ```bash
-playground topic consume --topic copy_of_s3_topic --min-expected-messages 9
+playground topic consume --topic copy_of_s3_topic --min-expected-messages 9 --timeout 60
 ```
 
 Results:
@@ -116,8 +116,8 @@ $ curl -X PUT \
      --data '{
                "tasks.max": "1",
                "connector.class": "io.confluent.connect.s3.source.S3SourceConnector",
-               "s3.region": "'"$AWS_REGION"'",
-               "s3.bucket.name": "'"$AWS_BUCKET_NAME"'",
+               "s3.region": "$AWS_REGION",
+               "s3.bucket.name": "$AWS_BUCKET_NAME",
                "format.class": "io.confluent.connect.s3.format.json.JsonFormat",
                "value.converter": "org.apache.kafka.connect.json.JsonConverter",
                "value.converter.schemas.enable": "false",
@@ -134,7 +134,7 @@ $ curl -X PUT \
 Verifying topic `quick-start-topic`:
 
 ```bash
-playground topic consume --topic quick-start-topic --min-expected-messages 9
+playground topic consume --topic quick-start-topic --min-expected-messages 9 --timeout 60
 ```
 
 Results:

@@ -19,7 +19,7 @@ then
      do
      set +e
      log "🏗 Building jar for ${component}"
-     docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${DIR}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${DIR}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
+     docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${PWD}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${PWD}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
      if [ $? != 0 ]
      then
           logerror "ERROR: failed to build java component "
@@ -80,9 +80,8 @@ log "Show content of team table:"
 docker exec mysql bash -c "mysql --user=root --password=password --database=mydb -e 'select * from team'"
 
 log "Creating MySQL source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector mysql-source << EOF
+{
                "connector.class":"io.confluent.connect.jdbc.JdbcSourceConnector",
                "tasks.max":"10",
                "connection.url":"jdbc:mysql://mysql:3306/mydb?user=user&password=password&useSSL=false",
@@ -91,13 +90,13 @@ curl -X PUT \
                "timestamp.column.name":"last_modified",
                "incrementing.column.name":"id",
                "topic.prefix":"mysql-"
-          }' \
-     http://localhost:8083/connectors/mysql-source/config | jq .
+          }
+EOF
 
 sleep 5
 
 log "Verifying topic mysql-team"
-playground topic consume --topic mysql-team --min-expected-messages 2
+playground topic consume --topic mysql-team --min-expected-messages 2 --timeout 60
 
 if [ ! -z "$SQL_DATAGEN" ]
 then

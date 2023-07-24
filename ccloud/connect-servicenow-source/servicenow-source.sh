@@ -70,36 +70,35 @@ if ! version_gt $TAG_BASE "5.9.9"; then
      # note: for 6.x CONNECT_TOPIC_CREATION_ENABLE=true
      log "Creating topic in Confluent Cloud (auto.create.topics.enable=false)"
      set +e
-     create_topic topic-servicenow
+     playground topic create --topic topic-servicenow
      set -e
 fi
 
 TODAY=$(date -u '+%Y-%m-%d')
 
 log "Creating ServiceNow Source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector servicenow-source << EOF
+{
                "connector.class": "io.confluent.connect.servicenow.ServiceNowSourceConnector",
                "kafka.topic": "topic-servicenow",
-               "servicenow.url": "'"$SERVICENOW_URL"'",
+               "servicenow.url": "$SERVICENOW_URL",
                "tasks.max": "1",
                "servicenow.table": "incident",
                "servicenow.user": "admin",
-               "servicenow.password": "'"$SERVICENOW_PASSWORD"'",
-               "servicenow.since": "'"$TODAY"'",
+               "servicenow.password": "$SERVICENOW_PASSWORD",
+               "servicenow.since": "$TODAY",
                "topic.creation.default.replication.factor": "-1",
                "topic.creation.default.partitions": "-1",
                "key.converter": "org.apache.kafka.connect.json.JsonConverter",
                "value.converter": "org.apache.kafka.connect.json.JsonConverter",
                "confluent.topic.ssl.endpoint.identification.algorithm" : "https",
                "confluent.topic.sasl.mechanism" : "PLAIN",
-               "confluent.topic.bootstrap.servers": "${file:/data:bootstrap.servers}",
-               "confluent.topic.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/data:sasl.username}\" password=\"${file:/data:sasl.password}\";",
+               "confluent.topic.bootstrap.servers": "\${file:/data:bootstrap.servers}",
+               "confluent.topic.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"\${file:/data:sasl.username}\" password=\"\${file:/data:sasl.password}\";",
                "confluent.topic.security.protocol" : "SASL_SSL",
                "confluent.topic.replication.factor": "3"
-          }' \
-     http://localhost:8083/connectors/servicenow-source/config | jq .
+          }
+EOF
 
 sleep 10
 
@@ -116,5 +115,5 @@ docker exec -e SERVICENOW_URL="$SERVICENOW_URL" -e SERVICENOW_PASSWORD="$SERVICE
 sleep 5
 
 log "Verify we have received the data in topic-servicenow topic"
-playground topic consume --topic topic-servicenow --min-expected-messages 1
+playground topic consume --topic topic-servicenow --min-expected-messages 1 --timeout 60
 

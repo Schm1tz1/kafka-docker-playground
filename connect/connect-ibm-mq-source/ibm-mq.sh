@@ -35,25 +35,24 @@ ${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml
 
 
 log "Creating IBM MQ source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class": "io.confluent.connect.ibm.mq.IbmMQSourceConnector",
-                    "kafka.topic": "MyKafkaTopicName",
-                    "mq.hostname": "ibmmq",
-                    "mq.port": "1414",
-                    "mq.transport.type": "client",
-                    "mq.queue.manager": "QM1",
-                    "mq.channel": "DEV.APP.SVRCONN",
-                    "mq.username": "app",
-                    "mq.password": "passw0rd",
-                    "jms.destination.name": "DEV.QUEUE.1",
-                    "jms.destination.type": "queue",
-                    "confluent.license": "",
-                    "confluent.topic.bootstrap.servers": "broker:9092",
-                    "confluent.topic.replication.factor": "1"
-          }' \
-     http://localhost:8083/connectors/ibm-mq-source/config | jq .
+playground connector create-or-update --connector ibm-mq-source << EOF
+{
+     "connector.class": "io.confluent.connect.ibm.mq.IbmMQSourceConnector",
+     "kafka.topic": "MyKafkaTopicName",
+     "mq.hostname": "ibmmq",
+     "mq.port": "1414",
+     "mq.transport.type": "client",
+     "mq.queue.manager": "QM1",
+     "mq.channel": "DEV.APP.SVRCONN",
+     "mq.username": "app",
+     "mq.password": "passw0rd",
+     "jms.destination.name": "DEV.QUEUE.1",
+     "jms.destination.type": "queue",
+     "confluent.license": "",
+     "confluent.topic.bootstrap.servers": "broker:9092",
+     "confluent.topic.replication.factor": "1"
+}
+EOF
 
 sleep 5
 
@@ -66,4 +65,4 @@ EOF
 sleep 5
 
 log "Verify we have received the data in MyKafkaTopicName topic"
-playground topic consume --topic MyKafkaTopicName --min-expected-messages 2
+playground topic consume --topic MyKafkaTopicName --min-expected-messages 2 --timeout 60

@@ -55,9 +55,9 @@ else
 fi
 
 set +e
-delete_topic sfdc-cdc-contacts
+playground topic delete --topic sfdc-cdc-contacts
 sleep 3
-create_topic sfdc-cdc-contacts
+playground topic create --topic sfdc-cdc-contacts
 set -e
 
 docker-compose build
@@ -70,7 +70,14 @@ docker exec sfdx-cli sh -c "sfdx sfpowerkit:auth:login -u \"$SALESFORCE_USERNAME
 log "Add a Contact to Salesforce"
 docker exec sfdx-cli sh -c "sfdx data:create:record  --target-org \"$SALESFORCE_USERNAME\" -s Contact -v \"FirstName='John_$RANDOM' LastName='Doe_$RANDOM'\""
 
-cat << EOF > connector.json
+connector_name="SalesforceCdcSource"
+set +e
+log "Deleting fully managed connector $connector_name, it might fail..."
+playground ccloud-connector delete --connector $connector_name
+set -e
+
+log "Creating fully managed connector"
+playground ccloud-connector create-or-update --connector $connector_name << EOF
 {
      "connector.class": "SalesforceCdcSource",
      "name": "SalesforceCdcSource",
@@ -89,20 +96,9 @@ cat << EOF > connector.json
      "tasks.max": "1"
 }
 EOF
-
-log "Connector configuration is:"
-cat connector.json
-
-set +e
-log "Deleting fully managed connector, it might fail..."
-delete_ccloud_connector connector.json
-set -e
-
-log "Creating fully managed connector"
-create_ccloud_connector connector.json
-wait_for_ccloud_connector_up connector.json 300
+wait_for_ccloud_connector_up $connector_name 300
 
 sleep 60
 
 log "Verify we have received the data in sfdc-cdc-contacts topic"
-playground topic consume --topic sfdc-cdc-contacts --min-expected-messages 1
+playground topic consume --topic sfdc-cdc-contacts --min-expected-messages 1 --timeout 60

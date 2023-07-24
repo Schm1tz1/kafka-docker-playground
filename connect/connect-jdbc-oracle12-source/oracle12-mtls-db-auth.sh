@@ -23,9 +23,9 @@ if ! version_gt $JDBC_CONNECTOR_VERSION "9.9.9"; then
           logerror "ERROR: ${DIR}/ojdbc8.jar is missing. It must be downloaded manually in order to acknowledge user agreement"
           exit 1
      fi
-     docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.mtls-db-auth.yml" down -v --remove-orphans
+     docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.mtls-db-auth-db-auth.yml" down -v --remove-orphans
      log "Starting up oracle container to get generated cert from oracle server wallet"
-     docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.mtls-db-auth.yml" up -d oracle
+     docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.mtls-db-auth-db-auth.yml" up -d oracle
 else
      log "ojdbc jar is shipped with connector (starting with 10.0.0)"
      docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.no-ojdbc-mtls.yml" down -v --remove-orphans
@@ -205,8 +205,15 @@ sleep 60
 
 if ! version_gt $JDBC_CONNECTOR_VERSION "9.9.9"; then
      docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.mtls-db-auth.yml" up -d
+
+     command="source ${DIR}/../../scripts/utils.sh && docker-compose -f ../../environment/plaintext/docker-compose.yml -f ${PWD}/docker-compose.plaintext.mtls-db-auth.yml up -d ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d"
+     echo "$command" > /tmp/playground-command
+     log "✨ If you modify a docker-compose file and want to re-create the container(s), run cli command playground container recreate"
 else
      docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.no-ojdbc-mtls.yml" up -d
+
+     command="source ${DIR}/../../scripts/utils.sh && docker-compose -f ../../environment/plaintext/docker-compose.yml -f ${PWD}/docker-compose.plaintext.no-ojdbc-mtls.yml up -d ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d"
+     echo "$command" > /tmp/playground-command
 fi
 
 ../../scripts/wait-for-connect-and-controlcenter.sh
@@ -214,9 +221,8 @@ fi
 sleep 10
 
 log "Creating Oracle source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector oracle-source-mtls-db-auth << EOF
+{
                "connector.class":"io.confluent.connect.jdbc.JdbcSourceConnector",
                "tasks.max":"1",
                "connection.oracle.net.ssl_server_dn_match": "true",
@@ -232,12 +238,12 @@ curl -X PUT \
                "topic.prefix":"oracle-",
                "errors.log.enable": "true",
                "errors.log.include.messages": "true"
-          }' \
-     http://localhost:8083/connectors/oracle-source-mtls-db-auth/config | jq .
+          }
+EOF
 
 sleep 5
 
 log "Verifying topic oracle-CUSTOMERS"
-playground topic consume --topic oracle-CUSTOMERS --min-expected-messages 2
+playground topic consume --topic oracle-CUSTOMERS --min-expected-messages 2 --timeout 60
 
 

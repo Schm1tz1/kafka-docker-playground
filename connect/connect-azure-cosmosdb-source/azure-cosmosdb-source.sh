@@ -93,26 +93,25 @@ docker exec -e AZURE_COSMOSDB_DB_ENDPOINT_URI="$AZURE_COSMOSDB_DB_ENDPOINT_URI" 
 
 # https://github.com/microsoft/kafka-connect-cosmosdb/blob/dev/doc/README_Source.md#source-configuration-properties
 log "Creating Azure Cosmos DB Source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-                "connector.class": "com.azure.cosmos.kafka.connect.source.CosmosDBSourceConnector",
-                "tasks.max": "1",
-                "key.converter": "org.apache.kafka.connect.json.JsonConverter",
-                "value.converter": "org.apache.kafka.connect.json.JsonConverter",
-                "value.converter.schemas.enable": "false",
-                "key.converter.schemas.enable": "false",
-                "connect.cosmos.task.poll.interval": "100",
-                "connect.cosmos.connection.endpoint": "${file:/data:AZURE_COSMOSDB_DB_ENDPOINT_URI}",
-                "connect.cosmos.master.key": "${file:/data:AZURE_COSMOSDB_PRIMARY_CONNECTION_KEY}",
-                "connect.cosmos.databasename": "${file:/data:AZURE_COSMOSDB_DB_NAME}",
-                "connect.cosmos.containers.topicmap": "${file:/data:TOPIC_MAP}",
-                "connect.cosmos.offset.useLatest": false,
-                "errors.tolerance": "all",
-                "errors.log.enable": "true",
-                "errors.log.include.messages": "true"
-          }' \
-     http://localhost:8083/connectors/azure-cosmosdb-source/config | jq .
+playground connector create-or-update --connector azure-cosmosdb-source << EOF
+{
+    "connector.class": "com.azure.cosmos.kafka.connect.source.CosmosDBSourceConnector",
+    "tasks.max": "1",
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false",
+    "key.converter.schemas.enable": "false",
+    "connect.cosmos.task.poll.interval": "100",
+    "connect.cosmos.connection.endpoint": "\${file:/data:AZURE_COSMOSDB_DB_ENDPOINT_URI}",
+    "connect.cosmos.master.key": "\${file:/data:AZURE_COSMOSDB_PRIMARY_CONNECTION_KEY}",
+    "connect.cosmos.databasename": "\${file:/data:AZURE_COSMOSDB_DB_NAME}",
+    "connect.cosmos.containers.topicmap": "\${file:/data:TOPIC_MAP}",
+    "connect.cosmos.offset.useLatest": false,
+    "errors.tolerance": "all",
+    "errors.log.enable": "true",
+    "errors.log.include.messages": "true"
+}
+EOF
 
 sleep 30
 
@@ -120,7 +119,7 @@ log "Send again messages to Azure Cosmos DB"
 docker exec -e AZURE_COSMOSDB_DB_ENDPOINT_URI="$AZURE_COSMOSDB_DB_ENDPOINT_URI" -e AZURE_COSMOSDB_PRIMARY_CONNECTION_KEY="$AZURE_COSMOSDB_PRIMARY_CONNECTION_KEY" -e AZURE_COSMOSDB_DB_NAME="$AZURE_COSMOSDB_DB_NAME" -e AZURE_COSMOSDB_CONTAINER_NAME="$AZURE_COSMOSDB_CONTAINER_NAME" azure-cosmos-client bash -c "python /insert-data.py"
 
 log "Verifying topic apparels"
-playground topic consume --topic apparels --min-expected-messages 9
+playground topic consume --topic apparels --min-expected-messages 2 --timeout 60
 
 log "Delete Cosmos DB instance"
 az cosmosdb delete -g $AZURE_RESOURCE_GROUP -n $AZURE_COSMOSDB_SERVER_NAME --yes

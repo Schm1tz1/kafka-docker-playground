@@ -23,23 +23,22 @@ GO
 EOF
 
 log "Creating JDBC Sybase source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-                "connector.class" : "io.confluent.connect.jdbc.JdbcSourceConnector",
-                "tasks.max" : "1",
-                "connection.url": "jdbc:jtds:sybase://sybase:5000/testDB",
-                "connection.user": "sa",
-                "connection.password": "password",
-                "table.whitelist": "customers",
-                "mode": "incrementing",
-                "incrementing.column.name": "id",
-                "topic.prefix": "sybase-",
-                "validate.non.null":"false",
-                "errors.log.enable": "true",
-                "errors.log.include.messages": "true"
-          }' \
-     http://localhost:8083/connectors/jdbc-sybase-source/config | jq .
+playground connector create-or-update --connector jdbc-sybase-source << EOF
+{
+      "connector.class" : "io.confluent.connect.jdbc.JdbcSourceConnector",
+      "tasks.max" : "1",
+      "connection.url": "jdbc:jtds:sybase://sybase:5000/testDB",
+      "connection.user": "sa",
+      "connection.password": "password",
+      "table.whitelist": "customers",
+      "mode": "incrementing",
+      "incrementing.column.name": "id",
+      "topic.prefix": "sybase-",
+      "validate.non.null":"false",
+      "errors.log.enable": "true",
+      "errors.log.include.messages": "true"
+}
+EOF
 
 sleep 5
 
@@ -52,4 +51,4 @@ GO
 EOF
 
 log "Verifying topic sybase-customers"
-playground topic consume --topic sybase-customers --min-expected-messages 5
+playground topic consume --topic sybase-customers --min-expected-messages 5 --timeout 60

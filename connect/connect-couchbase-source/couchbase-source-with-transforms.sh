@@ -14,9 +14,8 @@ docker exec couchbase bash -c "/opt/couchbase/bin/cbdocloader -c localhost:8091 
 set -e
 
 log "Creating Couchbase Source connector with transforms"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector couchbase-source << EOF
+{
                "connector.class": "com.couchbase.connect.kafka.CouchbaseSourceConnector",
                "tasks.max": "2",
                "couchbase.topic": "default-topic",
@@ -32,26 +31,26 @@ curl -X PUT \
                "couchbase.flow.control.buffer": "128m",
                "couchbase.persistence.polling.interval": "100ms",
                "transforms": "KeyExample,dropSufffix",
-               "transforms.KeyExample.type": "io.confluent.connect.transforms.ExtractTopic$Key",
+               "transforms.KeyExample.type": "io.confluent.connect.transforms.ExtractTopic\$Key",
                "transforms.KeyExample.skip.missing.or.null": "true",
                "transforms.dropSufffix.type": "org.apache.kafka.connect.transforms.RegexRouter",
                "transforms.dropSufffix.regex": "(.*)_.*",
-               "transforms.dropSufffix.replacement": "$1",
+               "transforms.dropSufffix.replacement": "\$1",
                "errors.tolerance": "all",
                "errors.log.enable": "true",
                "errors.log.include.messages": "true"
-          }' \
-     http://localhost:8083/connectors/couchbase-source/config | jq .
+          }
+EOF
 
 sleep 10
 
 log "Verifying topic airline"
-playground topic consume --topic airline --min-expected-messages 1
+playground topic consume --topic airline --min-expected-messages 1 --timeout 60
 log "Verifying topic airport"
-playground topic consume --topic airport --min-expected-messages 1
+playground topic consume --topic airport --min-expected-messages 1 --timeout 60
 log "Verifying topic hotel"
-playground topic consume --topic hotel --min-expected-messages 1
+playground topic consume --topic hotel --min-expected-messages 1 --timeout 60
 log "Verifying topic landmark"
-playground topic consume --topic landmark --min-expected-messages 1
+playground topic consume --topic landmark --min-expected-messages 1 --timeout 60
 log "Verifying topic route"
-playground topic consume --topic route --min-expected-messages 1
+playground topic consume --topic route --min-expected-messages 1 --timeout 60

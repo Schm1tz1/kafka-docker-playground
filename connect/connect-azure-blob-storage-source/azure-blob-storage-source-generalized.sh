@@ -75,31 +75,30 @@ cp generalized.quickstart.json /tmp/
 az storage blob upload --account-name "${AZURE_ACCOUNT_NAME}" --account-key "${AZURE_ACCOUNT_KEY}" --container-name "${AZURE_CONTAINER_NAME}" --name quickstart/generalized.quickstart.json --file /tmp/generalized.quickstart.json
 
 log "Creating Generalized Azure Blob Storage Source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-                "connector.class": "io.confluent.connect.azure.blob.storage.AzureBlobStorageSourceConnector",
-                "tasks.max": "1",
-                "azblob.account.name": "${file:/data:AZURE_ACCOUNT_NAME}",
-                "azblob.account.key": "${file:/data:AZURE_ACCOUNT_KEY}",
-                "azblob.container.name": "${file:/data:AZURE_CONTAINER_NAME}",
-                "format.class": "io.confluent.connect.cloud.storage.source.format.CloudStorageJsonFormat",
-                "value.converter": "org.apache.kafka.connect.json.JsonConverter",
-                "value.converter.schemas.enable": "false",
-                "confluent.license": "",
-                "mode": "GENERIC",
-                "topics.dir": "quickstart",
-                "topic.regex.list": "quick-start-topic:.*",
-                "confluent.license": "",
-                "confluent.topic.bootstrap.servers": "broker:9092",
-                "confluent.topic.replication.factor": "1"
-          }' \
-     http://localhost:8083/connectors/azure-blob-source/config | jq .
+playground connector create-or-update --connector azure-blob-source << EOF
+{
+    "connector.class": "io.confluent.connect.azure.blob.storage.AzureBlobStorageSourceConnector",
+    "tasks.max": "1",
+    "azblob.account.name": "\${file:/data:AZURE_ACCOUNT_NAME}",
+    "azblob.account.key": "\${file:/data:AZURE_ACCOUNT_KEY}",
+    "azblob.container.name": "\${file:/data:AZURE_CONTAINER_NAME}",
+    "format.class": "io.confluent.connect.cloud.storage.source.format.CloudStorageJsonFormat",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false",
+    "confluent.license": "",
+    "mode": "GENERIC",
+    "topics.dir": "quickstart",
+    "topic.regex.list": "quick-start-topic:.*",
+    "confluent.license": "",
+    "confluent.topic.bootstrap.servers": "broker:9092",
+    "confluent.topic.replication.factor": "1"
+}
+EOF
 
 sleep 5
 
 log "Verifying topic quick-start-topic"
-playground topic consume --topic quick-start-topic --min-expected-messages 9
+playground topic consume --topic quick-start-topic --min-expected-messages 9 --timeout 60
 
 log "Deleting resource group"
 az group delete --name $AZURE_RESOURCE_GROUP --yes --no-wait

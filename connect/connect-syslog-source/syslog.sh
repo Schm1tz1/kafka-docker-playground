@@ -7,9 +7,8 @@ source ${DIR}/../../scripts/utils.sh
 ${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
 
 log "Creating Syslog Source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector syslog-source << EOF
+{
                "tasks.max": "1",
                     "connector.class": "io.confluent.connect.syslog.SyslogSourceConnector",
                     "syslog.port": "5454",
@@ -17,8 +16,8 @@ curl -X PUT \
                     "confluent.license": "",
                     "confluent.topic.bootstrap.servers": "broker:9092",
                     "confluent.topic.replication.factor": "1"
-          }' \
-     http://localhost:8083/connectors/syslog-source/config | jq .
+          }
+EOF
 
 
 sleep 10
@@ -29,4 +28,4 @@ echo "<34>1 2003-10-11T22:14:15.003Z mymachine.example.com su - ID47 - Your refr
 sleep 5
 
 log "Verify we have received the data in syslog topic"
-playground topic consume --topic syslog --min-expected-messages 1
+playground topic consume --topic syslog --min-expected-messages 1 --timeout 60

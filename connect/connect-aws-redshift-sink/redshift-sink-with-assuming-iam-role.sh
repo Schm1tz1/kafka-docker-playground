@@ -28,7 +28,7 @@ else
      export CONNECT_CONTAINER_HOME_DIR="/root"
 fi
 
-PASSWORD=$(date +%s | sha256sum | base64 | head -c 32 ; echo)
+PASSWORD=$(date +%s | cksum | base64 | head -c 32 ; echo)
 # generate data file for externalizing secrets
 sed -e "s|:PASSWORD:|$PASSWORD|g" \
     ../../connect/connect-aws-redshift-sink/data.template > ../../connect/connect-aws-redshift-sink/data
@@ -78,29 +78,74 @@ sleep 60
 CLUSTER=$(aws redshift describe-clusters --cluster-identifier $CLUSTER_NAME | jq -r .Clusters[0].Endpoint.Address)
 
 log "Sending messages to topic orders"
-docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic orders --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"id","type":"int"},{"name":"product", "type": "string"}, {"name":"quantity", "type": "int"}, {"name":"price","type": "float"}]}' << EOF
-{"id": 999, "product": "foo", "quantity": 100, "price": 50}
+playground topic produce -t orders --nb-messages 1 << 'EOF'
+{
+  "type": "record",
+  "name": "myrecord",
+  "fields": [
+    {
+      "name": "id",
+      "type": "int"
+    },
+    {
+      "name": "product",
+      "type": "string"
+    },
+    {
+      "name": "quantity",
+      "type": "int"
+    },
+    {
+      "name": "price",
+      "type": "float"
+    }
+  ]
+}
+EOF
+
+playground topic produce -t orders --nb-messages 1 --forced-value '{"id":2,"product":"foo","quantity":2,"price":0.86583304}' << 'EOF'
+{
+  "type": "record",
+  "name": "myrecord",
+  "fields": [
+    {
+      "name": "id",
+      "type": "int"
+    },
+    {
+      "name": "product",
+      "type": "string"
+    },
+    {
+      "name": "quantity",
+      "type": "int"
+    },
+    {
+      "name": "price",
+      "type": "float"
+    }
+  ]
+}
 EOF
 
 log "Creating AWS Redshift Sink connector with cluster url $CLUSTER"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class": "io.confluent.connect.aws.redshift.RedshiftSinkConnector",
-               "tasks.max": "1",
-               "topics": "orders",
-               "aws.redshift.domain": "'"$CLUSTER"'",
-               "aws.redshift.port": "5439",
-               "aws.redshift.database": "dev",
-               "aws.redshift.user": "masteruser",
-               "aws.redshift.password": "${file:/data:password}",
-               "auto.create": "true",
-               "pk.mode": "kafka",
-               "confluent.license": "",
-               "confluent.topic.bootstrap.servers": "broker:9092",
-               "confluent.topic.replication.factor": "1"
-          }' \
-     http://localhost:8083/connectors/redshift-sink/config | jq .
+playground connector create-or-update --connector redshift-sink << EOF
+{
+     "connector.class": "io.confluent.connect.aws.redshift.RedshiftSinkConnector",
+     "tasks.max": "1",
+     "topics": "orders",
+     "aws.redshift.domain": "$CLUSTER",
+     "aws.redshift.port": "5439",
+     "aws.redshift.database": "dev",
+     "aws.redshift.user": "masteruser",
+     "aws.redshift.password": "\${file:/data:password}",
+     "auto.create": "true",
+     "pk.mode": "kafka",
+     "confluent.license": "",
+     "confluent.topic.bootstrap.servers": "broker:9092",
+     "confluent.topic.replication.factor": "1"
+}
+EOF
 
 sleep 20
 

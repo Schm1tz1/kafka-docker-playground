@@ -115,12 +115,12 @@ $ curl -X PUT \
                "connector.class" : "io.confluent.connect.aws.lambda.AwsLambdaSinkConnector",
                "tasks.max": "1",
                "topics" : "add-topic",
-               "aws.lambda.function.name" : "'"$LAMBDA_FUNCTION_NAME"'",
+               "aws.lambda.function.name" : "$LAMBDA_FUNCTION_NAME",
                "aws.lambda.invocation.type" : "sync",
                "aws.lambda.batch.size" : "50",
-               "aws.lambda.region": "'"$AWS_REGION"'",
-               "aws.access.key.id" : "'"$AWS_ACCESS_KEY_ID"'",
-               "aws.secret.access.key": "'"$AWS_SECRET_ACCESS_KEY"'",
+               "aws.lambda.region": "$AWS_REGION",
+               "aws.access.key.id" : "$AWS_ACCESS_KEY_ID",
+               "aws.secret.access.key": "$AWS_SECRET_ACCESS_KEY",
                "behavior.on.error" : "fail",
                "reporter.bootstrap.servers": "broker:9092",
                "reporter.error.topic.name": "error-responses",
@@ -137,7 +137,7 @@ $ curl -X PUT \
 Verifying topic `add-topic-response`
 
 ```bash
-playground topic consume --topic success-responses --min-expected-messages 10
+playground topic consume --topic success-responses --min-expected-messages 10 --timeout 60
 ```
 
 Results:

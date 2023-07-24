@@ -132,12 +132,12 @@ $ curl -X PUT \
                     "tasks.max": "1",
                     "curl.logging": "true",
                     "salesforce.platform.event.name" : "MyPlatformEvent__e",
-                    "salesforce.instance" : "'"$SALESFORCE_INSTANCE"'",
-                    "salesforce.username" : "'"$SALESFORCE_USERNAME"'",
-                    "salesforce.password" : "'"$SALESFORCE_PASSWORD"'",
-                    "salesforce.password.token" : "'"$SALESFORCE_SECURITY_TOKEN"'",
-                    "salesforce.consumer.key" : "'"$SALESFORCE_CONSUMER_KEY"'",
-                    "salesforce.consumer.secret" : "'"$SALESFORCE_CONSUMER_PASSWORD"'",
+                    "salesforce.instance" : "$SALESFORCE_INSTANCE",
+                    "salesforce.username" : "$SALESFORCE_USERNAME",
+                    "salesforce.password" : "$SALESFORCE_PASSWORD",
+                    "salesforce.password.token" : "$SALESFORCE_SECURITY_TOKEN",
+                    "salesforce.consumer.key" : "$SALESFORCE_CONSUMER_KEY",
+                    "salesforce.consumer.secret" : "$SALESFORCE_CONSUMER_PASSWORD",
                     "salesforce.initial.start" : "latest",
                     "key.converter": "org.apache.kafka.connect.json.JsonConverter",
                     "value.converter": "org.apache.kafka.connect.json.JsonConverter",
@@ -152,7 +152,7 @@ $ curl -X PUT \
 Verify we have received the data in `sfdc-platform-events` topic
 
 ```bash
-playground topic consume --topic sfdc-platform-events --min-expected-messages 1
+playground topic consume --topic sfdc-platform-events --min-expected-messages 1 --timeout 60
 ```
 
 Results:

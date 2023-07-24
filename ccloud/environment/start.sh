@@ -4,6 +4,10 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
+verify_installed "docker-compose"
+check_docker_compose_version
+check_bash_version
+
 bootstrap_ccloud_environment
 
 # generate data file for externalizing secrets
@@ -18,10 +22,12 @@ export SR_USER=$(echo "$SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO" | cut -d":" -f1)
 export SR_PASSWORD=$(echo "$SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO" | cut -d":" -f2)
 
 set +e
+playground topic delete --topic _confluent-monitoring
 log "Cleanup connect worker topics"
-delete_topic connect-status-${TAG}
-delete_topic connect-offsets-${TAG}
-delete_topic connect-configs-${TAG}
+playground topic delete --topic connect-status-${TAG}
+playground topic delete --topic connect-offsets-${TAG}
+playground topic delete --topic connect-configs-${TAG}
+playground topic create --topic _confluent-monitoring
 set -e
 
 # https://docs.docker.com/compose/profiles/

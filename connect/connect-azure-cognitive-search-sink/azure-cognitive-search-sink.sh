@@ -67,41 +67,81 @@ sed -e "s|:AZURE_SEARCH_SERVICE_NAME:|$AZURE_SEARCH_SERVICE_NAME|g" \
 ${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
 
 log "Sending messages to topic hotels-sample"
-docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic hotels-sample --property key.schema='{"type":"string"}' --property "parse.key=true" --property "key.separator=," --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"HotelName","type":"string"},{"name":"Description","type":"string"}]}' << EOF
-"marriottId",{"HotelName": "Marriott", "Description": "Marriott description"}
-"holidayinnId",{"HotelName": "HolidayInn", "Description": "HolidayInn description"}
-"motel8Id",{"HotelName": "Motel8", "Description": "motel8 description"}
+playground topic produce -t hotels-sample --nb-messages 1 --forced-value '{"HotelName": "Marriott", "Description": "Marriott description"}' --key "marriottId" << 'EOF'
+{
+  "type": "record",
+  "name": "myrecord",
+  "fields": [
+    {
+      "name": "HotelName",
+      "type": "string"
+    },
+    {
+      "name": "Description",
+      "type": "string"
+    }
+  ]
+}
+EOF
+playground topic produce -t hotels-sample --nb-messages 1 --forced-value '{"HotelName": "HolidayInn", "Description": "HolidayInn description"}' --key "holidayinnId" << 'EOF'
+{
+  "type": "record",
+  "name": "myrecord",
+  "fields": [
+    {
+      "name": "HotelName",
+      "type": "string"
+    },
+    {
+      "name": "Description",
+      "type": "string"
+    }
+  ]
+}
+EOF
+playground topic produce -t hotels-sample --nb-messages 1 --forced-value '{"HotelName": "Motel8", "Description": "motel8 description"}' --key "motel8Id" << 'EOF'
+{
+  "type": "record",
+  "name": "myrecord",
+  "fields": [
+    {
+      "name": "HotelName",
+      "type": "string"
+    },
+    {
+      "name": "Description",
+      "type": "string"
+    }
+  ]
+}
 EOF
 
-
 log "Creating Azure Search Sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class": "io.confluent.connect.azure.search.AzureSearchSinkConnector",
-                "tasks.max": "1",
-                "topics": "hotels-sample",
-                "key.converter": "io.confluent.connect.avro.AvroConverter",
-                "key.converter.schema.registry.url": "http://schema-registry:8081",
-                "value.converter": "io.confluent.connect.avro.AvroConverter",
-                "value.converter.schema.registry.url": "http://schema-registry:8081",
-                "azure.search.service.name": "${file:/data:AZURE_SEARCH_SERVICE_NAME}",
-                "azure.search.api.key": "${file:/data:AZURE_SEARCH_ADMIN_PRIMARY_KEY}",
-                "index.name": "${topic}-index",
-                "confluent.license": "",
-                "confluent.topic.bootstrap.servers": "broker:9092",
-                "confluent.topic.replication.factor": "1",
-                "reporter.bootstrap.servers": "broker:9092",
-                "reporter.error.topic.name": "test-error",
-                "reporter.error.topic.replication.factor": 1,
-                "reporter.error.topic.key.format": "string",
-                "reporter.error.topic.value.format": "string",
-                "reporter.result.topic.name": "test-result",
-                "reporter.result.topic.key.format": "string",
-                "reporter.result.topic.value.format": "string",
-                "reporter.result.topic.replication.factor": 1
-          }' \
-     http://localhost:8083/connectors/azure-cognitive-search/config | jq .
+playground connector create-or-update --connector azure-cognitive-search << EOF
+{
+    "connector.class": "io.confluent.connect.azure.search.AzureSearchSinkConnector",
+    "tasks.max": "1",
+    "topics": "hotels-sample",
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "io.confluent.connect.avro.AvroConverter",
+    "value.converter.schema.registry.url": "http://schema-registry:8081",
+    "azure.search.service.name": "\${file:/data:AZURE_SEARCH_SERVICE_NAME}",
+    "azure.search.api.key": "\${file:/data:AZURE_SEARCH_ADMIN_PRIMARY_KEY}",
+    "index.name": "\${topic}-index",
+    "confluent.license": "",
+    "confluent.topic.bootstrap.servers": "broker:9092",
+    "confluent.topic.replication.factor": "1",
+    "reporter.bootstrap.servers": "broker:9092",
+    "reporter.error.topic.name": "test-error",
+    "reporter.error.topic.replication.factor": 1,
+    "reporter.error.topic.key.format": "string",
+    "reporter.error.topic.value.format": "string",
+    "reporter.result.topic.name": "test-result",
+    "reporter.result.topic.key.format": "string",
+    "reporter.result.topic.value.format": "string",
+    "reporter.result.topic.replication.factor": 1
+}
+EOF
 
 
 sleep 30

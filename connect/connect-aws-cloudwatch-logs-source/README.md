@@ -71,11 +71,11 @@ $ curl -X PUT \
      --data '{
                "connector.class": "io.confluent.connect.aws.cloudwatch.AwsCloudWatchSourceConnector",
                "tasks.max": "1",
-               "aws.cloudwatch.logs.url": "'"$CLOUDWATCH_LOGS_URL"'",
-               "aws.cloudwatch.log.group": "'"$LOG_GROUP"'",
-               "aws.cloudwatch.log.streams": "'"$LOG_STREAM"'",
-               "aws.access.key.id" : "'"$AWS_ACCESS_KEY_ID"'",
-               "aws.secret.access.key": "'"$AWS_SECRET_ACCESS_KEY"'",
+               "aws.cloudwatch.logs.url": "$CLOUDWATCH_LOGS_URL",
+               "aws.cloudwatch.log.group": "$LOG_GROUP",
+               "aws.cloudwatch.log.streams": "$LOG_STREAM",
+               "aws.access.key.id" : "$AWS_ACCESS_KEY_ID",
+               "aws.secret.access.key": "$AWS_SECRET_ACCESS_KEY",
                "confluent.license": "",
                "confluent.topic.bootstrap.servers": "broker:9092",
                "confluent.topic.replication.factor": "1"
@@ -86,7 +86,7 @@ $ curl -X PUT \
 Verify we have received the data in `my-log-group.my-log-stream` topic
 
 ```bash
-playground topic consume --topic my-log-group.my-log-stream --min-expected-messages 10
+playground topic consume --topic my-log-group.my-log-stream --min-expected-messages 10 --timeout 60
 ```
 
 N.B: Control Center is reachable at [http://127.0.0.1:9021](http://127.0.0.1:9021])

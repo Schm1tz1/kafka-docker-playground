@@ -64,7 +64,7 @@ $ curl -X PUT \
                "connector.class": "io.confluent.connect.s3.S3SinkConnector",
                "tasks.max": "1",
                "topics": "s3_topic",
-               "s3.region": "'"$AWS_REGION"'",
+               "s3.region": "$AWS_REGION",
                "s3.bucket.name": "$AWS_BUCKET_NAME",
                "s3.part.size": 52428801,
                "flush.size": "3",
@@ -78,7 +78,18 @@ $ curl -X PUT \
 Messages are sent to `s3_topic` topic using:
 
 ```
-s$ eq -f "{\"f1\": \"value%g\"}" 10 | docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic s3_topic --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"f1","type":"string"}]}'
+$ playground topic produce -t s3_topic --nb-messages 10 --forced-value '{"f1":"value%g"}' << 'EOF'
+{
+  "type": "record",
+  "name": "myrecord",
+  "fields": [
+    {
+      "name": "f1",
+      "type": "string"
+    }
+  ]
+}
+EOF
 ```
 
 After a few seconds, S3 should contain files in bucket:

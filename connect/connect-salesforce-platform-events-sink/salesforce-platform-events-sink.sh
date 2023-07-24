@@ -47,28 +47,27 @@ fi
 ${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
 
 log "Creating Salesforce Platform Events Source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-                    "connector.class": "io.confluent.salesforce.SalesforcePlatformEventSourceConnector",
-                    "kafka.topic": "sfdc-platform-events",
-                    "tasks.max": "1",
-                    "curl.logging": "true",
-                    "salesforce.platform.event.name" : "MyPlatformEvent__e",
-                    "salesforce.instance" : "'"$SALESFORCE_INSTANCE"'",
-                    "salesforce.username" : "'"$SALESFORCE_USERNAME"'",
-                    "salesforce.password" : "'"$SALESFORCE_PASSWORD"'",
-                    "salesforce.password.token" : "'"$SALESFORCE_SECURITY_TOKEN"'",
-                    "salesforce.consumer.key" : "'"$SALESFORCE_CONSUMER_KEY"'",
-                    "salesforce.consumer.secret" : "'"$SALESFORCE_CONSUMER_PASSWORD"'",
-                    "salesforce.initial.start" : "latest",
-                    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
-                    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
-                    "confluent.license": "",
-                    "confluent.topic.bootstrap.servers": "broker:9092",
-                    "confluent.topic.replication.factor": "1"
-          }' \
-     http://localhost:8083/connectors/salesforce-platform-events-source/config | jq .
+playground connector create-or-update --connector salesforce-platform-events-source << EOF
+{
+     "connector.class": "io.confluent.salesforce.SalesforcePlatformEventSourceConnector",
+     "kafka.topic": "sfdc-platform-events",
+     "tasks.max": "1",
+     "curl.logging": "true",
+     "salesforce.platform.event.name" : "MyPlatformEvent__e",
+     "salesforce.instance" : "$SALESFORCE_INSTANCE",
+     "salesforce.username" : "$SALESFORCE_USERNAME",
+     "salesforce.password" : "$SALESFORCE_PASSWORD",
+     "salesforce.password.token" : "$SALESFORCE_SECURITY_TOKEN",
+     "salesforce.consumer.key" : "$SALESFORCE_CONSUMER_KEY",
+     "salesforce.consumer.secret" : "$SALESFORCE_CONSUMER_PASSWORD",
+     "salesforce.initial.start" : "latest",
+     "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+     "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+     "confluent.license": "",
+     "confluent.topic.bootstrap.servers": "broker:9092",
+     "confluent.topic.replication.factor": "1"
+}
+EOF
 
 sleep 5
 
@@ -81,23 +80,22 @@ docker exec sfdx-cli sh -c "sfdx apex run --target-org \"$SALESFORCE_USERNAME\" 
 sleep 10
 
 log "Verify we have received the data in sfdc-platform-events topic"
-playground topic consume --topic sfdc-platform-events --min-expected-messages 2
+playground topic consume --topic sfdc-platform-events --min-expected-messages 2 --timeout 60
 
 log "Creating Salesforce Platform Events Sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector salesforce-platform-events-sink << EOF
+{
                     "connector.class": "io.confluent.salesforce.SalesforcePlatformEventSinkConnector",
                     "topics": "sfdc-platform-events",
                     "tasks.max": "1",
                     "curl.logging": "true",
                     "salesforce.platform.event.name" : "MyPlatformEvent__e",
-                    "salesforce.instance" : "'"$SALESFORCE_INSTANCE"'",
-                    "salesforce.username" : "'"$SALESFORCE_USERNAME"'",
-                    "salesforce.password" : "'"$SALESFORCE_PASSWORD"'",
-                    "salesforce.password.token" : "'"$SALESFORCE_SECURITY_TOKEN"'",
-                    "salesforce.consumer.key" : "'"$SALESFORCE_CONSUMER_KEY"'",
-                    "salesforce.consumer.secret" : "'"$SALESFORCE_CONSUMER_PASSWORD"'", 
+                    "salesforce.instance" : "$SALESFORCE_INSTANCE",
+                    "salesforce.username" : "$SALESFORCE_USERNAME",
+                    "salesforce.password" : "$SALESFORCE_PASSWORD",
+                    "salesforce.password.token" : "$SALESFORCE_SECURITY_TOKEN",
+                    "salesforce.consumer.key" : "$SALESFORCE_CONSUMER_KEY",
+                    "salesforce.consumer.secret" : "$SALESFORCE_CONSUMER_PASSWORD", 
                     "connection.max.message.size": "10048576",
                     "key.converter": "org.apache.kafka.connect.json.JsonConverter",
                     "value.converter": "org.apache.kafka.connect.json.JsonConverter",
@@ -107,19 +105,19 @@ curl -X PUT \
                     "reporter.result.topic.name": "success-responses",
                     "reporter.result.topic.replication.factor": 1,
                     "transforms": "MaskField",
-                    "transforms.MaskField.type": "org.apache.kafka.connect.transforms.MaskField$Value",
+                    "transforms.MaskField.type": "org.apache.kafka.connect.transforms.MaskField\$Value",
                     "transforms.MaskField.fields": "Message__c",
                     "confluent.license": "",
                     "confluent.topic.bootstrap.servers": "broker:9092",
                     "confluent.topic.replication.factor": "1"
-          }' \
-     http://localhost:8083/connectors/salesforce-platform-events-sink/config | jq .
+          }
+EOF
 
 
 sleep 10
 
 log "Verify topic success-responses"
-playground topic consume --topic success-responses --min-expected-messages 2
+playground topic consume --topic success-responses --min-expected-messages 2 --timeout 60
 
 # log "Verify topic error-responses"
-playground topic consume --topic error-responses --min-expected-messages 0
+playground topic consume --topic error-responses --min-expected-messages 0 --timeout 60

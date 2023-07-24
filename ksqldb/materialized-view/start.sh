@@ -34,14 +34,23 @@ CREATE SOURCE CONNECTOR calls_reader WITH (
     'database.password' = 'dbz',
     'database.allowPublicKeyRetrieval' = 'true',
     'database.server.id' = '223344',
+    'table.whitelist' = 'mydb.calls',
+
+    'database.names'  = 'mydb',
+    '_comment' = 'old version before 2.x',
     'database.server.name' = 'dbserver1',
-    'database.whitelist' = 'mydb',
     'database.history.kafka.bootstrap.servers' = 'broker:9092',
     'database.history.kafka.topic' = 'call-center',
-    'table.whitelist' = 'mydb.calls',
+    '_comment 2' = 'new version since 2.x',
+    'topic.prefix' = 'dbserver1',
+    'schema.history.internal.kafka.bootstrap.servers' = 'broker:9092',
+    'schema.history.internal.kafka.topic' = 'call-center',
+
     'include.schema.changes' = 'false'
 );
 EOF
+
+
 
 sleep 5
 
@@ -159,14 +168,14 @@ fi
 #                     "database.history.kafka.topic": "schema-changes.mydb",
 #                     "transforms": "RemoveDots",
 #                     "transforms.RemoveDots.type": "org.apache.kafka.connect.transforms.RegexRouter",
-#                     "transforms.RemoveDots.regex": "(.*)\\.(.*)\\.(.*)",
-#                     "transforms.RemoveDots.replacement": "$1_$2_$3"
+#                     "transforms.RemoveDots.regex": "(.*)\\\\.(.*)\\\\.(.*)",
+#                     "transforms.RemoveDots.replacement": "\$1_\$2_\$3"
 #           }' \
 #      http://localhost:8083/connectors/debezium-mysql-source/config | jq .
 
 # sleep 5
 
-# log "Verifying topic dbserver1_mydb_calls"
-playground topic consume --topic dbserver1_mydb_calls --min-expected-messages 2
+# log "Verifying topic dbserver1.mydb.calls"
+playground topic consume --topic dbserver1.mydb.calls --min-expected-messages 2 --timeout 60
 
 

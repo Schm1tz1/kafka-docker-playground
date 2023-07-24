@@ -97,9 +97,9 @@ else
 fi
 
 set +e
-delete_topic sfdc-pushtopic-leads
+playground topic delete --topic sfdc-pushtopic-leads
 sleep 3
-create_topic sfdc-pushtopic-leads
+playground topic create --topic sfdc-pushtopic-leads
 set -e
 
 docker-compose build
@@ -122,7 +122,14 @@ log "Create $PUSH_TOPICS_NAME"
 docker exec sfdx-cli sh -c "sfdx apex run --target-org \"$SALESFORCE_USERNAME\" -f \"/tmp/MyLeadPushTopics.apex\""
 
 log "Creating Salesforce PushTopics Source connector"
-cat << EOF > connector.json
+connector_name="SalesforcePushTopicSource"
+set +e
+log "Deleting fully managed connector $connector_name, it might fail..."
+playground ccloud-connector delete --connector $connector_name
+set -e
+
+log "Creating fully managed connector"
+playground ccloud-connector create-or-update --connector $connector_name << EOF
 {
      "connector.class": "SalesforcePushTopicSource",
      "name": "SalesforcePushTopicSource",
@@ -143,18 +150,7 @@ cat << EOF > connector.json
      "tasks.max": "1"
 }
 EOF
-
-log "Connector configuration is:"
-cat connector.json
-
-set +e
-log "Deleting fully managed connector, it might fail..."
-delete_ccloud_connector connector.json
-set -e
-
-log "Creating fully managed connector"
-create_ccloud_connector connector.json
-wait_for_ccloud_connector_up connector.json 300
+wait_for_ccloud_connector_up $connector_name 300
 
 LEAD_FIRSTNAME=John_$RANDOM
 LEAD_LASTNAME=Doe_$RANDOM
@@ -164,10 +160,17 @@ docker exec sfdx-cli sh -c "sfdx data:create:record  --target-org \"$SALESFORCE_
 sleep 30
 
 log "Verify we have received the data in sfdc-pushtopic-leads topic"
-playground topic consume --topic sfdc-pushtopic-leads --min-expected-messages 1
+playground topic consume --topic sfdc-pushtopic-leads --min-expected-messages 1 --timeout 60
 
 log "Creating Salesforce SObject Sink connector"
-cat << EOF > connector2.json
+connector_name="SalesforceSObjectSink"
+set +e
+log "Deleting fully managed connector $connector_name, it might fail..."
+playground ccloud-connector delete --connector $connector_name
+set -e
+
+log "Creating fully managed connector"
+playground ccloud-connector create-or-update --connector $connector_name << EOF
 {
      "connector.class": "SalesforceSObjectSink",
      "name": "SalesforceSObjectSink",
@@ -193,26 +196,14 @@ cat << EOF > connector2.json
      "tasks.max": "1"
 }
 EOF
-
-log "Connector configuration is:"
-cat connector2.json
-
-set +e
-log "Deleting fully managed connector, it might fail..."
-delete_ccloud_connector connector2.json
-set -e
-
-log "Creating fully managed connector"
-create_ccloud_connector connector2.json
-wait_for_ccloud_connector_up connector2.json 300
+wait_for_ccloud_connector_up $connector_name 300
 
 sleep 40
 
-connectorName=$(cat connector2.json| jq -r .name)
-connectorId=$(get_ccloud_connector_lcc $connectorName)
+connectorId=$(get_ccloud_connector_lcc $connector_name)
 
 log "Verifying topic success-$connectorId"
-playground topic consume --topic success-$connectorId --min-expected-messages 1
+playground topic consume --topic success-$connectorId --min-expected-messages 1 --timeout 60
 
 log "Login with sfdx CLI on the account #2"
 docker exec sfdx-cli sh -c "sfdx sfpowerkit:auth:login -u \"$SALESFORCE_USERNAME_ACCOUNT2\" -p \"$SALESFORCE_PASSWORD_ACCOUNT2\" -r \"$SALESFORCE_INSTANCE_ACCOUNT2\" -s \"$SALESFORCE_SECURITY_TOKEN_ACCOUNT2\""

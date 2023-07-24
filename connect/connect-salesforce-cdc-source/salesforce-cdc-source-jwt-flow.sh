@@ -63,20 +63,19 @@ fi
 ${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.jwt-flow.yml"
 
 log "Creating Salesforce CDC Source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector salesforce-cdc-source << EOF
+{
                     "connector.class": "io.confluent.salesforce.SalesforceCdcSourceConnector",
                     "kafka.topic": "sfdc-cdc-contacts",
                     "tasks.max": "1",
                     "curl.logging": "true",
-                    "salesforce.instance" : "'"$SALESFORCE_INSTANCE"'",
+                    "salesforce.instance" : "$SALESFORCE_INSTANCE",
                     "salesforce.cdc.name" : "ContactChangeEvent",
                     "__comment" : "from 2.0.0 salesforce.cdc.name is renamed salesforce.cdc.channel",
                     "salesforce.cdc.channel" : "ContactChangeEvent",
-                    "salesforce.username" : "'"$SALESFORCE_USERNAME"'",
-                    "salesforce.password" : "'"$SALESFORCE_PASSWORD"'",
-                    "salesforce.password.token" : "'"$SALESFORCE_SECURITY_TOKEN"'",
+                    "salesforce.username" : "$SALESFORCE_USERNAME",
+                    "salesforce.password" : "$SALESFORCE_PASSWORD",
+                    "salesforce.password.token" : "$SALESFORCE_SECURITY_TOKEN",
                     "salesforce.initial.start" : "latest",
                     "connection.max.message.size": "10048576",
                     "key.converter": "org.apache.kafka.connect.json.JsonConverter",
@@ -85,12 +84,12 @@ curl -X PUT \
                     "confluent.topic.bootstrap.servers": "broker:9092",
                     "confluent.topic.replication.factor": "1",
 
-                    "salesforce.consumer.key" : "'"$SALESFORCE_CONSUMER_KEY_WITH_JWT"'",
-                    "salesforce.consumer.secret" : "'"$SALESFORCE_CONSUMER_PASSWORD_WITH_JWT"'",
+                    "salesforce.consumer.key" : "$SALESFORCE_CONSUMER_KEY_WITH_JWT",
+                    "salesforce.consumer.secret" : "$SALESFORCE_CONSUMER_PASSWORD_WITH_JWT",
                     "salesforce.jwt.keystore.path": "/tmp/salesforce-confluent.keystore.jks",
                     "salesforce.jwt.keystore.password": "confluent"
-          }' \
-     http://localhost:8083/connectors/salesforce-cdc-source/config | jq .
+          }
+EOF
 
 sleep 5
 
@@ -103,4 +102,4 @@ docker exec sfdx-cli sh -c "sfdx data:create:record  --target-org \"$SALESFORCE_
 sleep 10
 
 log "Verify we have received the data in sfdc-cdc-contacts topic"
-playground topic consume --topic sfdc-cdc-contacts --min-expected-messages 1
+playground topic consume --topic sfdc-cdc-contacts --min-expected-messages 1 --timeout 60

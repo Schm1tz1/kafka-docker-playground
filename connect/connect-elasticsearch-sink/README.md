@@ -22,9 +22,8 @@ $ playground run -f elasticsearch-sink<tab>
 The connector is created with:
 
 ```
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector elasticsearch-sink << EOF
+{
         "connector.class": "io.confluent.connect.elasticsearch.ElasticsearchSinkConnector",
           "tasks.max": "1",
           "topics": "test-elasticsearch-sink",
@@ -32,14 +31,25 @@ curl -X PUT \
           "connection.url": "http://elasticsearch:9200",
           "type.name": "kafka-connect",
           "name": "elasticsearch-sink"
-          }' \
-     http://localhost:8083/connectors/elasticsearch-sink/config | jq .
+          }
+EOF
 ```
 
 Messages are sent to `test-elasticsearch-sink` topic using:
 
 ```
-$ seq -f "{\"f1\": \"value%g\"}" 10 | docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic test-elasticsearch-sink --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"f1","type":"string"}]}'
+$ playground topic produce -t test-elasticsearch-sink --nb-messages 10 --forced-value '{"f1":"value%g"}' << 'EOF'
+{
+  "type": "record",
+  "name": "myrecord",
+  "fields": [
+    {
+      "name": "f1",
+      "type": "string"
+    }
+  ]
+}
+EOF
 ```
 
 Check that the data is available in Elasticsearch:

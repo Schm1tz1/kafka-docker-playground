@@ -54,9 +54,8 @@ $ docker exec postgres bash -c "psql -U myuser -d postgres -c 'SELECT * FROM CUS
 Creating Debezium PostgreSQL source connector
 
 ```bash
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector debezium-postgres-source << EOF
+{
                 "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
                 "tasks.max": "1",
                 "database.hostname": "postgres",
@@ -77,15 +76,15 @@ curl -X PUT \
                 "transforms": "addTopicSuffix",
                 "transforms.addTopicSuffix.type":"org.apache.kafka.connect.transforms.RegexRouter",
                 "transforms.addTopicSuffix.regex":"(.*)",
-                "transforms.addTopicSuffix.replacement":"$1-raw"
-          }' \
-     http://localhost:8083/connectors/debezium-postgres-source/config | jq .
+                "transforms.addTopicSuffix.replacement": "\$1-raw"
+          }
+EOF
 ```
 
 Verifying topic asgard.public.customers-raw
 
 ```bash
-playground topic consume --topic asgard.public.customers-raw --min-expected-messages 5
+playground topic consume --topic asgard.public.customers-raw --min-expected-messages 5 --timeout 60
 ```
 
 Result is:

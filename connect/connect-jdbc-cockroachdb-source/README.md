@@ -56,9 +56,8 @@ EOF
 Creating JDBC CockroachDB source connector
 
 ```bash
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector cockroachdb-source << EOF
+{
                "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
                "tasks.max": "1",
                "connection.url": "jdbc:postgresql://cockroachdb:26257/defaultdb?user=root&sslmode=disable",
@@ -69,14 +68,14 @@ curl -X PUT \
                "validate.non.null":"false",
                "errors.log.enable": "true",
                "errors.log.include.messages": "true"
-          }' \
-     http://localhost:8083/connectors/cockroachdb-source/config | jq .
+          }
+EOF
 ```
 
 Verifying topic `cockroachdb-drivers`
 
 ```bash
-playground topic consume --topic cockroachdb-drivers --min-expected-messages 2
+playground topic consume --topic cockroachdb-drivers --min-expected-messages 2 --timeout 60
 ```
 
 Results:

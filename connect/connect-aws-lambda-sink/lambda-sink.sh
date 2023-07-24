@@ -74,41 +74,55 @@ cd -
 ${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
 
 log "Sending messages to topic add-topic"
-seq -f "{\"a\": %g,\"b\": 1}" 10 | docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic add-topic --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"a","type":"int"},{"name":"b","type":"int"}]}'
+playground topic produce -t add-topic --nb-messages 10 << 'EOF'
+{
+  "type": "record",
+  "name": "myrecord",
+  "fields": [
+    {
+      "name": "a",
+      "type": "int"
+    },
+    {
+      "name": "b",
+      "type": "int"
+    }
+  ]
+}
+EOF
 
 log "Creating AWS Lambda Sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class" : "io.confluent.connect.aws.lambda.AwsLambdaSinkConnector",
-               "tasks.max": "1",
-               "topics" : "add-topic",
-               "aws.lambda.function.name" : "'"$LAMBDA_FUNCTION_NAME"'",
-               "aws.lambda.invocation.type" : "sync",
-               "aws.lambda.batch.size" : "50",
-               "aws.lambda.region": "'"$AWS_REGION"'",
-               "aws.access.key.id" : "'"$AWS_ACCESS_KEY_ID"'",
-               "aws.secret.access.key": "'"$AWS_SECRET_ACCESS_KEY"'",
-               "behavior.on.error" : "fail",
-               "reporter.bootstrap.servers": "broker:9092",
-               "reporter.error.topic.name": "error-responses",
-               "reporter.error.topic.replication.factor": 1,
-               "reporter.result.topic.name": "success-responses",
-               "reporter.result.topic.replication.factor": 1,
-               "confluent.license": "",
-               "confluent.topic.bootstrap.servers": "broker:9092",
-               "confluent.topic.replication.factor": "1"
-          }' \
-     http://localhost:8083/connectors/aws-lambda/config | jq .
+playground connector create-or-update --connector aws-lambda << EOF
+{
+    "connector.class" : "io.confluent.connect.aws.lambda.AwsLambdaSinkConnector",
+    "tasks.max": "1",
+    "topics" : "add-topic",
+    "aws.lambda.function.name" : "$LAMBDA_FUNCTION_NAME",
+    "aws.lambda.invocation.type" : "sync",
+    "aws.lambda.batch.size" : "50",
+    "aws.lambda.region": "$AWS_REGION",
+    "aws.access.key.id" : "$AWS_ACCESS_KEY_ID",
+    "aws.secret.access.key": "$AWS_SECRET_ACCESS_KEY",
+    "behavior.on.error" : "fail",
+    "reporter.bootstrap.servers": "broker:9092",
+    "reporter.error.topic.name": "error-responses",
+    "reporter.error.topic.replication.factor": 1,
+    "reporter.result.topic.name": "success-responses",
+    "reporter.result.topic.replication.factor": 1,
+    "confluent.license": "",
+    "confluent.topic.bootstrap.servers": "broker:9092",
+    "confluent.topic.replication.factor": "1"
+}
+EOF
 
 
 sleep 10
 
 log "Verify topic success-responses"
-playground topic consume --topic success-responses --min-expected-messages 10
+playground topic consume --topic success-responses --min-expected-messages 10 --timeout 60
 
 # log "Verify topic error-responses"
-playground topic consume --topic error-responses --min-expected-messages 0
+playground topic consume --topic error-responses --min-expected-messages 0 --timeout 60
 
 log "Cleanup role and function"
 aws iam delete-role --role-name $LAMBDA_ROLE_NAME

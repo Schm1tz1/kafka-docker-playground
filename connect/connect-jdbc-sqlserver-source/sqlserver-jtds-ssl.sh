@@ -90,9 +90,8 @@ GO
 EOF
 
 log "Creating JDBC SQL Server (with JTDS driver) source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector sqlserver-source-ssl << EOF
+{
                "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
                "tasks.max": "1",
                "connection.url": "jdbc:jtds:sqlserver://sqlserver:1433/testDB;ssl=require",
@@ -105,8 +104,8 @@ curl -X PUT \
                "validate.non.null":"false",
                "errors.log.enable": "true",
                "errors.log.include.messages": "true"
-          }' \
-     http://localhost:8083/connectors/sqlserver-source-ssl/config | jq .
+          }
+EOF
 
 sleep 5
 
@@ -117,4 +116,4 @@ GO
 EOF
 
 log "Verifying topic sqlserver-customers"
-playground topic consume --topic sqlserver-customers --min-expected-messages 5
+playground topic consume --topic sqlserver-customers --min-expected-messages 5 --timeout 60

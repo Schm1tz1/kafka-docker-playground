@@ -55,18 +55,18 @@ $ curl -X PUT \
      --data '{
                "connector.class": "io.confluent.connect.servicenow.ServiceNowSourceConnector",
                 "kafka.topic": "topic-servicenow",
-                "servicenow.url": "'"$SERVICENOW_URL"'",
+                "servicenow.url": "$SERVICENOW_URL",
                 "tasks.max": "1",
                 "servicenow.table": "incident",
                 "servicenow.user": "admin",
-                "servicenow.password": "'"$SERVICENOW_PASSWORD"'",
-                "servicenow.since": "'"$TODAY"'",
+                "servicenow.password": "$SERVICENOW_PASSWORD",
+                "servicenow.since": "$TODAY",
                 "key.converter": "org.apache.kafka.connect.json.JsonConverter",
                 "value.converter": "org.apache.kafka.connect.json.JsonConverter",
                 "confluent.topic.ssl.endpoint.identification.algorithm" : "https",
                 "confluent.topic.sasl.mechanism" : "PLAIN",
                 "confluent.topic.bootstrap.servers": "${file:/data:bootstrap.servers}",
-                "confluent.topic.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/data:sasl.username}\" password=\"${file:/data:sasl.password}\";",
+                "confluent.topic.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"\${file:/data:sasl.username}\" password=\"\${file:/data:sasl.password}\";",
                 "confluent.topic.security.protocol" : "SASL_SSL",
                 "confluent.topic.replication.factor": "3"
           }' \
@@ -89,7 +89,7 @@ $ docker exec -e SERVICENOW_URL="$SERVICENOW_URL" -e SERVICENOW_PASSWORD="$SERVI
 Verify we have received the data in `topic-servicenow` topic
 
 ```
-playground topic consume --topic topic-servicenow --min-expected-messages 1
+playground topic consume --topic topic-servicenow --min-expected-messages 1 --timeout 60
 ```
 
 Results:

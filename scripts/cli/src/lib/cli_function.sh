@@ -43,6 +43,31 @@ function get_connect_url_and_security() {
   echo "$connect_url@$security"
 }
 
+function get_ccloud_connect() {
+  if [ ! -f /tmp/delta_configs/ak-tools-ccloud.delta ]
+  then
+      logerror "ERROR: /tmp/delta_configs/ak-tools-ccloud.delta has not been generated"
+      exit 1
+  fi
+  DIR_CLI="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+  dir1=$(echo ${DIR_CLI%/*})
+  root_folder=$(echo ${dir1%/*})
+  IGNORE_CHECK_FOR_DOCKER_COMPOSE=true
+  source $root_folder/scripts/utils.sh
+
+  environment=$(grep "ENVIRONMENT ID" /tmp/delta_configs/ak-tools-ccloud.delta | cut -d " " -f 4)
+  cluster=$(grep "KAFKA CLUSTER ID" /tmp/delta_configs/ak-tools-ccloud.delta | cut -d " " -f 5)
+
+  if [[ "$OSTYPE" == "darwin"* ]]
+  then
+      authorization=$(echo -n "$CLOUD_API_KEY:$CLOUD_API_SECRET" | base64)
+  else
+      authorization=$(echo -n "$CLOUD_API_KEY:$CLOUD_API_SECRET" | base64 -w 0)
+  fi
+
+  echo "$environment@$cluster@$authorization"
+}
+
 function get_sr_url_and_security() {
   environment=`get_environment_used`
 
@@ -111,15 +136,6 @@ function get_security_broker() {
       security="$config_file_name /etc/kafka/secrets/client_without_interceptors.config"
   fi
   echo "$container@$security"
-}
-
-function get_connector_list() {
-  ret=$(get_connect_url_and_security)
-
-  connect_url=$(echo "$ret" | cut -d "@" -f 1)
-  security=$(echo "$ret" | cut -d "@" -f 2)
-
-  curl $security -s "$connect_url/connectors" | jq -r '.[]' | tr '\n' ' ' | sed -e 's/[[:space:]]*$//'
 }
 
 function get_fzf_version() {
@@ -287,6 +303,34 @@ function get_any_files_with_fzf() {
   res=$(find $dir2 -type f ! -path '*/\.*' | fzf --query "$cur" --margin=1%,1%,1%,1% $fzf_option_rounded --info=inline --prompt="🍺" --header="ctrl-c or esc to quit" --color="bg:-1,bg+:-1,info:#BDBB72,border:#FFFFFF,spinner:0,hl:#beb665,fg:#00f7f7,header:#5CC9F5,fg+:#beb665,pointer:#E12672,marker:#5CC9F5,prompt:#98BEDE" $fzf_option_wrap $fzf_option_pointer);echo "$cur@$res"
 }
 
+function get_predefined_schemas_with_fzf() {
+  DIR_CLI="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+  dir1=$(echo ${DIR_CLI%/*})
+  dir2=$(echo ${dir1%/*})
+  predefined_folder=$dir2/scripts/cli/src/predefined-schemas
+
+  cur="$1"
+
+  fzf_version=$(get_fzf_version)
+  if version_gt $fzf_version "0.38"
+  then
+    fzf_option_wrap="--preview-window=70%,wrap"
+    fzf_option_pointer="--pointer=👉"
+    fzf_option_rounded="--border=rounded"
+  else
+    fzf_options=""
+    fzf_option_pointer=""
+    fzf_option_rounded=""
+  fi
+
+  if [[ $(type -f bat 2>&1) =~ "not found" ]]
+  then
+    res=$(find $predefined_folder $PWD -maxdepth 2 \( -name "*.json" -o -name "*.avsc" -o -name "*.proto" -o -name "*.proto5" -o -name "*.sql" \) | fzf --query "$cur" --margin=1%,1%,1%,1% $fzf_option_rounded --info=inline --prompt="🍺" --header="ctrl-c or esc to quit" --color="bg:-1,bg+:-1,info:#BDBB72,border:#FFFFFF,spinner:0,hl:#beb665,fg:#00f7f7,header:#5CC9F5,fg+:#beb665,pointer:#E12672,marker:#5CC9F5,prompt:#98BEDE" --delimiter / --with-nth "-2,-1" $fzf_option_wrap $fzf_option_pointer --preview 'cat {}');echo "$cur@$res"
+  else
+    res=$(find $predefined_folder $PWD -maxdepth 2 \( -name "*.json" -o -name "*.avsc" -o -name "*.proto" -o -name "*.proto5" -o -name "*.sql" \) | fzf --query "$cur" --margin=1%,1%,1%,1% $fzf_option_rounded --info=inline --prompt="🍺" --header="ctrl-c or esc to quit" --color="bg:-1,bg+:-1,info:#BDBB72,border:#FFFFFF,spinner:0,hl:#beb665,fg:#00f7f7,header:#5CC9F5,fg+:#beb665,pointer:#E12672,marker:#5CC9F5,prompt:#98BEDE" --delimiter / --with-nth "-2,-1" $fzf_option_wrap $fzf_option_pointer --preview 'bat --style=plain --color=always --line-range :500 {}');echo "$cur@$res"
+  fi
+}
+
 function filter_not_mdc_environment() {
   environment=`get_environment_used`
 
@@ -299,6 +343,21 @@ function filter_not_mdc_environment() {
   if [[ "$environment" == "mdc"* ]]
   then
     echo "$environment is not supported with this command !"
+  fi
+}
+
+function filter_ccloud_environment() {
+  environment=`get_environment_used`
+
+  if [ "$environment" == "error" ]
+  then
+    logerror "File containing restart command /tmp/playground-command does not exist!"
+    exit 1 
+  fi
+
+  if [[ "$environment" != "environment" ]]
+  then
+    echo "environment should be ccloud with this command (it is $environment)!"
   fi
 }
 

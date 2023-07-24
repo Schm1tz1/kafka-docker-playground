@@ -71,30 +71,58 @@ log "Blocking $DOMAIN IP $IP to make sure proxy is used"
 docker exec --privileged --user root connect bash -c "iptables -A INPUT -p tcp -s $IP -j DROP"
 
 log "Creating Azure Blob Storage Sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-                "connector.class": "io.confluent.connect.azure.blob.AzureBlobStorageSinkConnector",
-                "tasks.max": "1",
-                "topics": "blob_topic",
-                "flush.size": "3",
-                "azblob.account.name": "${file:/data:AZURE_ACCOUNT_NAME}",
-                "azblob.account.key": "${file:/data:AZURE_ACCOUNT_KEY}",
-                "azblob.container.name": "${file:/data:AZURE_CONTAINER_NAME}",
-                "azblob.proxy.url" : "https://nginx-proxy:8888",
-                "format.class": "io.confluent.connect.azure.blob.format.avro.AvroFormat",
-                "confluent.license": "",
-                "confluent.topic.bootstrap.servers": "broker:9092",
-                "confluent.topic.replication.factor": "1",
-                "errors.tolerance": "all",
-                "errors.log.enable": "true",
-                "errors.log.include.messages": "true"
-          }' \
-     http://localhost:8083/connectors/azure-blob-sink/config | jq .
+playground connector create-or-update --connector azure-blob-sink << EOF
+{
+    "connector.class": "io.confluent.connect.azure.blob.AzureBlobStorageSinkConnector",
+    "tasks.max": "1",
+    "topics": "blob_topic",
+    "flush.size": "3",
+    "azblob.account.name": "\${file:/data:AZURE_ACCOUNT_NAME}",
+    "azblob.account.key": "\${file:/data:AZURE_ACCOUNT_KEY}",
+    "azblob.container.name": "\${file:/data:AZURE_CONTAINER_NAME}",
+    "azblob.proxy.url" : "https://nginx-proxy:8888",
+    "format.class": "io.confluent.connect.azure.blob.format.avro.AvroFormat",
+    "confluent.license": "",
+    "confluent.topic.bootstrap.servers": "broker:9092",
+    "confluent.topic.replication.factor": "1",
+    "errors.tolerance": "all",
+    "errors.log.enable": "true",
+    "errors.log.include.messages": "true"
+}
+EOF
 
 
 log "Sending messages to topic blob_topic"
-seq -f "{\"f1\": \"value%g\"}" 10 | docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic blob_topic --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"f1","type":"string"}]}'
+playground topic produce -t blob_topic --nb-messages 10 << 'EOF'
+{
+    "type": "record",
+    "namespace": "com.github.vdesabou",
+    "name": "Customer",
+    "version": "1",
+    "fields": [
+        {
+            "name": "count",
+            "type": "long",
+            "doc": "count"
+        },
+        {
+            "name": "first_name",
+            "type": "string",
+            "doc": "First Name of Customer"
+        },
+        {
+            "name": "last_name",
+            "type": "string",
+            "doc": "Last Name of Customer"
+        },
+        {
+            "name": "address",
+            "type": "string",
+            "doc": "Address of Customer"
+        }
+    ]
+}
+EOF
 
 sleep 10
 
@@ -108,14 +136,13 @@ docker run --rm -v /tmp:/tmp vdesabou/avro-tools tojson /tmp/blob_topic+0+000000
 
 
 log "Creating Azure Blob Storage Source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector azure-blob-source << EOF
+{
                 "connector.class": "io.confluent.connect.azure.blob.storage.AzureBlobStorageSourceConnector",
                 "tasks.max": "1",
-                "azblob.account.name": "${file:/data:AZURE_ACCOUNT_NAME}",
-                "azblob.account.key": "${file:/data:AZURE_ACCOUNT_KEY}",
-                "azblob.container.name": "${file:/data:AZURE_CONTAINER_NAME}",
+                "azblob.account.name": "\${file:/data:AZURE_ACCOUNT_NAME}",
+                "azblob.account.key": "\${file:/data:AZURE_ACCOUNT_KEY}",
+                "azblob.container.name": "\${file:/data:AZURE_CONTAINER_NAME}",
                 "azblob.proxy.url" : "https://nginx-proxy:8888",
                 "format.class": "io.confluent.connect.cloud.storage.source.format.CloudStorageAvroFormat",
                 "confluent.license": "",
@@ -124,14 +151,14 @@ curl -X PUT \
                 "transforms" : "AddPrefix",
                 "transforms.AddPrefix.type" : "org.apache.kafka.connect.transforms.RegexRouter",
                 "transforms.AddPrefix.regex" : ".*",
-                "transforms.AddPrefix.replacement" : "copy_of_$0"
-          }' \
-     http://localhost:8083/connectors/azure-blob-source/config | jq .
+                "transforms.AddPrefix.replacement" : "copy_of_\$0"
+          }
+EOF
 
 sleep 5
 
 log "Verifying topic copy_of_blob_topic"
-playground topic consume --topic copy_of_blob_topic --min-expected-messages 3
+playground topic consume --topic copy_of_blob_topic --min-expected-messages 3 --timeout 60
 exit 0
 log "Deleting resource group"
 az group delete --name $AZURE_RESOURCE_GROUP --yes --no-wait

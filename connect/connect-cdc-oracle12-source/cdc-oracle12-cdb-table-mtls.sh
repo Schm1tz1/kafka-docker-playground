@@ -226,12 +226,15 @@ sleep 60
 
 docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.cdb-table-mtls.yml" up -d
 
+command="source ${DIR}/../../scripts/utils.sh && docker-compose -f ../../environment/plaintext/docker-compose.yml -f ${PWD}/docker-compose.plaintext.cdb-table-mtls.yml up -d ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d"
+echo "$command" > /tmp/playground-command
+log "✨ If you modify a docker-compose file and want to re-create the container(s), run cli command playground container recreate"
+
 ../../scripts/wait-for-connect-and-controlcenter.sh
 
 log "Creating Oracle source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector cdc-oracle-source-cdb << EOF
+{
                "connector.class": "io.confluent.connect.oracle.cdc.OracleCdcSourceConnector",
                "tasks.max":2,
                "key.converter": "io.confluent.connect.avro.AvroConverter",
@@ -251,10 +254,11 @@ curl -X PUT \
                "oracle.connection.javax.net.ssl.keyStore": "/tmp/keystore.jks",
                "oracle.connection.javax.net.ssl.keyStorePassword": "welcome123",
                "start.from":"snapshot",
+               "enable.metrics.collection": "true",
                "redo.log.topic.name": "redo-log-topic",
                "redo.log.consumer.bootstrap.servers":"broker:9092",
                "table.inclusion.regex": ".*CUSTOMERS.*",
-               "table.topic.name.template": "${databaseName}.${schemaName}.${tableName}",
+               "table.topic.name.template": "\${databaseName}.\${schemaName}.\${tableName}",
                "numeric.mapping": "best_fit",
                "connection.pool.max.size": 20,
                "redo.log.row.fetch.size":1,
@@ -266,8 +270,8 @@ curl -X PUT \
                "topic.creation.default.replication.factor": 1,
                "topic.creation.default.partitions": 1,
                "topic.creation.default.cleanup.policy": "delete"
-          }' \
-     http://localhost:8083/connectors/cdc-oracle-source-cdb/config | jq .
+          }
+EOF
 
 log "Waiting 20s for connector to read existing data"
 sleep 20
@@ -279,8 +283,8 @@ do
 done
 
 log "Verifying topic ORCLCDB.C__MYUSER.CUSTOMERS: there should be 13 records"
-playground topic consume --topic ORCLCDB.C__MYUSER.CUSTOMERS --min-expected-messages 13
+playground topic consume --topic ORCLCDB.C__MYUSER.CUSTOMERS --min-expected-messages 13 --timeout 60
 
 log "Verifying topic redo-log-topic: there should be 15 records"
-playground topic consume --topic redo-log-topic --min-expected-messages 15
+playground topic consume --topic redo-log-topic --min-expected-messages 15 --timeout 60
 

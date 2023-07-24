@@ -8,7 +8,7 @@ for component in json-producer
 do
      set +e
      log "🏗 Building jar for ${component}"
-     docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${DIR}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${DIR}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
+     docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${PWD}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${PWD}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
      if [ $? != 0 ]
      then
           logerror "ERROR: failed to build java component $component"
@@ -29,25 +29,24 @@ log "Sending messages to topic couchbase-sink-example"
 docker exec json-producer bash -c "java -jar json-producer-1.0.0-SNAPSHOT-jar-with-dependencies.jar"
 
 log "Creating Couchbase sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class": "com.couchbase.connect.kafka.CouchbaseSinkConnector",
-               "tasks.max": "2",
-               "topics": "couchbase-sink-example",
-               "couchbase.seed.nodes": "couchbase",
-               "couchbase.bootstrap.timeout": "2000ms",
-               "couchbase.bucket": "travel-data",
-               "couchbase.username": "Administrator",
-               "couchbase.password": "password",
-               "couchbase.persist.to": "NONE",
-               "couchbase.replicate.to": "NONE",
-               "couchbase.document.id": "/airport",
-               "key.converter": "org.apache.kafka.connect.storage.StringConverter",
-               "value.converter": "org.apache.kafka.connect.json.JsonConverter",
-               "value.converter.schemas.enable": "false"
-          }' \
-     http://localhost:8083/connectors/couchbase-sink/config | jq .
+playground connector create-or-update --connector couchbase-sink << EOF
+{
+     "connector.class": "com.couchbase.connect.kafka.CouchbaseSinkConnector",
+     "tasks.max": "2",
+     "topics": "couchbase-sink-example",
+     "couchbase.seed.nodes": "couchbase",
+     "couchbase.bootstrap.timeout": "2000ms",
+     "couchbase.bucket": "travel-data",
+     "couchbase.username": "Administrator",
+     "couchbase.password": "password",
+     "couchbase.persist.to": "NONE",
+     "couchbase.replicate.to": "NONE",
+     "couchbase.document.id": "/airport",
+     "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+     "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+     "value.converter.schemas.enable": "false"
+}
+EOF
 
 sleep 10
 

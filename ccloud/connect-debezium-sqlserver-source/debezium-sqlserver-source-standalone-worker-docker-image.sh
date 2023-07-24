@@ -21,7 +21,7 @@ fi
 cp ../../ccloud/environment/data standalone-worker-docker-image/data
 
 set +e
-delete_topic server1.testDB.dbo.customers
+playground topic delete --topic server1.testDB.dbo.customers
 set -e
 
 log "Create table"
@@ -64,7 +64,7 @@ docker run --network=host test
 # EOF
 
 # log "Verifying topic server1.testDB.dbo.customers"
-playground topic consume --topic server1.testDB.dbo.customers --min-expected-messages 5
+playground topic consume --topic server1.testDB.dbo.customers --min-expected-messages 5 --timeout 60
 
 # log "Copying standalone logs to /tmp/standalone.log"
 # docker cp connect:/tmp/standalone.log /tmp/standalone.log

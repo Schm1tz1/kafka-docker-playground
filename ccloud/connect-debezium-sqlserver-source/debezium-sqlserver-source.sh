@@ -17,7 +17,7 @@ then
      do
      set +e
      log "🏗 Building jar for ${component}"
-     docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${DIR}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${DIR}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
+     docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${PWD}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${PWD}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
      if [ $? != 0 ]
      then
           logerror "ERROR: failed to build java component "
@@ -43,7 +43,7 @@ fi
 #############
 
 set +e
-delete_topic server1.testDB.dbo.customers
+playground topic delete --topic server1.testDB.dbo.customers
 set -e
 
 log "Create table"
@@ -74,9 +74,8 @@ GO
 EOF
 
 log "Creating Debezium SQL Server source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector debezium-sqlserver-source << EOF
+{
               "connector.class": "io.debezium.connector.sqlserver.SqlServerConnector",
               "tasks.max": "1",
               "database.hostname": "sqlserver",
@@ -89,28 +88,28 @@ curl -X PUT \
               
               "_comment": "old version before 2.x",
               "database.server.name": "server1",
-              "database.history.kafka.bootstrap.servers": "${file:/data:bootstrap.servers}",
+              "database.history.kafka.bootstrap.servers": "\${file:/data:bootstrap.servers}",
               "database.history.kafka.topic": "schema-changes.inventory",
-              "database.history.producer.sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/data:sasl.username}\" password=\"${file:/data:sasl.password}\";",
+              "database.history.producer.sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"\${file:/data:sasl.username}\" password=\"\${file:/data:sasl.password}\";",
               "database.history.producer.sasl.mechanism": "PLAIN",
               "database.history.producer.security.protocol": "SASL_SSL",
-              "database.history.consumer.sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/data:sasl.username}\" password=\"${file:/data:sasl.password}\";",
+              "database.history.consumer.sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"\${file:/data:sasl.username}\" password=\"\${file:/data:sasl.password}\";",
               "database.history.consumer.sasl.mechanism": "PLAIN",
               "database.history.consumer.security.protocol": "SASL_SSL",
 
               "_comment": "new version since 2.x",
               "database.encrypt": "false",
               "topic.prefix": "server1",
-              "schema.history.internal.kafka.bootstrap.servers": "${file:/data:bootstrap.servers}",
+              "schema.history.internal.kafka.bootstrap.servers": "\${file:/data:bootstrap.servers}",
               "schema.history.internal.kafka.topic": "schema-changes.inventory",
-              "schema.history.internal.producer.sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/data:sasl.username}\" password=\"${file:/data:sasl.password}\";",
+              "schema.history.internal.producer.sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"\${file:/data:sasl.username}\" password=\"\${file:/data:sasl.password}\";",
               "schema.history.internal.producer.sasl.mechanism": "PLAIN",
               "schema.history.internal.producer.security.protocol": "SASL_SSL",
-              "schema.history.internal.consumer.sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/data:sasl.username}\" password=\"${file:/data:sasl.password}\";",
+              "schema.history.internal.consumer.sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"\${file:/data:sasl.username}\" password=\"\${file:/data:sasl.password}\";",
               "schema.history.internal.consumer.sasl.mechanism": "PLAIN",
               "schema.history.internal.consumer.security.protocol": "SASL_SSL"
-          }' \
-     http://localhost:8083/connectors/debezium-sqlserver-source/config | jq .
+          }
+EOF
 
 sleep 5
 
@@ -121,7 +120,7 @@ GO
 EOF
 
 log "Verifying topic server1.testDB.dbo.customers"
-playground topic consume --topic server1.testDB.dbo.customers --min-expected-messages 5
+playground topic consume --topic server1.testDB.dbo.customers --min-expected-messages 5 --timeout 60
 
 
 if [ ! -z "$SQL_DATAGEN" ]

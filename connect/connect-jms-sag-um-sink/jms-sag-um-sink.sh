@@ -58,9 +58,8 @@ log "Sending messages to topic sink-messages"
 seq 10 | docker exec -i broker kafka-console-producer --broker-list broker:9092 --topic sink-messages
 
 log "Creating Solace source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector jms-sag-um-sink << EOF
+{
                "connector.class": "io.confluent.connect.jms.JmsSinkConnector",
                "tasks.max": "1",
                "topics": "sink-messages",
@@ -75,10 +74,14 @@ curl -X PUT \
                "value.converter": "org.apache.kafka.connect.storage.StringConverter",
                "confluent.topic.bootstrap.servers": "broker:9092",
                "confluent.topic.replication.factor": "1"
-          }' \
-     http://localhost:8083/connectors/jms-sag-um-sink/config | jq .
+          }
+EOF
 
 sleep 10
 
-log "Confirm the messages were delivered to the test-queue queue "
-docker exec -i umserver timeout 30 runUMTool.sh JMSSubscribe -rname=nsp://localhost:9000 -connectionfactory=QueueConnectionFactory -destination=test-queue
+log "Confirm the messages were delivered to the test-queue queue"
+set +e
+docker exec -i umserver timeout 10 runUMTool.sh JMSSubscribe -rname=nsp://localhost:9000 -connectionfactory=QueueConnectionFactory -destination=test-queue > /tmp/result.log  2>&1
+set -e
+cat /tmp/result.log
+grep "JMS MSG ID" /tmp/result.log

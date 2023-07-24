@@ -38,22 +38,21 @@ seq -f "{\"f1\": \"value%g\"}" 10 | docker exec -i connect kafka-avro-console-pr
 Verify data was sent to broker using `--property proxy.host=nginx-proxy -property proxy.port=8888`:
 
 ```bash
-playground topic consume --topic a-topic --min-expected-messages 20
+playground topic consume --topic a-topic --min-expected-messages 20 --timeout 60
 ```
 
 Verify data was sent to broker using `--property schema.proxy.host=nginx-proxy -property schema.proxy.port=8888`:
 
 ```bash
-playground topic consume --topic a-topic --min-expected-messages 20
+playground topic consume --topic a-topic --min-expected-messages 20 --timeout 60
 ```
 
 With connector:
 
 ```
 log "Creating FileStream Sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector filestream-sink << EOF
+{
                "tasks.max": "1",
                "connector.class": "org.apache.kafka.connect.file.FileStreamSinkConnector",
                "topics": "a-topic",
@@ -63,8 +62,8 @@ curl -X PUT \
                "value.converter.schema.registry.url": "http://schema-registry:8081",
                "value.converter.proxy.host": "nginx-proxy",
                "value.converter.proxy.port": "8888"
-          }' \
-     http://localhost:8083/connectors/filestream-sink/config | jq .
+          }
+EOF
 ```
 
 

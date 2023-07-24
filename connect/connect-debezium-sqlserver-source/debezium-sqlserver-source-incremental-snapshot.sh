@@ -50,9 +50,8 @@ GO
 EOF
 
 log "Creating Debezium SQL Server source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector debezium-sqlserver-source << EOF
+{
 
               "connector.class": "io.debezium.connector.sqlserver.SqlServerConnector",
               "tasks.max": "1",
@@ -74,8 +73,8 @@ curl -X PUT \
               "topic.prefix": "server1",
               "schema.history.internal.kafka.bootstrap.servers": "broker:9092",
               "schema.history.internal.kafka.topic": "schema-changes.inventory"
-          }' \
-     http://localhost:8083/connectors/debezium-sqlserver-source/config | jq .
+          }
+EOF
 
 sleep 5
 
@@ -87,7 +86,7 @@ GO
 EOF
 
 log "Verifying topic server1.testDB.dbo.customers"
-playground topic consume --topic server1.testDB.dbo.customers --min-expected-messages 5
+playground topic consume --topic server1.testDB.dbo.customers --min-expected-messages 5 --timeout 60
 
 
 log "Add another table customers2"
@@ -113,31 +112,34 @@ EOF
 
 
 log "Updating Debezium SQL Server source connector with new table customers2"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-              "connector.class": "io.debezium.connector.sqlserver.SqlServerConnector",
-              "tasks.max": "1",
-              "database.hostname": "sqlserver",
-              "database.port": "1433",
-              "database.user": "sa",
-              "database.password": "Password!",
-              "database.names" : "testDB",
+playground connector create-or-update --connector debezium-sqlserver-source << EOF
+{
+  "connector.class": "io.debezium.connector.sqlserver.SqlServerConnector",
+  "tasks.max": "1",
+  "database.hostname": "sqlserver",
+  "database.port": "1433",
+  "database.user": "sa",
+  "database.password": "Password!",
+  "database.names" : "testDB",
 
-              "table.include.list" : "dbo.customers,dbo.debezium_signal,dbo.customers2",
-              "signal.data.collection": "testDB.dbo.debezium_signal",
+  "table.include.list" : "dbo.customers,dbo.debezium_signal,dbo.customers2",
+  "signal.data.collection": "testDB.dbo.debezium_signal",
 
-              "_comment": "old version before 2.x",
-              "database.server.name": "server1",
-              "database.history.kafka.bootstrap.servers": "broker:9092",
-              "database.history.kafka.topic": "schema-changes.inventory",
-              "_comment": "new version since 2.x",
-              "database.encrypt": "false",
-              "topic.prefix": "server1",
-              "schema.history.internal.kafka.bootstrap.servers": "broker:9092",
-              "schema.history.internal.kafka.topic": "schema-changes.inventory"
-          }' \
-     http://localhost:8083/connectors/debezium-sqlserver-source/config | jq .
+  "_comment": "old version before 2.x",
+  "database.server.name": "server1",
+  "database.history.kafka.bootstrap.servers": "broker:9092",
+  "database.history.kafka.topic": "schema-changes.inventory",
+  "_comment": "new version since 2.x",
+  "database.encrypt": "false",
+  "topic.prefix": "server1",
+  "schema.history.internal.kafka.bootstrap.servers": "broker:9092",
+  "schema.history.internal.kafka.topic": "schema-changes.inventory",
+
+  "_comment:": "remove _ to use ExtractNewRecordState smt",
+  "_transforms": "unwrap",
+  "_transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState"
+}
+EOF
 
 log "Add another table customers2"
 docker exec -i sqlserver /opt/mssql-tools/bin/sqlcmd -U sa -P Password! << EOF
@@ -147,10 +149,8 @@ INSERT INTO customers2(first_name,last_name,email)
 GO
 EOF
 
-set +e
 log "Verifying topic server1.testDB.dbo.customers2 : there will be only the new record"
-playground topic consume --topic server1.testDB.dbo.customers2 --min-expected-messages 5
-set -e
+playground topic consume --topic server1.testDB.dbo.customers2 --min-expected-messages 1 --timeout 60
 
 log "Trigger Ad hoc snapshot"
 docker exec -i sqlserver /opt/mssql-tools/bin/sqlcmd -U sa -P Password! << EOF
@@ -163,4 +163,4 @@ EOF
 sleep 5
 
 log "Verifying topic server1.testDB.dbo.customers2: it should have all records"
-playground topic consume --topic server1.testDB.dbo.customers2 --min-expected-messages 5
+playground topic consume --topic server1.testDB.dbo.customers2 --min-expected-messages 5 --timeout 60

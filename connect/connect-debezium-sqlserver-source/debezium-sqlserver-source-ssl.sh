@@ -91,31 +91,34 @@ EOF
 
 
 log "Creating Debezium SQL Server source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-              "connector.class": "io.debezium.connector.sqlserver.SqlServerConnector",
-              "tasks.max": "1",
-              "database.hostname": "sqlserver",
-              "database.port": "1433",
-              "database.user": "sa",
-              "database.password": "Password!",
-              "database.names" : "testDB",
-              "_comment": "old version before 2.x",
-              "database.server.name": "server1",
-              "database.history.kafka.bootstrap.servers": "broker:9092",
-              "database.history.kafka.topic": "schema-changes.inventory",
-              "database.trustStore": "/tmp/truststore.jks",
-              "database.trustStorePassword": "confluent",
-              "_comment": "new version since 2.x",
-              "database.encrypt": "true",
-              "topic.prefix": "server1",
-              "schema.history.internal.kafka.bootstrap.servers": "broker:9092",
-              "schema.history.internal.kafka.topic": "schema-changes.inventory",
-              "database.ssl.truststore": "/tmp/truststore.jks",
-              "database.ssl.truststore.password": "confluent"
-          }' \
-     http://localhost:8083/connectors/debezium-sqlserver-source-ssl/config | jq .
+playground connector create-or-update --connector debezium-sqlserver-source-ssl << EOF
+{
+  "connector.class": "io.debezium.connector.sqlserver.SqlServerConnector",
+  "tasks.max": "1",
+  "database.hostname": "sqlserver",
+  "database.port": "1433",
+  "database.user": "sa",
+  "database.password": "Password!",
+  "database.names" : "testDB",
+  "_comment": "old version before 2.x",
+  "database.server.name": "server1",
+  "database.history.kafka.bootstrap.servers": "broker:9092",
+  "database.history.kafka.topic": "schema-changes.inventory",
+  "database.trustStore": "/tmp/truststore.jks",
+  "database.trustStorePassword": "confluent",
+  "_comment": "new version since 2.x",
+  "database.encrypt": "true",
+  "topic.prefix": "server1",
+  "schema.history.internal.kafka.bootstrap.servers": "broker:9092",
+  "schema.history.internal.kafka.topic": "schema-changes.inventory",
+  "database.ssl.truststore": "/tmp/truststore.jks",
+  "database.ssl.truststore.password": "confluent",
+
+  "_comment:": "remove _ to use ExtractNewRecordState smt",
+  "_transforms": "unwrap",
+  "_transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState"
+}
+EOF
 
 sleep 5
 
@@ -126,4 +129,4 @@ GO
 EOF
 
 log "Verifying topic server1.testDB.dbo.customers"
-playground topic consume --topic server1.testDB.dbo.customers --min-expected-messages 5
+playground topic consume --topic server1.testDB.dbo.customers --min-expected-messages 5 --timeout 60

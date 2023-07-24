@@ -20,27 +20,25 @@ docker cp json-sftp-source.json sftp-server:/chroot/home/foo/upload/input/
 rm -f json-sftp-source.json
 
 log "Creating JSON (no schema) SFTP Source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-        "topics": "test_sftp_sink",
-               "tasks.max": "1",
-               "connector.class": "io.confluent.connect.sftp.SftpSchemaLessJsonSourceConnector",
-               "behavior.on.error":"IGNORE",
-               "input.path": "/home/foo/upload/input",
-               "error.path": "/home/foo/upload/error",
-               "finished.path": "/home/foo/upload/finished",
-               "input.file.pattern": ".*\\.json",
-               "sftp.username":"foo",
-               "sftp.password":"pass",
-               "sftp.host":"sftp-server",
-               "sftp.port":"22",
-               "kafka.topic": "sftp-testing-topic",
-               "value.converter": "org.apache.kafka.connect.storage.StringConverter"
-          }' \
-     http://localhost:8083/connectors/sftp-source-json/config | jq .
+playground connector create-or-update --connector sftp-source-json << EOF
+{
+     "tasks.max": "1",
+     "connector.class": "io.confluent.connect.sftp.SftpSchemaLessJsonSourceConnector",
+     "behavior.on.error":"IGNORE",
+     "input.path": "/home/foo/upload/input",
+     "error.path": "/home/foo/upload/error",
+     "finished.path": "/home/foo/upload/finished",
+     "input.file.pattern": ".*\\\\.json",
+     "sftp.username":"foo",
+     "sftp.password":"pass",
+     "sftp.host":"sftp-server",
+     "sftp.port":"22",
+     "kafka.topic": "sftp-testing-topic",
+     "value.converter": "org.apache.kafka.connect.storage.StringConverter"
+}
+EOF
 
-sleep 5
+sleep 15
 
 log "Verifying topic sftp-testing-topic"
-playground topic consume --topic sftp-testing-topic --min-expected-messages 2
+playground topic consume --topic sftp-testing-topic --min-expected-messages 2 --timeout 60

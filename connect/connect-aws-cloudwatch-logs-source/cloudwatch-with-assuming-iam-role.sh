@@ -62,21 +62,20 @@ done
 CLOUDWATCH_LOGS_URL="https://logs.$AWS_REGION.amazonaws.com"
 
 log "Creating AWS CloudWatch Logs Source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class": "io.confluent.connect.aws.cloudwatch.AwsCloudWatchSourceConnector",
-               "tasks.max": "1",
-               "aws.cloudwatch.logs.url": "'"$CLOUDWATCH_LOGS_URL"'",
-               "aws.cloudwatch.log.group": "'"$LOG_GROUP"'",
-               "aws.cloudwatch.log.streams": "'"$LOG_STREAM"'",
-               "confluent.license": "",
-               "confluent.topic.bootstrap.servers": "broker:9092",
-               "confluent.topic.replication.factor": "1"
-          }' \
-     http://localhost:8083/connectors/aws-cloudwatch-logs-source/config | jq .
+playground connector create-or-update --connector aws-cloudwatch-logs-source << EOF
+{
+     "connector.class": "io.confluent.connect.aws.cloudwatch.AwsCloudWatchSourceConnector",
+     "tasks.max": "1",
+     "aws.cloudwatch.logs.url": "$CLOUDWATCH_LOGS_URL",
+     "aws.cloudwatch.log.group": "$LOG_GROUP",
+     "aws.cloudwatch.log.streams": "$LOG_STREAM",
+     "confluent.license": "",
+     "confluent.topic.bootstrap.servers": "broker:9092",
+     "confluent.topic.replication.factor": "1"
+}
+EOF
 
 sleep 5
 
 log "Verify we have received the data in $LOG_GROUP.$LOG_STREAM topic"
-playground topic consume --topic $LOG_GROUP.$LOG_STREAM --min-expected-messages 11
+playground topic consume --topic $LOG_GROUP.$LOG_STREAM --min-expected-messages 11 --timeout 60

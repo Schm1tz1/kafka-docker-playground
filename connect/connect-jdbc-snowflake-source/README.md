@@ -111,7 +111,7 @@ $ curl -X PUT \
      --data '{
                "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
                "tasks.max": "1",
-               "connection.url": "'"$CONNECTION_URL"'",
+               "connection.url": "$CONNECTION_URL",
                "table.whitelist": "FOO",
                "mode": "timestamp+incrementing",
                "timestamp.column.name": "UPDATE_TS",
@@ -127,7 +127,7 @@ $ curl -X PUT \
 Verifying topic `snowflake-FOO`
 
 ```bash
-playground topic consume --topic snowflake-FOO --min-expected-messages 3
+playground topic consume --topic snowflake-FOO --min-expected-messages 3 --timeout 60
 ```
 
 

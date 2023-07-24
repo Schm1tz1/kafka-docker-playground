@@ -51,31 +51,65 @@ docker run -i --volumes-from gcloud-config google/cloud-sdk:latest gcloud spanne
 docker run -i --volumes-from gcloud-config google/cloud-sdk:latest gcloud spanner databases create $DATABASE --instance $INSTANCE --project $GCP_PROJECT
 
 log "Sending messages to topic products"
-docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic products --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"name","type":"string"},
-{"name":"price", "type": "float"}, {"name":"quantity", "type": "int"}]}' << EOF
-{"name": "scissors", "price": 2.75, "quantity": 3}
-{"name": "tape", "price": 0.99, "quantity": 10}
-{"name": "notebooks", "price": 1.99, "quantity": 5}
+playground topic produce -t products --nb-messages 2 << 'EOF'
+{
+  "type": "record",
+  "name": "myrecord",
+  "fields": [
+    {
+      "name": "name",
+      "type": "string"
+    },
+    {
+      "name": "price",
+      "type": "float"
+    },
+    {
+      "name": "quantity",
+      "type": "int"
+    }
+  ]
+}
+EOF
+
+playground topic produce -t products --nb-messages 1 --forced-value '{"name": "notebooks", "price": 1.99, "quantity": 5}' << 'EOF'
+{
+  "type": "record",
+  "name": "myrecord",
+  "fields": [
+    {
+      "name": "name",
+      "type": "string"
+    },
+    {
+      "name": "price",
+      "type": "float"
+    },
+    {
+      "name": "quantity",
+      "type": "int"
+    }
+  ]
+}
 EOF
 
 
 log "Creating GCP Spanner Sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector gcp-spanner-sink << EOF
+{
                "connector.class": "io.confluent.connect.gcp.spanner.SpannerSinkConnector",
                "tasks.max" : "1",
                "topics" : "products",
                "auto.create" : "true",
-               "table.name.format" : "kafka_${topic}",
-               "gcp.spanner.instance.id" : "'"$INSTANCE"'",
-               "gcp.spanner.database.id" : "'"$DATABASE"'",
+               "table.name.format" : "kafka_\${topic}",
+               "gcp.spanner.instance.id" : "$INSTANCE",
+               "gcp.spanner.database.id" : "$DATABASE",
                "gcp.spanner.credentials.path" : "/tmp/keyfile.json",
                "confluent.license": "",
                "confluent.topic.bootstrap.servers": "broker:9092",
                "confluent.topic.replication.factor": "1"
-          }' \
-     http://localhost:8083/connectors/gcp-spanner-sink/config | jq .
+          }
+EOF
 
 sleep 60
 

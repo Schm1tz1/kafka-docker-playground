@@ -56,30 +56,40 @@ aws s3 rm s3://$AWS_BUCKET_NAME/$TAG --recursive --region $AWS_REGION
 set -e
 
 log "Creating S3 Sink connector with bucket name <$AWS_BUCKET_NAME>"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class": "io.confluent.connect.s3.S3SinkConnector",
-               "tasks.max": "1",
-               "topics": "s3_topic",
-               "s3.region": "'"$AWS_REGION"'",
-               "s3.bucket.name": "'"$AWS_BUCKET_NAME"'",
-               "topics.dir": "'"$TAG"'",
-               "s3.part.size": 5242880,
-               "flush.size": "3",
-               "storage.class": "io.confluent.connect.s3.storage.S3Storage",
-               "format.class": "io.confluent.connect.s3.format.avro.AvroFormat",
-               "partitioner.class": "io.confluent.connect.storage.partitioner.DefaultPartitioner",
-               "schema.compatibility": "NONE",
-               "errors.tolerance": "all",
-               "errors.log.enable": "true",
-               "errors.log.include.messages": "true"
-          }' \
-     http://localhost:8083/connectors/s3-sink/config | jq .
+playground connector create-or-update --connector s3-sink << EOF
+{
+     "connector.class": "io.confluent.connect.s3.S3SinkConnector",
+     "tasks.max": "1",
+     "topics": "s3_topic",
+     "s3.region": "$AWS_REGION",
+     "s3.bucket.name": "$AWS_BUCKET_NAME",
+     "topics.dir": "$TAG",
+     "s3.part.size": 5242880,
+     "flush.size": "3",
+     "storage.class": "io.confluent.connect.s3.storage.S3Storage",
+     "format.class": "io.confluent.connect.s3.format.avro.AvroFormat",
+     "partitioner.class": "io.confluent.connect.storage.partitioner.DefaultPartitioner",
+     "schema.compatibility": "NONE",
+     "errors.tolerance": "all",
+     "errors.log.enable": "true",
+     "errors.log.include.messages": "true"
+}
+EOF
 
 
 log "Sending messages to topic s3_topic"
-seq -f "{\"f1\": \"value%g\"}" 10 | docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic s3_topic --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"f1","type":"string"}]}'
+playground topic produce -t s3_topic --nb-messages 10 --forced-value '{"f1":"value%g"}' << 'EOF'
+{
+  "type": "record",
+  "name": "myrecord",
+  "fields": [
+    {
+      "name": "f1",
+      "type": "string"
+    }
+  ]
+}
+EOF
 
 sleep 10
 
@@ -93,14 +103,13 @@ docker run --rm -v ${DIR}:/tmp vdesabou/avro-tools tojson /tmp/s3_topic+0+000000
 rm -f s3_topic+0+0000000000.avro
 
 log "Creating Backup and Restore S3 Source connector with bucket name <$AWS_BUCKET_NAME>"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector s3-source << EOF
+{
                "tasks.max": "1",
                "connector.class": "io.confluent.connect.s3.source.S3SourceConnector",
-               "s3.region": "'"$AWS_REGION"'",
-               "s3.bucket.name": "'"$AWS_BUCKET_NAME"'",
-               "topics.dir": "'"$TAG"'",
+               "s3.region": "$AWS_REGION",
+               "s3.bucket.name": "$AWS_BUCKET_NAME",
+               "topics.dir": "$TAG",
                "format.class": "io.confluent.connect.s3.format.avro.AvroFormat",
                "confluent.license": "",
                "confluent.topic.bootstrap.servers": "broker:9092",
@@ -108,10 +117,11 @@ curl -X PUT \
                "transforms": "AddPrefix",
                "transforms.AddPrefix.type": "org.apache.kafka.connect.transforms.RegexRouter",
                "transforms.AddPrefix.regex": ".*",
-               "transforms.AddPrefix.replacement": "copy_of_$0"
-          }' \
-     http://localhost:8083/connectors/s3-source/config | jq .
+               "transforms.AddPrefix.replacement": "copy_of_\$0"
+          }
+EOF
 
+sleep 10
 
 log "Verifying topic copy_of_s3_topic"
-playground topic consume --topic copy_of_s3_topic --min-expected-messages 9
+playground topic consume --topic copy_of_s3_topic --min-expected-messages 9 --timeout 60

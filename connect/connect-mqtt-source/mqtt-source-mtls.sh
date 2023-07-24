@@ -13,27 +13,26 @@ cd ${DIR}
 ${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.mtls.yml"
 
 log "Creating MQTT Source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class": "io.confluent.connect.mqtt.MqttSourceConnector",
-               "tasks.max": "1",
-               "mqtt.server.uri": "ssl://mosquitto:8883",
-               "mqtt.topics":"my-mqtt-topic",
-               "kafka.topic":"mqtt-source-1",
-               "mqtt.qos": "2",
-               "mqtt.username": "myuser",
-               "mqtt.password": "mypassword",
-               "confluent.license": "",
-               "confluent.topic.bootstrap.servers": "broker:9092",
-               "confluent.topic.replication.factor": "1",
-               "mqtt.ssl.trust.store.path": "/tmp/truststore.jks",
-               "mqtt.ssl.trust.store.password": "confluent",
-               "mqtt.ssl.key.store.path": "/tmp/keystore.jks",
-               "mqtt.ssl.key.store.password": "confluent",
-               "mqtt.ssl.key.password": "confluent"
-          }' \
-     http://localhost:8083/connectors/source-mqtt/config | jq .
+playground connector create-or-update --connector source-mqtt << EOF
+{
+     "connector.class": "io.confluent.connect.mqtt.MqttSourceConnector",
+     "tasks.max": "1",
+     "mqtt.server.uri": "ssl://mosquitto:8883",
+     "mqtt.topics":"my-mqtt-topic",
+     "kafka.topic":"mqtt-source-1",
+     "mqtt.qos": "2",
+     "mqtt.username": "myuser",
+     "mqtt.password": "mypassword",
+     "confluent.license": "",
+     "confluent.topic.bootstrap.servers": "broker:9092",
+     "confluent.topic.replication.factor": "1",
+     "mqtt.ssl.trust.store.path": "/tmp/truststore.jks",
+     "mqtt.ssl.trust.store.password": "confluent",
+     "mqtt.ssl.key.store.path": "/tmp/keystore.jks",
+     "mqtt.ssl.key.store.password": "confluent",
+     "mqtt.ssl.key.password": "confluent"
+}
+EOF
 
 
 sleep 5
@@ -44,4 +43,4 @@ docker exec mosquitto sh -c 'mosquitto_pub -h localhost -p 8883 -u "myuser" -P "
 sleep 5
 
 log "Verify we have received the data in mqtt-source-1 topic"
-playground topic consume --topic mqtt-source-1 --min-expected-messages 1
+playground topic consume --topic mqtt-source-1 --min-expected-messages 1 --timeout 60

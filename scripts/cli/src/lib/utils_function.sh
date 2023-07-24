@@ -182,7 +182,7 @@ function maybe_create_image()
       export CONNECT_USER="appuser"
       if [ `uname -m` = "arm64" ]
       then
-        CONNECT_3RDPARTY_INSTALL="if [ ! -f /tmp/done ]; then yum -y install --disablerepo='Confluent*' bind-utils openssl unzip findutils net-tools nc jq which iptables libmnl krb5-workstation krb5-libs vim && yum clean all && rm -rf /var/cache/yum && dnf -y install iproute && rpm -i --nosignature http://mirror.centos.org/centos/8-stream/BaseOS/aarch64/os/Packages/iproute-tc-5.18.0-1.el8.aarch64.rpm && rpm -i --nosignature https://rpmfind.net/linux/centos/8-stream/AppStream/aarch64/os/Packages/tcpdump-4.9.3-2.el8.aarch64.rpm && touch /tmp/done; fi"
+        CONNECT_3RDPARTY_INSTALL="if [ ! -f /tmp/done ]; then yum -y install --disablerepo='Confluent*' bind-utils openssl unzip findutils net-tools nc jq which iptables libmnl krb5-workstation krb5-libs vim && yum clean all && rm -rf /var/cache/yum && dnf -y install iproute && rpm -i --nosignature http://mirror.centos.org/centos/8-stream/BaseOS/aarch64/os/Packages/iproute-tc-5.18.0-1.1.el8.aarch64.rpm && rpm -i --nosignature https://rpmfind.net/linux/centos/8-stream/AppStream/aarch64/os/Packages/tcpdump-4.9.3-2.el8.aarch64.rpm && touch /tmp/done; fi"
       else
         CONNECT_3RDPARTY_INSTALL="if [ ! -f /tmp/done ]; then wget http://vault.centos.org/8.1.1911/BaseOS/x86_64/os/Packages/iproute-tc-4.18.0-15.el8.x86_64.rpm && rpm -i --nodeps --nosignature http://vault.centos.org/8.1.1911/BaseOS/x86_64/os/Packages/iproute-tc-4.18.0-15.el8.x86_64.rpm && curl http://mirror.centos.org/centos/8-stream/AppStream/x86_64/os/Packages/tcpdump-4.9.3-1.el8.x86_64.rpm -o tcpdump-4.9.3-1.el8.x86_64.rpm && rpm -Uvh tcpdump-4.9.3-1.el8.x86_64.rpm && yum -y install --disablerepo='Confluent*' bind-utils openssl unzip findutils net-tools nc jq which iptables libmnl krb5-workstation krb5-libs vim && yum clean all && rm -rf /var/cache/yum && touch /tmp/done; fi"
       fi
@@ -192,6 +192,7 @@ function maybe_create_image()
     fi
 
     tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
+    trap 'rm -rf $tmp_dir' EXIT
 cat << EOF > $tmp_dir/Dockerfile
 FROM ${CP_CONNECT_IMAGE}:${CONNECT_TAG}
 USER root
@@ -290,8 +291,8 @@ function check_if_continue()
 function create_topic()
 {
   local topic="$1"
-  log "Check if topic $topic exists"
-  confluent kafka topic create "$topic" --partitions 1 --dry-run 2>/dev/null
+  # log "Check if topic $topic exists"
+  confluent kafka topic create "$topic" --partitions 1 --dry-run > /dev/null 2>/dev/null
   if [[ $? == 0 ]]; then
     log "Create topic $topic"
     log "confluent kafka topic create $topic --partitions 1"
@@ -304,8 +305,8 @@ function create_topic()
 function delete_topic()
 {
   local topic="$1"
-  log "Check if topic $topic exists"
-  confluent kafka topic create "$topic" --partitions 1 --dry-run 2>/dev/null
+  # log "Check if topic $topic exists"
+  confluent kafka topic create "$topic" --partitions 1 --dry-run > /dev/null 2>/dev/null
   if [[ $? != 0 ]]; then
     log "Delete topic $topic"
     log "confluent kafka topic delete $topic --force"
@@ -328,7 +329,23 @@ function check_docker_compose_version() {
   DOCKER_COMPOSE_VER=$(get_docker_compose_version)
 
   if version_gt $REQUIRED_DOCKER_COMPOSE_VER $DOCKER_COMPOSE_VER; then
-    log "docker-compose version ${REQUIRED_DOCKER_COMPOSE_VER} or greater is required.  Current reported version: ${DOCKER_COMPOSE_VER}"
+    logerror "docker-compose version ${REQUIRED_DOCKER_COMPOSE_VER} or greater is required. Current reported version: ${DOCKER_COMPOSE_VER}"
+    exit 1
+  fi
+}
+
+function get_bash_version() {
+  bash_major_version=$(bash --version | head -n1 | awk '{print $4}')
+  major_version="${bash_major_version%%.*}"
+  echo "$major_version"
+}
+
+function check_bash_version() {
+  REQUIRED_BASH_VER=${1:-"4"}
+  BASH_VER=$(get_bash_version)
+
+  if version_gt $REQUIRED_BASH_VER $BASH_VER; then
+    logerror "bash version ${REQUIRED_BASH_VER} or greater is required. Current reported version: ${BASH_VER}"
     exit 1
   fi
 }
@@ -751,6 +768,7 @@ function get_jmx_metrics() {
 
   component="$1"
   domains="$2"
+  open="$3"
   if [ "$domains" = "" ]
   then
     # non existing domain: all domains will be in output !
@@ -795,23 +813,32 @@ exit
 EOF
   while read line; do echo "get *"  -b $line; done < /tmp/beans.log >> /tmp/commands
 
-  echo "####### domain $domain ########" >> /tmp/jmx_metrics.log
-  docker exec -i $component java -jar $JMXTERM_UBER_JAR  -l localhost:$port -n < /tmp/commands >> /tmp/jmx_metrics.log 2>&1
+  if [[ -n "$open" ]]
+  then
+    echo "####### domain $domain ########" >> /tmp/jmx_metrics.log
+    docker exec -i $component java -jar $JMXTERM_UBER_JAR  -l localhost:$port -n < /tmp/commands >> /tmp/jmx_metrics.log 2>&1
+  else
+    echo "####### domain $domain ########"
+    docker exec -i $component java -jar $JMXTERM_UBER_JAR  -l localhost:$port -n < /tmp/commands 2>&1
+  fi
 done
 
-  if config_has_key "editor"
+  if [[ -n "$open" ]]
   then
-    editor=$(config_get "editor")
-    log "📖 Opening /tmp/jmx_metrics.log using configured editor $editor"
-    $editor /tmp/jmx_metrics.log
-  else
-    if [[ $(type code 2>&1) =~ "not found" ]]
+    if config_has_key "editor"
     then
-      logerror "Could not determine an editor to use as default code is not found - you can change editor by updating config.ini"
-      exit 1
+      editor=$(config_get "editor")
+      log "📖 Opening /tmp/jmx_metrics.log using configured editor $editor"
+      $editor /tmp/jmx_metrics.log
     else
-      log "📖 Opening /tmp/jmx_metrics.log with code (default) - you can change editor by updating config.ini"
-      code /tmp/jmx_metrics.log
+      if [[ $(type code 2>&1) =~ "not found" ]]
+      then
+        logerror "Could not determine an editor to use as default code is not found - you can change editor by updating config.ini"
+        exit 1
+      else
+        log "📖 Opening /tmp/jmx_metrics.log with code (default) - you can change editor by updating config.ini"
+        code /tmp/jmx_metrics.log
+      fi
     fi
   fi
 }
@@ -1105,8 +1132,15 @@ function create_or_get_oracle_image() {
           then
             log "📄 image $ORACLE_IMAGE has been installed locally"
           fi
-          log "🧹 Removing /tmp/$ORACLE_IMAGE.tar"
-          rm -f /tmp/$ORACLE_IMAGE.tar
+
+          if [[ "$OSTYPE" == "darwin"* ]]
+          then
+            log "🧹 Removing /tmp/$ORACLE_IMAGE.tar"
+            rm -f /tmp/$ORACLE_IMAGE.tar
+          else
+            log "🧹 Removing /tmp/$ORACLE_IMAGE.tar with sudo"
+            sudo rm -f /tmp/$ORACLE_IMAGE.tar
+          fi
         fi
     else
         logwarn "If you're a Confluent employee, please check this link https://confluent.slack.com/archives/C0116NM415F/p1636391410032900 and also here https://confluent.slack.com/archives/C0116NM415F/p1636389483030900."
@@ -1138,8 +1172,15 @@ function create_or_get_oracle_image() {
           then
             log "📄 image $BASE_ORACLE_IMAGE has been installed locally"
           fi
-          log "🧹 Removing /tmp/$ORACLE_IMAGE.tar"
-          rm -f /tmp/oracle_database_$ORACLE_VERSION.tar
+
+          if [[ "$OSTYPE" == "darwin"* ]]
+          then
+            log "🧹 Removing /tmp/$ORACLE_IMAGE.tar"
+            rm -f /tmp/oracle_database_$ORACLE_VERSION.tar
+          else
+            log "🧹 Removing /tmp/$ORACLE_IMAGE.tar with sudo"
+            sudo rm -f /tmp/oracle_database_$ORACLE_VERSION.tar
+          fi
         fi
     fi
     set -e
@@ -1363,6 +1404,8 @@ function bootstrap_ccloud_environment () {
     export EXAMPLE=$(basename $PWD)
     export WARMUP_TIME=15
     export QUIET=true
+
+    check_if_continue
   else
     # 
     # CLUSTER_NAME is set
@@ -1387,8 +1430,6 @@ function bootstrap_ccloud_environment () {
     export WARMUP_TIME=0
   fi
 
-  check_if_continue
-
   ccloud::create_ccloud_stack false  \
     && print_code_pass -c "ccloud::create_ccloud_stack false"
 
@@ -1406,12 +1447,15 @@ function bootstrap_ccloud_environment () {
     logerror "ERROR: $DELTA_CONFIGS_ENV has not been generated"
     exit 1
   fi
+
+  # trick
+  echo "ccloud/environment" > /tmp/playground-command
 }
 
 function create_ccloud_connector() {
   file=$1
 
-  log "Creating connector from $file"
+  log "🛠️ Creating connector from $file"
   confluent connect cluster create --config-file $file
   if [[ $? != 0 ]]
   then
@@ -1452,10 +1496,9 @@ function ccloud::retry() {
 }
 
 function wait_for_ccloud_connector_up() {
-  filename=$1
+  connectorName=$1
   maxWait=$2
 
-  connectorName=$(cat $filename | jq -r .name)
   connectorId=$(get_ccloud_connector_lcc $connectorName)
   log "Waiting up to $maxWait seconds for connector $connectorName ($connectorId) to be RUNNING"
   ccloud::retry $maxWait validate_ccloud_connector_up $connectorName || exit 1
@@ -1466,8 +1509,7 @@ function wait_for_ccloud_connector_up() {
 
 
 function delete_ccloud_connector() {
-  filename=$1
-  connectorName=$(cat $filename | jq -r .name)
+  connectorName=$1
   connectorId=$(get_ccloud_connector_lcc $connectorName)
 
   log "Deleting connector $connectorName ($connectorId)"
@@ -2100,10 +2142,9 @@ function ccloud::validate_connector_up() {
 }
 
 function ccloud::wait_for_connector_up() {
-  filename=$1
+  connectorName=$1
   maxWait=$2
 
-  connectorName=$(cat $filename | jq -r .name)
   echo "Waiting up to $maxWait seconds for connector $filename ($connectorName) to be RUNNING"
   ccloud::retry $maxWait ccloud::validate_connector_up $connectorName || exit 1
   echo "Connector $filename ($connectorName) is RUNNING"
@@ -2380,7 +2421,14 @@ function ccloud::create_ccloud_stack() {
     exit 1
   fi
 
-  BOOTSTRAP_SERVERS=$(confluent kafka cluster describe $CLUSTER -o json | jq -r ".endpoint" | cut -c 12-)
+  endpoint=$(confluent kafka cluster describe $CLUSTER -o json | jq -r ".endpoint")
+  if [[ $endpoint == "SASL_SSL://"* ]]
+  then
+    BOOTSTRAP_SERVERS=$(echo "$endpoint" | cut -c 12-)
+  else
+    BOOTSTRAP_SERVERS="$endpoint"
+  fi
+  
   NEED_ACLS=0
   # VINC: added
   if [[ -z "$CLUSTER_CREDS" ]]
@@ -2420,10 +2468,17 @@ function ccloud::create_ccloud_stack() {
     SCHEMA_REGISTRY_CREDS=$(ccloud::maybe_create_credentials_resource $SERVICE_ACCOUNT_ID $SCHEMA_REGISTRY)
   fi
 
-  # VINC
-  set +e
-  #log "Adding ResourceOwner RBAC role for all subjects"
-  confluent iam rbac role-binding create --principal User:$SERVICE_ACCOUNT_ID --role ResourceOwner --environment $ENVIRONMENT --schema-registry-cluster $SCHEMA_REGISTRY --resource Subject:* 2>/dev/null
+  if [[ $NEED_ACLS -eq 1 ]]
+  then
+    # VINC
+    set +e
+    if [ "$SERVICE_ACCOUNT_ID" != "" ]
+    then
+      log "Adding ResourceOwner RBAC role for all subjects"
+      confluent iam rbac role-binding create --principal User:$SERVICE_ACCOUNT_ID --role ResourceOwner --environment $ENVIRONMENT --schema-registry-cluster $SCHEMA_REGISTRY --resource Subject:*
+    fi
+    set -e
+  fi
 
   if $enable_ksqldb ; then
     KSQLDB_NAME=${KSQLDB_NAME:-"demo-ksqldb-$SERVICE_ACCOUNT_ID"}
@@ -2433,11 +2488,11 @@ function ccloud::create_ccloud_stack() {
     confluent ksql cluster configure-acls $KSQLDB
   fi
 
-  CLOUD_API_KEY=`echo $CLUSTER_CREDS | awk -F: '{print $1}'`
-  CLOUD_API_SECRET=`echo $CLUSTER_CREDS | awk -F: '{print $2}'`
+  KAFKA_API_KEY=`echo $CLUSTER_CREDS | awk -F: '{print $1}'`
+  KAFKA_API_SECRET=`echo $CLUSTER_CREDS | awk -F: '{print $2}'`
   # FIX THIS: added by me
-  confluent api-key store "$CLOUD_API_KEY" "$CLOUD_API_SECRET" --resource ${CLUSTER} --force
-  confluent api-key use $CLOUD_API_KEY --resource ${CLUSTER}
+  confluent api-key store "$KAFKA_API_KEY" "$KAFKA_API_SECRET" --resource ${CLUSTER} --force
+  confluent api-key use $KAFKA_API_KEY --resource ${CLUSTER}
 
   if [[ -z "$SKIP_CONFIG_FILE_WRITE" ]]; then
     if [[ -z "$CCLOUD_CONFIG_FILE" ]]; then
@@ -2463,7 +2518,7 @@ EOF
 sasl.mechanism=PLAIN
 security.protocol=SASL_SSL
 bootstrap.servers=${BOOTSTRAP_SERVERS}
-sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username='${CLOUD_API_KEY}' password='${CLOUD_API_SECRET}';
+sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username='${KAFKA_API_KEY}' password='${KAFKA_API_SECRET}';
 basic.auth.credentials.source=USER_INFO
 schema.registry.url=${SCHEMA_REGISTRY_ENDPOINT}
 basic.auth.user.info=`echo $SCHEMA_REGISTRY_CREDS | awk -F: '{print $1}'`:`echo $SCHEMA_REGISTRY_CREDS | awk -F: '{print $2}'`
@@ -3322,21 +3377,24 @@ function check_arm64_support() {
   if [ `uname -m` = "arm64" ]
   then
     test=$(echo "$DOCKER_COMPOSE_FILE" | awk -F"/" '{ print $(NF-2)"/"$(NF-1) }')
-    grep "${test}" ${DIR}/../../scripts/arm64-support-none.txt > /dev/null
+    base_test=$(echo $test | cut -d "/" -f 2)
+    grep "${base_test}" ${DIR}/../../scripts/arm64-support-none.txt > /dev/null
     if [ $? = 0 ]
     then
         logerror "🖥️ This example is not working with ARM64 !"
         log "Do you want to start test anyway ?"
         check_if_continue
+        return
     fi
 
-    grep "${test}" ${DIR}/../../scripts/arm64-support-with-emulation.txt > /dev/null
+    grep "${base_test}" ${DIR}/../../scripts/arm64-support-with-emulation.txt > /dev/null
     if [ $? = 0 ]
     then
-        logwarn "🖥️ This example is working with ARM64 but requires emulation."
+        logwarn "🖥️ This example is working with ARM64 but requires emulation"
+        return
     fi
 
-    log "🖥️ This example should work natively with ARM64."
+    log "🖥️ This example should work natively with ARM64"
   fi
   set -e
 }
@@ -3348,4 +3406,20 @@ function playground() {
   else
     $(which playground) "$@"
   fi
+}
+
+function force_enable () {
+  flag=$1
+  env_variable=$2
+
+  logwarn "💪 Forcing $flag ($env_variable env variable)"
+  line_final_source=$(grep -n 'source ${DIR}/../../scripts/utils.sh' $repro_test_file | cut -d ":" -f 1 | tail -n1)
+  tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
+  trap 'rm -rf $tmp_dir' EXIT
+  echo "# remove or comment those lines if you don't need it anymore" > $tmp_dir/tmp_force_enable
+  echo "logwarn \"💪 Forcing $flag ($env_variable env variable) as it was set when reproduction model was created\"" >> $tmp_dir/tmp_force_enable
+  echo "export $env_variable=true" >> $tmp_dir/tmp_force_enable
+  cp $repro_test_file $tmp_dir/tmp_file
+
+  { head -n $(($line_final_source+1)) $tmp_dir/tmp_file; cat $tmp_dir/tmp_force_enable; tail -n  +$(($line_final_source+1)) $tmp_dir/tmp_file; } > $repro_test_file
 }

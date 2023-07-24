@@ -13,7 +13,7 @@ for component in producer
 do
     set +e
     log "🏗 Building jar for ${component}"
-    docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${DIR}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${DIR}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
+    docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${PWD}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${PWD}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
     if [ $? != 0 ]
     then
         logerror "ERROR: failed to build java component $component"
@@ -36,16 +36,15 @@ log "producing using --property schema.registry.proxy.host=nginx-proxy -property
 seq -f "{\"f1\": \"value%g\"}" 10 | docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic a-topic --property schema.registry.proxy.host=nginx-proxy -property schema.registry.proxy.port=8888 --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"f1","type":"string"}]}'
 
 log "Verify data was sent to broker using --property proxy.host=nginx-proxy -property proxy.port=8888"
-playground topic consume --topic a-topic --min-expected-messages 20
+timeout 60 docker exec connect kafka-avro-console-consumer -bootstrap-server broker:9092 --property proxy.host=nginx-proxy -property proxy.port=8888 --property schema.registry.url=http://schema-registry:8081 --topic a-topic --from-beginning --max-messages 20
 
 log "Verify data was sent to broker using --property schema.proxy.host=nginx-proxy -property schema.proxy.port=8888"
-playground topic consume --topic a-topic --min-expected-messages 20
+timeout 60 docker exec connect kafka-avro-console-consumer -bootstrap-server broker:9092 --property schema.registry.proxy.host=nginx-proxy -property schema.registry.proxy.port=8888 --property schema.registry.url=http://schema-registry:8081 --topic a-topic --from-beginning --max-messages 20
 
 
 log "Creating FileStream Sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector filestream-sink << EOF
+{
                "tasks.max": "1",
                "connector.class": "org.apache.kafka.connect.file.FileStreamSinkConnector",
                "topics": "a-topic",
@@ -55,8 +54,8 @@ curl -X PUT \
                "value.converter.schema.registry.url": "http://schema-registry:8081",
                "value.converter.proxy.host": "nginx-proxy",
                "value.converter.proxy.port": "8888"
-          }' \
-     http://localhost:8083/connectors/filestream-sink/config | jq .
+          }
+EOF
 
 
 sleep 5
@@ -69,7 +68,7 @@ log "Produce avro data using Java producer"
 docker exec producer bash -c "java -jar producer-1.0.0-jar-with-dependencies.jar"
 
 log "Verify data was sent to broker using --property proxy.host=nginx-proxy -property proxy.port=8888"
-playground topic consume --topic customer-avro --min-expected-messages 10
+timeout 60 docker exec connect kafka-avro-console-consumer -bootstrap-server broker:9092 --property proxy.host=nginx-proxy -property proxy.port=8888 --property schema.registry.url=http://schema-registry:8081 --topic customer-avro --from-beginning --max-messages 10
 
 # {"count":-5106534569952410475,"first_name":"eOMtThyhVNL","last_name":"WUZNRcBaQKxIye","address":"dUsF"}
 # {"count":-167885730524958550,"first_name":"wdkelQbxe","last_name":"TeQOvaScfqIO","address":"OmaaJxkyvRnLR"}

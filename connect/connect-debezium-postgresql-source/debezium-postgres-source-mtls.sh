@@ -145,39 +145,42 @@ SELECT * FROM CUSTOMERS;
 EOF
 
 log "Creating Debezium PostgreSQL source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-                "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
-                "tasks.max": "1",
-                "database.hostname": "postgres",
-                "database.port": "5432",
-                "database.user": "myuser",
-                "database.sslmode": "verify-full",
-                "database.sslrootcert": "/tmp/ca.crt",
-                "database.sslcert": "/tmp/client.crt",
-                "database.sslkey": "/tmp/client.key.pk8",
-                "database.dbname" : "postgres",
+playground connector create-or-update --connector debezium-postgres-source << EOF
+{
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "tasks.max": "1",
+    "database.hostname": "postgres",
+    "database.port": "5432",
+    "database.user": "myuser",
+    "database.sslmode": "verify-full",
+    "database.sslrootcert": "/tmp/ca.crt",
+    "database.sslcert": "/tmp/client.crt",
+    "database.sslkey": "/tmp/client.key.pk8",
+    "database.dbname" : "postgres",
 
-                "_comment": "old version before 2.x",
-                "database.server.name": "asgard",
-                "_comment": "new version since 2.x",
-                "topic.prefix": "asgard",
-                
-                "key.converter" : "io.confluent.connect.avro.AvroConverter",
-                "key.converter.schema.registry.url": "http://schema-registry:8081",
-                "value.converter" : "io.confluent.connect.avro.AvroConverter",
-                "value.converter.schema.registry.url": "http://schema-registry:8081",
-                "transforms": "addTopicSuffix",
-                "transforms.addTopicSuffix.type":"org.apache.kafka.connect.transforms.RegexRouter",
-                "transforms.addTopicSuffix.regex":"(.*)",
-                "transforms.addTopicSuffix.replacement":"$1-raw"
-          }' \
-     http://localhost:8083/connectors/debezium-postgres-source/config | jq .
+    "_comment": "old version before 2.x",
+    "database.server.name": "asgard",
+    "_comment": "new version since 2.x",
+    "topic.prefix": "asgard",
+    
+    "key.converter" : "io.confluent.connect.avro.AvroConverter",
+    "key.converter.schema.registry.url": "http://schema-registry:8081",
+    "value.converter" : "io.confluent.connect.avro.AvroConverter",
+    "value.converter.schema.registry.url": "http://schema-registry:8081",
+    "transforms": "addTopicSuffix",
+    "transforms.addTopicSuffix.type":"org.apache.kafka.connect.transforms.RegexRouter",
+    "transforms.addTopicSuffix.regex":"(.*)",
+    "transforms.addTopicSuffix.replacement": "\$1-raw",
+
+    "_comment:": "remove _ to use ExtractNewRecordState smt",
+    "_transforms": "unwrap,addTopicSuffix",
+    "_transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState"
+}
+EOF
 
 sleep 5
 
 log "Verifying topic asgard.public.customers-raw"
-playground topic consume --topic asgard.public.customers-raw --min-expected-messages 5
+playground topic consume --topic asgard.public.customers-raw --min-expected-messages 5 --timeout 60
 
 

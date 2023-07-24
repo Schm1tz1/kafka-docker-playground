@@ -148,25 +148,24 @@ EOF
 # https://docs.snowflake.com/en/user-guide/jdbc-configure.html#jdbc-driver-connection-string
 CONNECTION_URL="jdbc:snowflake://$SNOWFLAKE_ACCOUNT_NAME.snowflakecomputing.com/?warehouse=$PLAYGROUND_WAREHOUSE&db=$PLAYGROUND_DB&role=$PLAYGROUND_CONNECTOR_ROLE&schema=PUBLIC&user=$PLAYGROUND_USER&private_key_file=/tmp/snowflake_key.p8&private_key_file_pwd=confluent&tracing=ALL"
 log "Creating JDBC Snowflake Source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
-               "tasks.max": "1",
-               "connection.url": "'"$CONNECTION_URL"'",
-               "table.whitelist": "FOO",
-               "mode": "timestamp+incrementing",
-               "timestamp.column.name": "UPDATE_TS",
-               "incrementing.column.name": "ID",
-               "topic.prefix": "snowflake-",
-               "validate.non.null":"false",
-               "errors.log.enable": "true",
-               "errors.log.include.messages": "true"
-          }' \
-     http://localhost:8083/connectors/jdbc-snowflake-source/config | jq .
+playground connector create-or-update --connector jdbc-snowflake-source << EOF
+{
+     "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
+     "tasks.max": "1",
+     "connection.url": "$CONNECTION_URL",
+     "table.whitelist": "FOO",
+     "mode": "timestamp+incrementing",
+     "timestamp.column.name": "UPDATE_TS",
+     "incrementing.column.name": "ID",
+     "topic.prefix": "snowflake-",
+     "validate.non.null":"false",
+     "errors.log.enable": "true",
+     "errors.log.include.messages": "true"
+}
+EOF
 
 sleep 15
 
 log "Verifying topic snowflake-FOO"
-playground topic consume --topic snowflake-FOO --min-expected-messages 3
+playground topic consume --topic snowflake-FOO --min-expected-messages 3 --timeout 60
 

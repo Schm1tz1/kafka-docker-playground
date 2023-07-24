@@ -31,32 +31,30 @@ ERROR_PATH="${CONNECT_CONTAINER_HOME_DIR}/data/error/"
 FINISHED_PATH="${CONNECT_CONTAINER_HOME_DIR}/data/finished/"
 
 log "Creating CSV Spool Dir Source connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector spool-dir << EOF
+{
           "tasks.max": "1",
           "connector.class": "com.github.jcustenborder.kafka.connect.spooldir.SpoolDirCsvSourceConnector",
           "input.file.pattern": "csv-spooldir-source.csv",
-          "input.path": "'"$INPUT_PATH"'",
-          "error.path": "'"$ERROR_PATH"'",
-          "finished.path": "'"$FINISHED_PATH"'",
+          "input.path": "$INPUT_PATH",
+          "error.path": "$ERROR_PATH",
+          "finished.path": "$FINISHED_PATH",
           "halt.on.error": "false",
           "topic": "spooldir-csv-topic",
           "csv.first.row.as.header": "true",
           "key.schema": "{\n  \"name\" : \"com.example.users.UserKey\",\n  \"type\" : \"STRUCT\",\n  \"isOptional\" : false,\n  \"fieldSchemas\" : {\n    \"id\" : {\n      \"type\" : \"INT64\",\n      \"isOptional\" : false\n    }\n  }\n}",
           "value.schema": "{\n  \"name\" : \"com.example.users.User\",\n  \"type\" : \"STRUCT\",\n  \"isOptional\" : false,\n  \"fieldSchemas\" : {\n    \"id\" : {\n      \"type\" : \"INT64\",\n      \"isOptional\" : false\n    },\n    \"first_name\" : {\n      \"type\" : \"STRING\",\n      \"isOptional\" : true\n    },\n    \"last_name\" : {\n      \"type\" : \"STRING\",\n      \"isOptional\" : true\n    },\n    \"email\" : {\n      \"type\" : \"STRING\",\n      \"isOptional\" : true\n    },\n    \"gender\" : {\n      \"type\" : \"STRING\",\n      \"isOptional\" : true\n    },\n    \"ip_address\" : {\n      \"type\" : \"STRING\",\n      \"isOptional\" : true\n    },\n    \"last_login\" : {\n      \"type\" : \"STRING\",\n      \"isOptional\" : true\n    },\n    \"account_balance\" : {\n      \"name\" : \"org.apache.kafka.connect.data.Decimal\",\n      \"type\" : \"BYTES\",\n      \"version\" : 1,\n      \"parameters\" : {\n        \"scale\" : \"2\"\n      },\n      \"isOptional\" : true\n    },\n    \"country\" : {\n      \"type\" : \"STRING\",\n      \"isOptional\" : true\n    },\n    \"favorite_color\" : {\n      \"type\" : \"STRING\",\n      \"isOptional\" : true\n    }\n  }\n}"
-     }}' \
-     http://localhost:8083/connectors/spool-dir/config | jq .
+     }}
+EOF
 
 sleep 5
 
 log "Verify we have received the data in spooldir-csv-topic topic"
-playground topic consume --topic spooldir-csv-topic --min-expected-messages 10
+playground topic consume --topic spooldir-csv-topic --min-expected-messages 10 --timeout 60
 
 log "Creating SFTP Sink connector"
-curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
+playground connector create-or-update --connector sftp-sink << EOF
+{
                "topics": "test_sftp_sink",
                "tasks.max": "1",
                "connector.class": "io.confluent.connect.sftp.SftpSinkConnector",
@@ -74,12 +72,23 @@ curl -X PUT \
                "confluent.license": "",
                "confluent.topic.bootstrap.servers": "broker:9092",
                "confluent.topic.replication.factor": "1"
-          }' \
-     http://localhost:8083/connectors/sftp-sink/config | jq .
+          }
+EOF
 
 
 log "Sending messages to topic test_sftp_sink"
-seq -f "{\"f1\": \"value%g\"}" 10 | docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic test_sftp_sink --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"f1","type":"string"}]}'
+playground topic produce -t test_sftp_sink --nb-messages 10 --forced-value '{"f1":"value%g"}' << 'EOF'
+{
+  "type": "record",
+  "name": "myrecord",
+  "fields": [
+    {
+      "name": "f1",
+      "type": "string"
+    }
+  ]
+}
+EOF
 
 sleep 10
 

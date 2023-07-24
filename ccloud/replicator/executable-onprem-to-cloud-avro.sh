@@ -38,12 +38,12 @@ mv ${DIR}/tmp ${DIR}/executable-onprem-to-cloud-replicator-avro.properties
 
 log "Creating topic in Confluent Cloud (auto.create.topics.enable=false)"
 set +e
-delete_topic executable-products-avro
+playground topic delete --topic executable-products-avro
 sleep 3
-create_topic executable-products-avro
-delete_topic connect-onprem-to-cloud-avro.offsets
-delete_topic connect-onprem-to-cloud-avro.status
-delete_topic connect-onprem-to-cloud-avro.config
+playground topic create --topic executable-products-avro
+playground topic delete --topic connect-onprem-to-cloud-avro.offsets
+playground topic delete --topic connect-onprem-to-cloud-avro.status
+playground topic delete --topic connect-onprem-to-cloud-avro.config
 set -e
 
 log "Delete schema for topic"
@@ -65,5 +65,5 @@ docker-compose -f ../../ccloud/environment/docker-compose.yml -f ${PWD}/docker-c
 
 sleep 50
 log "Verify we have received the data in executable-products-avro topic"
-playground topic consume --topic executable-products-avro --min-expected-messages 3
+timeout 60 docker container exec -e BOOTSTRAP_SERVERS="$BOOTSTRAP_SERVERS" -e SASL_JAAS_CONFIG="$SASL_JAAS_CONFIG" -e SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO="$SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO" -e SCHEMA_REGISTRY_URL="$SCHEMA_REGISTRY_URL" connect bash -c 'kafka-avro-console-consumer --topic executable-products-avro --bootstrap-server $BOOTSTRAP_SERVERS --consumer-property ssl.endpoint.identification.algorithm=https --consumer-property sasl.mechanism=PLAIN --consumer-property security.protocol=SASL_SSL --consumer-property sasl.jaas.config="$SASL_JAAS_CONFIG" --property basic.auth.credentials.source=USER_INFO --property schema.registry.basic.auth.user.info="$SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO" --property schema.registry.url=$SCHEMA_REGISTRY_URL --from-beginning --max-messages 3'
 
