@@ -24,8 +24,8 @@ else
         if [ -f $HOME/.aws/credentials ]
         then
             logwarn "💭 AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are set based on $HOME/.aws/credentials"
-            export AWS_ACCESS_KEY_ID=$( grep "^aws_access_key_id" $HOME/.aws/credentials| awk -F'=' '{print $2;}' )
-            export AWS_SECRET_ACCESS_KEY=$( grep "^aws_secret_access_key" $HOME/.aws/credentials| awk -F'=' '{print $2;}' ) 
+            export AWS_ACCESS_KEY_ID=$( grep "^aws_access_key_id" $HOME/.aws/credentials | head -1 | awk -F'=' '{print $2;}' )
+            export AWS_SECRET_ACCESS_KEY=$( grep "^aws_secret_access_key" $HOME/.aws/credentials | head -1 | awk -F'=' '{print $2;}' ) 
         fi
     fi
     if [ -z "$AWS_REGION" ]
@@ -46,15 +46,7 @@ else
      export CONNECT_CONTAINER_HOME_DIR="/root"
 fi
 
-${DIR}/../../ccloud/environment/start.sh "${PWD}/docker-compose.yml"
-
-if [ -f /tmp/delta_configs/env.delta ]
-then
-     source /tmp/delta_configs/env.delta
-else
-     logerror "ERROR: /tmp/delta_configs/env.delta has not been generated"
-     exit 1
-fi
+playground start-environment --environment ccloud --docker-compose-override-file "${PWD}/docker-compose.yml"
 
 KINESIS_STREAM_NAME=kafka_docker_pg_kinesis$TAG
 KINESIS_STREAM_NAME=${KINESIS_STREAM_NAME//[-.]/}
@@ -74,49 +66,47 @@ fi
 
 set +e
 log "Delete the stream"
-aws kinesis delete-stream --stream-name $KINESIS_STREAM_NAME
+aws kinesis delete-stream --stream-name $KINESIS_STREAM_NAME --region $AWS_REGION
 set -e
 
 sleep 5
 
 log "Create a Kinesis stream $KINESIS_STREAM_NAME"
-aws kinesis create-stream --stream-name $KINESIS_STREAM_NAME --shard-count 1
+aws kinesis create-stream --stream-name $KINESIS_STREAM_NAME --shard-count 1 --region $AWS_REGION
 
 log "Sleep 60 seconds to let the Kinesis stream being fully started"
 sleep 60
 
 log "Insert records in Kinesis stream"
 # The example shows that a record containing partition key 123 and data "test-message-1" is inserted into kafka_docker_playground.
-aws kinesis put-record --stream-name $KINESIS_STREAM_NAME --partition-key 123 --data test-message-1
+aws kinesis put-record --stream-name $KINESIS_STREAM_NAME --partition-key 123 --data test-message-1 --region $AWS_REGION
 
 
 
 log "Creating Kinesis Source connector"
-playground connector create-or-update --connector kinesis-source << EOF
+playground connector create-or-update --connector kinesis-source  << EOF
 {
-               "connector.class":"io.confluent.connect.kinesis.KinesisSourceConnector",
-               "tasks.max": "1",
-               "kafka.topic": "$KINESIS_TOPIC",
-               "kinesis.stream": "$KINESIS_STREAM_NAME",
-               "kinesis.region": "$AWS_REGION",
-               "aws.access.key.id" : "$AWS_ACCESS_KEY_ID",
-               "aws.secret.key.id": "$AWS_SECRET_ACCESS_KEY",
-               "confluent.license": "",
-               "topic.creation.default.replication.factor": "-1",
-               "topic.creation.default.partitions": "-1",
-               "confluent.topic.ssl.endpoint.identification.algorithm" : "https",
-               "confluent.topic.sasl.mechanism" : "PLAIN",
-               "confluent.topic.bootstrap.servers": "\${file:/data:bootstrap.servers}",
-               "confluent.topic.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"\${file:/data:sasl.username}\" password=\"\${file:/data:sasl.password}\";",
-               "confluent.topic.security.protocol" : "SASL_SSL",
-               "confluent.topic.replication.factor": "3"
-          }
+    "connector.class":"io.confluent.connect.kinesis.KinesisSourceConnector",
+    "tasks.max": "1",
+    "kafka.topic": "$KINESIS_TOPIC",
+    "kinesis.stream": "$KINESIS_STREAM_NAME",
+    "kinesis.region": "$AWS_REGION",
+    "aws.access.key.id" : "$AWS_ACCESS_KEY_ID",
+    "aws.secret.key.id": "$AWS_SECRET_ACCESS_KEY",
+    "confluent.license": "",
+    "topic.creation.default.replication.factor": "-1",
+    "topic.creation.default.partitions": "-1",
+    "confluent.topic.bootstrap.servers": "\${file:/data:bootstrap.servers}",
+    "confluent.topic.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"\${file:/data:sasl.username}\" password=\"\${file:/data:sasl.password}\";",
+    "confluent.topic.security.protocol" : "SASL_SSL",
+    "confluent.topic.sasl.mechanism" : "PLAIN"
+}
 EOF
 
-sleep 10
+sleep 60
 
 log "Verify we have received the data in $KINESIS_TOPIC topic"
 playground topic consume --topic $KINESIS_TOPIC --min-expected-messages 1 --timeout 60
 
 log "Delete the stream"
-aws kinesis delete-stream --stream-name $KINESIS_STREAM_NAME
+aws kinesis delete-stream --stream-name $KINESIS_STREAM_NAME --region $AWS_REGION

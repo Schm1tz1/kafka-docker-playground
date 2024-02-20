@@ -18,7 +18,8 @@ do
      set -e
 done
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Creating Couchbase cluster"
 docker exec couchbase bash -c "/opt/couchbase/bin/couchbase-cli cluster-init --cluster-username Administrator --cluster-password password --services=data,index,query"
@@ -29,7 +30,7 @@ log "Sending messages to topic couchbase-sink-example"
 docker exec json-producer bash -c "java -jar json-producer-1.0.0-SNAPSHOT-jar-with-dependencies.jar"
 
 log "Creating Couchbase sink connector"
-playground connector create-or-update --connector couchbase-sink << EOF
+playground connector create-or-update --connector couchbase-sink  << EOF
 {
      "connector.class": "com.couchbase.connect.kafka.CouchbaseSinkConnector",
      "tasks.max": "2",

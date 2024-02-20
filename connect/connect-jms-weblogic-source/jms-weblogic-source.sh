@@ -6,10 +6,8 @@ source ${DIR}/../../scripts/utils.sh
 
 if test -z "$(docker images -q container-registry.oracle.com/middleware/weblogic:12.2.1.3)"
 then
-     if [ ! -z "$CI" ]
+     if [ ! -z "$ORACLE_CONTAINER_REGISTRY_USERNAME" ] && [ ! -z "$ORACLE_CONTAINER_REGISTRY_PASSWORD" ]
      then
-          # running with github actions
-
           docker login container-registry.oracle.com -u $ORACLE_CONTAINER_REGISTRY_USERNAME -p "$ORACLE_CONTAINER_REGISTRY_PASSWORD"
           docker pull container-registry.oracle.com/middleware/weblogic:12.2.1.3
      else
@@ -53,28 +51,29 @@ do
      set -e
 done
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 
 log "Creating JMS weblogic source connector"
-playground connector create-or-update --connector weblogic-source << EOF
+playground connector create-or-update --connector weblogic-source  << EOF
 {
-               "connector.class": "io.confluent.connect.jms.JmsSourceConnector",
-               "kafka.topic": "from-weblogic-messages",
-               "java.naming.factory.initial": "weblogic.jndi.WLInitialContextFactory",
-               "jms.destination.name": "myJMSServer/mySystemModule!myJMSServer@MyDistributedQueue",
-               "jms.destination.type": "QUEUE",
-               "java.naming.provider.url": "t3://weblogic-jms:7001",
-               "connection.factory.name": "myFactory",
-               "java.naming.security.principal": "weblogic",
-               "java.naming.security.credentials": "welcome1",
-               "key.converter": "org.apache.kafka.connect.storage.StringConverter",
-               "value.converter": "org.apache.kafka.connect.storage.StringConverter",
-               "tasks.max" : "1",
-               "confluent.license": "",
-               "confluent.topic.bootstrap.servers": "broker:9092",
-               "confluent.topic.replication.factor": "1"
-          }
+     "connector.class": "io.confluent.connect.jms.JmsSourceConnector",
+     "kafka.topic": "from-weblogic-messages",
+     "java.naming.factory.initial": "weblogic.jndi.WLInitialContextFactory",
+     "jms.destination.name": "myJMSServer/mySystemModule!myJMSServer@MyDistributedQueue",
+     "jms.destination.type": "QUEUE",
+     "java.naming.provider.url": "t3://weblogic-jms:7001",
+     "connection.factory.name": "myFactory",
+     "java.naming.security.principal": "weblogic",
+     "java.naming.security.credentials": "welcome1",
+     "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+     "value.converter": "org.apache.kafka.connect.storage.StringConverter",
+     "tasks.max" : "1",
+     "confluent.license": "",
+     "confluent.topic.bootstrap.servers": "broker:9092",
+     "confluent.topic.replication.factor": "1"
+}
 EOF
 
 

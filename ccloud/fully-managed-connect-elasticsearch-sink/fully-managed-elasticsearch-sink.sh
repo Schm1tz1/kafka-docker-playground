@@ -28,13 +28,7 @@ check_if_continue
 
 bootstrap_ccloud_environment
 
-if [ -f /tmp/delta_configs/env.delta ]
-then
-     source /tmp/delta_configs/env.delta
-else
-     logerror "ERROR: /tmp/delta_configs/env.delta has not been generated"
-     exit 1
-fi
+
 
 log "Creating test-elasticsearch-sink topic"
 set +e
@@ -43,25 +37,25 @@ sleep 3
 playground topic create --topic test-elasticsearch-sink
 set -e
 
-docker-compose build
-docker-compose down -v --remove-orphans
-docker-compose up -d
+docker compose build
+docker compose down -v --remove-orphans
+docker compose up -d
 
 sleep 5
 
 log "Getting ngrok hostname and port"
-NGROK_URL=$(curl --silent http://127.0.0.1:4551/api/tunnels | jq -r '.tunnels[0].public_url')
+NGROK_URL=$(curl --silent http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[0].public_url')
 NGROK_HOSTNAME=$(echo $NGROK_URL | cut -d "/" -f3 | cut -d ":" -f 1)
 NGROK_PORT=$(echo $NGROK_URL | cut -d "/" -f3 | cut -d ":" -f 2)
 
 connector_name="ElasticsearchSink"
 set +e
 log "Deleting fully managed connector $connector_name, it might fail..."
-playground ccloud-connector delete --connector $connector_name
+playground connector delete --connector $connector_name
 set -e
 
 log "Creating fully managed connector"
-playground ccloud-connector create-or-update --connector $connector_name << EOF
+playground connector create-or-update --connector $connector_name << EOF
 {
      "connector.class": "ElasticsearchSink",
      "name": "ElasticsearchSink",

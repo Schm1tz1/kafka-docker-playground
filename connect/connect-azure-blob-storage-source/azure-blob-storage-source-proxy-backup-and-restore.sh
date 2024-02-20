@@ -63,7 +63,8 @@ sed -e "s|:AZURE_ACCOUNT_NAME:|$AZURE_ACCOUNT_NAME|g" \
     -e "s|:AZURE_CONTAINER_NAME:|$AZURE_CONTAINER_NAME|g" \
     ../../connect/connect-azure-blob-storage-source/data.template > ../../connect/connect-azure-blob-storage-source/data
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.proxy.backup-and-restore.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.proxy.backup-and-restore.yml"
 
 DOMAIN="$AZURE_CONTAINER_NAME.blob.core.windows.net"
 IP=$(nslookup $DOMAIN | grep Address | grep -v "#" | cut -d " " -f 2 | tail -1)
@@ -71,7 +72,7 @@ log "Blocking $DOMAIN IP $IP to make sure proxy is used"
 docker exec --privileged --user root connect bash -c "iptables -A INPUT -p tcp -s $IP -j DROP"
 
 log "Creating Azure Blob Storage Sink connector"
-playground connector create-or-update --connector azure-blob-sink << EOF
+playground connector create-or-update --connector azure-blob-sink  << EOF
 {
     "connector.class": "io.confluent.connect.azure.blob.AzureBlobStorageSinkConnector",
     "tasks.max": "1",
@@ -136,29 +137,30 @@ docker run --rm -v /tmp:/tmp vdesabou/avro-tools tojson /tmp/blob_topic+0+000000
 
 
 log "Creating Azure Blob Storage Source connector"
-playground connector create-or-update --connector azure-blob-source << EOF
+playground connector create-or-update --connector azure-blob-source  << EOF
 {
-                "connector.class": "io.confluent.connect.azure.blob.storage.AzureBlobStorageSourceConnector",
-                "tasks.max": "1",
-                "azblob.account.name": "\${file:/data:AZURE_ACCOUNT_NAME}",
-                "azblob.account.key": "\${file:/data:AZURE_ACCOUNT_KEY}",
-                "azblob.container.name": "\${file:/data:AZURE_CONTAINER_NAME}",
-                "azblob.proxy.url" : "https://nginx-proxy:8888",
-                "format.class": "io.confluent.connect.cloud.storage.source.format.CloudStorageAvroFormat",
-                "confluent.license": "",
-                "confluent.topic.bootstrap.servers": "broker:9092",
-                "confluent.topic.replication.factor": "1",
-                "transforms" : "AddPrefix",
-                "transforms.AddPrefix.type" : "org.apache.kafka.connect.transforms.RegexRouter",
-                "transforms.AddPrefix.regex" : ".*",
-                "transforms.AddPrefix.replacement" : "copy_of_\$0"
-          }
+    "connector.class": "io.confluent.connect.azure.blob.storage.AzureBlobStorageSourceConnector",
+    "tasks.max": "1",
+    "azblob.account.name": "\${file:/data:AZURE_ACCOUNT_NAME}",
+    "azblob.account.key": "\${file:/data:AZURE_ACCOUNT_KEY}",
+    "azblob.container.name": "\${file:/data:AZURE_CONTAINER_NAME}",
+    "azblob.proxy.url" : "https://nginx-proxy:8888",
+    "format.class": "io.confluent.connect.cloud.storage.source.format.CloudStorageAvroFormat",
+    "confluent.license": "",
+    "confluent.topic.bootstrap.servers": "broker:9092",
+    "confluent.topic.replication.factor": "1",
+    "transforms" : "AddPrefix",
+    "transforms.AddPrefix.type" : "org.apache.kafka.connect.transforms.RegexRouter",
+    "transforms.AddPrefix.regex" : ".*",
+    "transforms.AddPrefix.replacement" : "copy_of_\$0"
+}
 EOF
 
 sleep 5
 
 log "Verifying topic copy_of_blob_topic"
 playground topic consume --topic copy_of_blob_topic --min-expected-messages 3 --timeout 60
-exit 0
+
 log "Deleting resource group"
+check_if_continue
 az group delete --name $AZURE_RESOURCE_GROUP --yes --no-wait

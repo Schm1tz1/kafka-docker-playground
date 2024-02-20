@@ -24,7 +24,8 @@ else
      log "🛑 SQL_DATAGEN is not set"
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.jtds.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.jtds.yml"
 
 log "Create table"
 docker exec -i sqlserver /opt/mssql-tools/bin/sqlcmd -U sa -P Password! << EOF
@@ -53,7 +54,7 @@ GO
 EOF
 
 log "Creating JDBC SQL Server (with JTDS driver) source connector"
-playground connector create-or-update --connector sqlserver-source << EOF
+playground connector create-or-update --connector sqlserver-source  << EOF
 {
               "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
               "tasks.max": "1",

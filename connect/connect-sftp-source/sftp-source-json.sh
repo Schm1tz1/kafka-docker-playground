@@ -4,7 +4,8 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 docker exec sftp-server bash -c "
 mkdir -p /chroot/home/foo/upload/input
@@ -20,7 +21,7 @@ docker cp json-sftp-source.json sftp-server:/chroot/home/foo/upload/input/
 rm -f json-sftp-source.json
 
 log "Creating JSON (no schema) SFTP Source connector"
-playground connector create-or-update --connector sftp-source-json << EOF
+playground connector create-or-update --connector sftp-source-json  << EOF
 {
      "tasks.max": "1",
      "connector.class": "io.confluent.connect.sftp.SftpSchemaLessJsonSourceConnector",

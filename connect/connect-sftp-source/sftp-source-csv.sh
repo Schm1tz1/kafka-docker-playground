@@ -4,7 +4,8 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 docker exec sftp-server bash -c "
 mkdir -p /chroot/home/foo/upload/input
@@ -19,7 +20,7 @@ docker cp csv-sftp-source.csv sftp-server:/chroot/home/foo/upload/input/
 rm -f csv-sftp-source.csv
 
 log "Creating CSV SFTP Source connector"
-playground connector create-or-update --connector sftp-source-csv << EOF
+playground connector create-or-update --connector sftp-source-csv  << EOF
 {
      "tasks.max": "1",
      "connector.class": "io.confluent.connect.sftp.SftpCsvSourceConnector",

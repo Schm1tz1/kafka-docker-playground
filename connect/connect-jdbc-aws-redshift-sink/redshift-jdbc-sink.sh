@@ -8,7 +8,7 @@ if [ ! -f ${PWD}/redshift-jdbc42-2.1.0.17/redshift-jdbc42-2.1.0.17.jar ]
 then
      mkdir -p redshift-jdbc42-2.1.0.17
      cd redshift-jdbc42-2.1.0.17
-     wget https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/2.1.0.17/redshift-jdbc42-2.1.0.17.zip
+     wget -q https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/2.1.0.17/redshift-jdbc42-2.1.0.17.zip
      unzip redshift-jdbc42-2.1.0.17.zip
      cd -
 fi
@@ -27,8 +27,8 @@ else
         if [ -f $HOME/.aws/credentials ]
         then
             logwarn "💭 AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are set based on $HOME/.aws/credentials"
-            export AWS_ACCESS_KEY_ID=$( grep "^aws_access_key_id" $HOME/.aws/credentials| awk -F'=' '{print $2;}' )
-            export AWS_SECRET_ACCESS_KEY=$( grep "^aws_secret_access_key" $HOME/.aws/credentials| awk -F'=' '{print $2;}' ) 
+            export AWS_ACCESS_KEY_ID=$( grep "^aws_access_key_id" $HOME/.aws/credentials | head -1 | awk -F'=' '{print $2;}' )
+            export AWS_SECRET_ACCESS_KEY=$( grep "^aws_secret_access_key" $HOME/.aws/credentials | head -1 | awk -F'=' '{print $2;}' ) 
         fi
     fi
     if [ -z "$AWS_REGION" ]
@@ -49,14 +49,38 @@ else
      export CONNECT_CONTAINER_HOME_DIR="/root"
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 CLUSTER_NAME=pg${USER}jdbcredshift${TAG}
 CLUSTER_NAME=${CLUSTER_NAME//[-._]/}
 
-set +e
 log "Delete AWS Redshift cluster, if required"
-aws redshift delete-cluster --cluster-identifier $CLUSTER_NAME --skip-final-cluster-snapshot
+set +e
+RETRIES=3
+# Set the retry interval in seconds
+RETRY_INTERVAL=60
+# Attempt to delete the cluster
+for i in $(seq 1 $RETRIES); do
+    log "Attempt $i to delete cluster $CLUSTER_NAME"
+    if aws redshift delete-cluster --cluster-identifier $CLUSTER_NAME --skip-final-cluster-snapshot
+    then
+        log "Cluster $CLUSTER_NAME deleted successfully"
+        sleep 120
+        log "Delete security group sg$CLUSTER_NAME, if required"
+        aws ec2 delete-security-group --group-name sg$CLUSTER_NAME
+        break
+    else
+        error=$(aws redshift delete-cluster --cluster-identifier $CLUSTER_NAME --skip-final-cluster-snapshot 2>&1)
+        if [[ $error == *"InvalidClusterState"* ]]
+        then
+            logwarn "InvalidClusterState error encountered. Retrying in $RETRY_INTERVAL seconds..."
+            sleep $RETRY_INTERVAL
+        else
+            logwarn "Error deleting cluster $CLUSTER_NAME: $error"
+        fi
+    fi
+done
 log "Delete security group sg$CLUSTER_NAME, if required"
 aws ec2 delete-security-group --group-name sg$CLUSTER_NAME
 set -e
@@ -92,50 +116,35 @@ aws redshift modify-cluster --cluster-identifier $CLUSTER_NAME --vpc-security-gr
 CLUSTER=$(aws redshift describe-clusters --cluster-identifier $CLUSTER_NAME | jq -r .Clusters[0].Endpoint.Address)
 
 set +e
-docker run -i -e CLUSTER="$CLUSTER" -v "${DIR}/customers.sql":/tmp/customers.sql debezium/postgres:15-alpine psql -h "$CLUSTER" -U "masteruser" -d "dev" -p "5439" << EOF
+docker run -i -e CLUSTER="$CLUSTER" debezium/postgres:15-alpine psql -h "$CLUSTER" -U "masteruser" -d "dev" -p "5439" << EOF
 myPassword1
-DROP TABLE ORDERS;
+DROP TABLE orders;
 EOF
 set -e
 
+# need to pre-create otherwise getting ConnectException: null (INT32) type doesn't have a mapping to the SQL database column type
+docker run -i -e CLUSTER="$CLUSTER" debezium/postgres:15-alpine psql -h "$CLUSTER" -U "masteruser" -d "dev" -p "5439" << EOF
+myPassword1
+     create table orders (id INT,product TEXT,quantity INT,price REAL);
+EOF
+
+
 log "Creating JDBC AWS Redshift sink connector"
-playground connector create-or-update --connector redshift-jdbc-sink << EOF
+playground connector create-or-update --connector redshift-jdbc-sink  << EOF
 {
   "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
   "tasks.max": "1",
-  "connection.url": "jdbc:postgresql://$CLUSTER:$PORT/dev?user=masteruser&password=myPassword1&ssl=false",
+  "connection.url": "jdbc:redshift://$CLUSTER:5439/dev?user=masteruser&password=myPassword1&ssl=true&reWriteBatchedInserts=true&reWriteBatchedInsertsSize=512",
   "topics": "orders",
-  "auto.create": "true"
+  "auto.create": "false",
+  "auto.evolve": "false",
+  "insert.mode": "insert",
+  "batch.size": "512"
 }
 EOF
 
-log "Sending messages to topic ORDERS"
-playground topic produce -t ORDERS --nb-messages 1 << 'EOF'
-{
-  "type": "record",
-  "name": "myrecord",
-  "fields": [
-    {
-      "name": "id",
-      "type": "int"
-    },
-    {
-      "name": "product",
-      "type": "string"
-    },
-    {
-      "name": "quantity",
-      "type": "int"
-    },
-    {
-      "name": "price",
-      "type": "float"
-    }
-  ]
-}
-EOF
-
-playground topic produce -t ORDERS --nb-messages 1 --forced-value '{"id":2,"product":"foo","quantity":2,"price":0.86583304}' << 'EOF'
+log "Sending messages to topic orders"
+playground topic produce -t orders --nb-messages 512 << 'EOF'
 {
   "type": "record",
   "name": "myrecord",
@@ -165,5 +174,5 @@ sleep 10
 log "Verify data is in Redshift"
 docker run -i -e CLUSTER="$CLUSTER" -v "${DIR}/customers.sql":/tmp/customers.sql debezium/postgres:15-alpine psql -h "$CLUSTER" -U "masteruser" -d "dev" -p "5439" << EOF
 myPassword1
-SELECT * from ORDERS;
+SELECT * from orders;
 EOF

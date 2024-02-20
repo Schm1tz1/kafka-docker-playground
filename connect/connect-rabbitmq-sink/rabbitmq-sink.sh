@@ -4,7 +4,8 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 
 log "Create RabbitMQ exchange, queue and binding"
@@ -14,10 +15,12 @@ docker exec -i rabbitmq rabbitmqadmin -u myuser -p mypassword -V / declare bindi
 
 
 log "Sending messages to topic rabbitmq-messages"
-seq 10 | docker exec -i broker kafka-console-producer --broker-list broker:9092 --topic rabbitmq-messages
+playground topic produce -t rabbitmq-messages --nb-messages 10 << 'EOF'
+%g
+EOF
 
 log "Creating RabbitMQ Sink connector"
-playground connector create-or-update --connector rabbitmq-sink << EOF
+playground connector create-or-update --connector rabbitmq-sink  << EOF
 {
                "connector.class" : "io.confluent.connect.rabbitmq.sink.RabbitMQSinkConnector",
                "tasks.max" : "1",

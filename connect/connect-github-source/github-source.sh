@@ -14,11 +14,12 @@ then
      exit 1
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 if version_gt $CONNECTOR_TAG "1.9.9"
 then
-     playground connector create-or-update --connector github-source << EOF
+     playground connector create-or-update --connector github-source  << EOF
 {
      "connector.class": "io.confluent.connect.github.GithubSourceConnector",
      "topic.name.pattern":"github-topic-\${resourceName}",
@@ -41,7 +42,7 @@ then
 }
 EOF
 else
-     playground connector create-or-update --connector github-source << EOF
+     playground connector create-or-update --connector github-source  << EOF
 {
      "connector.class": "io.confluent.connect.github.GithubSourceConnector",
      "topic.name.pattern":"github-topic-${entityName}",

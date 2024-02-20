@@ -19,7 +19,7 @@ log "Sending sales in US cluster"
 seq -f "us_sale_%g ${RANDOM}" 10 | docker container exec -i client bash -c 'kinit -k -t /var/lib/secret/kafka-client.key kafka_producer && kafka-console-producer --broker-list broker-us:9092 --topic sales_US --producer.config /etc/kafka/producer-us.properties'
 
 log "Starting replicator instances"
-docker-compose -f ../../environment/mdc-plaintext/docker-compose.yml -f ../../environment/mdc-kerberos/docker-compose.kerberos.yml -f docker-compose.mdc-kerberos.replicator.yml up -d
+docker compose -f ../../environment/mdc-plaintext/docker-compose.yml -f ../../environment/mdc-kerberos/docker-compose.kerberos.yml -f docker-compose.mdc-kerberos.replicator.yml up -d
 
 docker container exec -i replicator-us bash -c 'kinit -k -t /var/lib/secret/kafka-connect.key connect'
 docker container exec -i replicator-europe bash -c 'kinit -k -t /var/lib/secret/kafka-connect.key connect'
@@ -27,8 +27,10 @@ docker container exec -i replicator-europe bash -c 'kinit -k -t /var/lib/secret/
 ../../scripts/wait-for-connect-and-controlcenter.sh replicator-us $@
 ../../scripts/wait-for-connect-and-controlcenter.sh replicator-europe $@
 
+sleep 120
+
 log "Verify we have received the data in all the sales_ topics in EUROPE"
-timeout 120 docker container exec -i client bash -c 'kinit -k -t /var/lib/secret/kafka-client.key kafka_consumer && kafka-console-consumer --bootstrap-server broker-europe:9092 --whitelist "sales_.*" --from-beginning --max-messages 20 --property metadata.max.age.ms 30000 --consumer.config /etc/kafka/consumer-europe.properties'
+docker container exec -i client bash -c 'kinit -k -t /var/lib/secret/kafka-client.key kafka_consumer && timeout 120 kafka-console-consumer --bootstrap-server broker-europe:9092 --whitelist "sales_.*" --from-beginning --max-messages 20 --property metadata.max.age.ms 30000 --consumer.config /etc/kafka/consumer-europe.properties'
 
 log "Verify we have received the data in all the sales_ topics in the US"
-timeout 120 docker container exec -i client bash -c 'kinit -k -t /var/lib/secret/kafka-client.key kafka_consumer && kafka-console-consumer --bootstrap-server broker-us:9092 --whitelist "sales_.*" --from-beginning --max-messages 20 --property metadata.max.age.ms 30000 --consumer.config /etc/kafka/consumer-us.properties'
+docker container exec -i client bash -c 'kinit -k -t /var/lib/secret/kafka-client.key kafka_consumer && timeout 120 kafka-console-consumer --bootstrap-server broker-us:9092 --whitelist "sales_.*" --from-beginning --max-messages 20 --property metadata.max.age.ms 30000 --consumer.config /etc/kafka/consumer-us.properties'

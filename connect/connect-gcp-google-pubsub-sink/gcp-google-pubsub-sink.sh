@@ -12,7 +12,7 @@ fi
 
 if [ ! -f ${DIR}/pubsub-group-kafka-connector-1.0.0.jar ]
 then
-     wget https://repo1.maven.org/maven2/com/google/cloud/pubsub-group-kafka-connector/1.0.0/pubsub-group-kafka-connector-1.0.0.jar
+     wget -q https://repo1.maven.org/maven2/com/google/cloud/pubsub-group-kafka-connector/1.0.0/pubsub-group-kafka-connector-1.0.0.jar
 fi
 
 cd ../../connect/connect-gcp-google-pubsub-sink
@@ -32,7 +32,8 @@ else
 fi
 cd -
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Doing gsutil authentication"
 set +e
@@ -56,29 +57,43 @@ docker run -i --volumes-from gcloud-config google/cloud-sdk:latest gcloud pubsub
 
 
 log "send data to pubsub-topic topic"
-docker exec -i broker kafka-console-producer --broker-list broker:9092 --topic pubsub-topic --property parse.key=true --property key.separator=, << EOF
-key1,{"u_name": "scissors", "u_price": 2.75, "u_quantity": 3}
-key2,{"u_name": "tape", "u_price": 0.99, "u_quantity": 10}
-key3,{"u_name": "notebooks", "u_price": 1.99, "u_quantity": 5}
+playground topic produce -t pubsub-topic --nb-messages 3 --key "key1" << 'EOF'
+{
+  "fields": [
+    {
+      "name": "u_name",
+      "type": "string"
+    },
+    {
+      "name": "u_price",
+      "type": "float"
+    },
+    {
+      "name": "u_quantity",
+      "type": "int"
+    }
+  ],
+  "name": "myrecord",
+  "type": "record"
+}
 EOF
-
 
 sleep 10
 
 log "Creating Google Cloud Pub/Sub Group Kafka Sink connector"
-playground connector create-or-update --connector pubsub-sink << EOF
+playground connector create-or-update --connector pubsub-sink  << EOF
 {
-               "connector.class" : "com.google.pubsub.kafka.sink.CloudPubSubSinkConnector",
-               "tasks.max" : "1",
-               "topics" : "pubsub-topic",
-               "cps.project" : "$GCP_PROJECT",
-               "cps.topic" : "topic-1",
-               "gcp.credentials.file.path" : "/tmp/keyfile.json",
-               "key.converter": "org.apache.kafka.connect.storage.StringConverter",
-               "value.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
-               "metadata.publish": "true",
-               "headers.publish": "true"
-          }
+     "connector.class" : "com.google.pubsub.kafka.sink.CloudPubSubSinkConnector",
+     "tasks.max" : "1",
+     "topics" : "pubsub-topic",
+     "cps.project" : "$GCP_PROJECT",
+     "cps.topic" : "topic-1",
+     "gcp.credentials.file.path" : "/tmp/keyfile.json",
+     "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+     "value.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
+     "metadata.publish": "true",
+     "headers.publish": "true"
+}
 EOF
 
 sleep 120
@@ -86,17 +101,8 @@ sleep 120
 log "Get messages from topic-1"
 docker run -i --volumes-from gcloud-config google/cloud-sdk:latest gcloud pubsub --project ${GCP_PROJECT} subscriptions pull subscription-1 > /tmp/result.log  2>&1
 cat /tmp/result.log
-grep "scissors" /tmp/result.log
+grep "kafka.topic" /tmp/result.log
 
-# ┌──────────────────────────────────────────────────────────┬──────────────────┬──────────────┬───────────────────────────────┬──────────────────┬─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-# │                           DATA                           │    MESSAGE_ID    │ ORDERING_KEY │           ATTRIBUTES          │ DELIVERY_ATTEMPT │                                                                                              ACK_ID                                                                                             │
-# ├──────────────────────────────────────────────────────────┼──────────────────┼──────────────┼───────────────────────────────┼──────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-# │ {"u_name": "scissors", "u_price": 2.75, "u_quantity": 3} │ 7291919715450279 │              │ kafka.offset=3                │                  │ RVNEUAYWLF1GSFE3GQhoUQ5PXiM_NSAoRRYLUxNRXHUDWxBvXDN1B1ENGXN1ZnVjXhYFBExadF9RGx9ZXESD0IqdL1BdZndjWxoAC0JSe1teGw9vVXSlkoejsvG0XW9WYuXW2dVlXrOw_bFZZiE9XBJLLD5-PTxFQV5AEkw2CURJUytDCypYEU4EISE-MD4 │
-# │                                                          │                  │              │ kafka.partition=0             │                  │                                                                                                                                                                                                 │
-# │                                                          │                  │              │ kafka.timestamp=1679487746962 │                  │                                                                                                                                                                                                 │
-# │                                                          │                  │              │ kafka.topic=pubsub-topic      │                  │                                                                                                                                                                                                 │
-# │                                                          │                  │              │ key=key1                      │                  │                                                                                                                                                                                                 │
-# └──────────────────────────────────────────────────────────┴──────────────────┴──────────────┴───────────────────────────────┴──────────────────┴─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 log "Delete topic and subscription"
 docker run -i --volumes-from gcloud-config google/cloud-sdk:latest gcloud pubsub --project ${GCP_PROJECT} topics delete topic-1

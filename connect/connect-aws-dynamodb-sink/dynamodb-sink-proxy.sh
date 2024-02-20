@@ -24,8 +24,8 @@ else
         if [ -f $HOME/.aws/credentials ]
         then
             logwarn "💭 AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are set based on $HOME/.aws/credentials"
-            export AWS_ACCESS_KEY_ID=$( grep "^aws_access_key_id" $HOME/.aws/credentials| awk -F'=' '{print $2;}' )
-            export AWS_SECRET_ACCESS_KEY=$( grep "^aws_secret_access_key" $HOME/.aws/credentials| awk -F'=' '{print $2;}' ) 
+            export AWS_ACCESS_KEY_ID=$( grep "^aws_access_key_id" $HOME/.aws/credentials | head -1 | awk -F'=' '{print $2;}' )
+            export AWS_SECRET_ACCESS_KEY=$( grep "^aws_secret_access_key" $HOME/.aws/credentials | head -1 | awk -F'=' '{print $2;}' ) 
         fi
     fi
     if [ -z "$AWS_REGION" ]
@@ -46,7 +46,8 @@ else
      export CONNECT_CONTAINER_HOME_DIR="/root"
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.proxy.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.proxy.yml"
 
 log "Sending messages to topic mytable"
 playground topic produce -t mytable --nb-messages 10 --forced-value '{"f1":"value%g"}' << 'EOF'
@@ -65,7 +66,7 @@ EOF
 DYNAMODB_ENDPOINT="https://dynamodb.$AWS_REGION.amazonaws.com"
 
 log "Creating AWS DynamoDB Sink connector"
-playground connector create-or-update --connector dynamodb-sink << EOF
+playground connector create-or-update --connector dynamodb-sink  << EOF
 {
     "connector.class": "io.confluent.connect.aws.dynamodb.DynamoDbSinkConnector",
     "tasks.max": "1",

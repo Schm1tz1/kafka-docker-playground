@@ -23,7 +23,8 @@ then
      cd ${OLDDIR}
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Starting up locator"
 docker exec -i pivotal-gemfire sh /opt/pivotal/workdir/startLocator.sh
@@ -35,14 +36,21 @@ docker exec -i pivotal-gemfire sh /opt/pivotal/workdir/startServer2.sh
 sleep 8
 
 log "Sending messages to topic input_topic"
-docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic input_topic --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"f1","type":"string"}]}' << EOF
-{"f1": "value1"}
-{"f1": "value2"}
-{"f1": "value3"}
+playground topic produce -t input_topic --nb-messages 10 --forced-value '{"f1":"value%g"}' << 'EOF'
+{
+  "type": "record",
+  "name": "myrecord",
+  "fields": [
+    {
+      "name": "f1",
+      "type": "string"
+    }
+  ]
+}
 EOF
 
 log "Creating Pivotal Gemfire sink connector"
-playground connector create-or-update --connector pivotal-gemfire-sink << EOF
+playground connector create-or-update --connector pivotal-gemfire-sink  << EOF
 {
                "connector.class": "io.confluent.connect.pivotal.gemfire.PivotalGemfireSinkConnector",
                "tasks.max": "1",

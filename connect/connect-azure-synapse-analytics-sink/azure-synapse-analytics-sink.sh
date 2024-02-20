@@ -27,6 +27,7 @@ AZURE_DATA_WAREHOUSE_NAME=$AZURE_NAME
 AZURE_REGION=westeurope
 AZURE_SQL_URL="jdbc:sqlserver://$AZURE_SQL_NAME.database.windows.net:1433"
 PASSWORD=$(date +%s | cksum | base64 | head -c 32 ; echo)
+PASSWORD="${PASSWORD}1"
 
 set +e
 az group delete --name $AZURE_RESOURCE_GROUP --yes
@@ -44,7 +45,7 @@ az sql server create \
     --location $AZURE_REGION  \
     --admin-user myadmin \
     --admin-password $PASSWORD
-if [ ! -z "$CI" ]
+if [ ! -z "$GITHUB_RUN_NUMBER" ]
 then
     # running with CI
     # connect-azure-synapse-analytics-sink is failing #131
@@ -78,7 +79,8 @@ sed -e "s|:AZURE_SQL_URL:|$AZURE_SQL_URL|g" \
     -e "s|:AZURE_DATA_WAREHOUSE_NAME:|$AZURE_DATA_WAREHOUSE_NAME|g" \
     ../../connect/connect-azure-synapse-analytics-sink/data.template > ../../connect/connect-azure-synapse-analytics-sink/data
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Sending messages to topic products"
 playground topic produce -t products --nb-messages 2 << 'EOF'
@@ -124,7 +126,7 @@ playground topic produce -t products --nb-messages 1 --forced-value '{"name": "n
 EOF
 
 log "Creating Azure Synapse Analytics Sink connector"
-playground connector create-or-update --connector azure-sql-dw-sink << EOF
+playground connector create-or-update --connector azure-sql-dw-sink  << EOF
 {
     "connector.class": "io.confluent.connect.azuresqldw.AzureSqlDwSinkConnector",
     "tasks.max": "1",
@@ -153,4 +155,5 @@ cat /tmp/result.log
 grep "notebooks" /tmp/result.log
 
 log "Deleting resource group"
-az group delete --name $AZURE_RESOURCE_GROUP --yes --no-wait
+check_if_continue
+az group delete --name $AZURE_RESOURCE_GROUP --yes

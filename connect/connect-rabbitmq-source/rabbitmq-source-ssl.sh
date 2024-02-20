@@ -9,7 +9,8 @@ log "🔐 Generate keys and certificates used for SSL"
 docker run -u0 --rm -v $PWD:/tmp ${CP_CONNECT_IMAGE}:${CONNECT_TAG} bash -c "/tmp/certs-create.sh > /dev/null 2>&1 && chown -R $(id -u $USER):$(id -g $USER) /tmp/ && chmod a+r /tmp/*"
 cd -
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext-ssl.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext-ssl.yml"
 
 sleep 5
 
@@ -17,7 +18,7 @@ log "Send message to RabbitMQ in myqueue"
 docker exec rabbitmq_producer bash -c "python /producer.py myqueue 5"
 
 log "Creating RabbitMQ Source connector"
-playground connector create-or-update --connector rabbitmq-source << EOF
+playground connector create-or-update --connector rabbitmq-source  << EOF
 {
      "connector.class" : "io.confluent.connect.rabbitmq.RabbitMQSourceConnector",
      "tasks.max" : "1",

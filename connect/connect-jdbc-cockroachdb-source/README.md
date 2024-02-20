@@ -10,7 +10,7 @@ Quickly test [JDBC CockroachDB](https://docs.confluent.io/current/connect/kafka-
 Simply run:
 
 ```
-$ playground run -f cockroachdb<tab>
+$ playground run -f cockroachdb<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path>
 ```
 
 N.B: CockroachDB DB Console is reachable at [http://127.0.0.1:8080](http://127.0.0.1:8080])
@@ -56,7 +56,7 @@ EOF
 Creating JDBC CockroachDB source connector
 
 ```bash
-playground connector create-or-update --connector cockroachdb-source << EOF
+playground connector create-or-update --connector cockroachdb-source  << EOF
 {
                "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
                "tasks.max": "1",

@@ -1,31 +1,97 @@
 name: playground
 version: 1.0.0
 dependencies:
-  docker: visit $(blue_underlined https://docs.docker.com/get-docker) to install
+  docker: visit https://docs.docker.com/get-docker to install
 help: |-
   🧠 CLI for Kafka Docker Playground 🐳
 
   👉 Check documentation https://kafka-docker-playground.io/#/cli
 filters:
 - docker_running
+
+flags:
+- long: --vvv
+  short: -v
+  help: |
+    🐛 set verbose output (set -x)
+
+    ❗ it can print sensitive information ❗
+
 commands:
+
+- name: help
+  help: Show help about a command
+  args:
+  - name: command
+    help: 🆘 Help command
+
+- name: status
+  help: 🗺️ Show a status
 
 ### private commands for completion
 - name: get-connector-list
   help: Return some completion for connector list
   private: true
 
-- name: get-ccloud-connector-list
-  help: Return some completion for ccloud connector list
+- name: generate-fzf-find-files
+  help: force call to generate_fzf_find_files
+  private: true
+
+- name: generate-tag-list
+  help: generate the confluent platform tag list
+  private: true
+
+- name: generate-connector-plugin-list
+  help: generate the confluent hub plugin list
+  private: true
+
+- name: generate-kafka-region-list
+  help: generate the confluent kafka region list
   private: true
   dependencies:
-    confluent: visit $(blue_underlined https://docs.confluent.io/confluent-cli/current/overview.html) to install
+    confluent: visit https://docs.confluent.io/confluent-cli/current/overview.html to install
+    
+- name: get-connector-plugin
+  help: Return some completion for connector plugin
+  private: true
+  args:
+  - name: cur
+    required: false
+    help: correspond to completion $cur
+
+- name: get-ccloud-environment-list
+  help: Return some completion for ccloud environment
+  private: true
+  args:
+  - name: cur
+    required: false
+    help: correspond to completion $cur
+
+- name: get-ccloud-cluster-list
+  help: Return some completion for ccloud cluster
+  private: true
+  args:
+  - name: cur
+    required: false
+    help: correspond to completion $cur
+
+- name: get-tag-list
+  help: Return some completion for confluent platform tag
+  private: true
+  args:
+  - name: cur
+    required: false
+    help: correspond to completion $cur
 
 - name: get-kafka-region-list
   help: Return some completion for confluent cloud kafka cluster region list
   private: true
   dependencies:
-    confluent: visit $(blue_underlined https://docs.confluent.io/confluent-cli/current/overview.html) to install
+    confluent: visit https://docs.confluent.io/confluent-cli/current/overview.html to install
+  args:
+  - name: cur
+    required: false
+    help: correspond to completion $cur
 
 - name: get-topic-list
   help: Return some completion for topic list
@@ -33,6 +99,15 @@ commands:
   flags:
   - long: --skip-connect-internal-topics
     required: false
+
+- name: get-subject-list
+  help: Return some completion for subject list
+  private: true
+  flags:
+  - long: --deleted
+    required: false
+    help: |-
+      🧟 Include soft deleted schemas
 
 - name: get-examples-list-with-fzf
   help: Return some completion for examples list
@@ -47,6 +122,20 @@ commands:
   - long: --sink-only
     required: false
   - long: --ccloud-only
+    required: false
+  - long: --connector-only
+    required: false
+  - long: --repro-only
+    required: false
+  - long: --fully-managed-connector-only
+    required: false
+  - long: --ksql-only
+    required: false
+  - long: --schema-registry-only
+    required: false
+  - long: --rest-proxy-only
+    required: false
+  - long: --other-playgrounds-only
     required: false
 
 - name: get-zip-or-jar-with-fzf
@@ -70,6 +159,14 @@ commands:
     required: false
     help: correspond to completion $cur
 
+- name: get-playground-repro-export-with-fzf
+  help: Return some completion for export tgz files
+  private: true
+  args:
+  - name: cur
+    required: false
+    help: correspond to completion $cur
+
 - name: get-predefined-schemas
   help: Return some completion for predefined schemas
   private: true
@@ -81,7 +178,123 @@ commands:
 - name: bashly-reload
   private: true
   dependencies:
-    bashly: visit $(blue_underlined https://bashly.dannyb.co/installation/) to install
+    bashly: visit https://bashly.dannyb.co/installation/ to install
+
+- name: state
+  private: true
+  commands:
+  - name: show
+    private: true
+    help: Show the entire playground.ini file
+
+  - name: get
+    help: Read a value from the playground.ini file
+    private: true
+    args:
+    - name: key
+      required: true
+      help: playground.ini key
+    examples:
+    - playground state get hello
+    - playground state get user.name
+
+  - name: set
+    help: Save a value in the playground.ini file
+    private: true
+    args:
+    - name: key
+      required: true
+      help: playground.ini key
+    - name: value
+      required: true
+      help: playground.ini value
+    examples:
+    - playground state set hello world
+    - playground state set user.email me@example.com
+
+  - name: del
+    help: Remove a value from the playground.ini file
+    private: true
+    args:
+    - name: key
+      required: true
+      help: playground.ini key
+    examples:
+    - playground state del hello
+    - playground state del user.name
+
+
+- name: config
+  help: ⚙️ Configure CLI
+  commands:
+  - name: show
+    private: true
+    help: Show the entire playground_config.ini file
+
+  - name: get
+    private: true
+    help: Read a value from the playground_config.ini file
+
+    args:
+    - name: key
+      required: true
+      help: Config key
+    examples:
+    - playground config get hello
+    - playground config get user.name
+
+  - name: set
+    private: true
+    help: Save a value in the playground_config.ini file
+    args:
+    - name: key
+      required: true
+      help: playground_config.ini key
+    - name: value
+      required: true
+      help: playground_config.ini value
+    examples:
+    - playground config set hello world
+    - playground config set user.email me@example.com
+
+  - name: editor
+    help: editor to use to open files
+    args:
+    - name: editor
+      required: true
+      help: editor
+      validate: editor_exists
+    examples:
+    - playground config editor vi
+    - playground config editor code
+
+  - name: folder_zip_or_jar
+    help: |- 
+      📂 list of folders where to search for zip or jar
+      current folder is always included
+
+      default is ~ (home dir)
+    args:
+    - name: folder
+      required: true
+      help: folder
+      unique: true
+      repeatable: true
+      validate: dir_exists
+    examples:
+    - playground config folder_zip_or_jar ~/Downloads ~/Documents/github/kafka-connect-*
+    - playground config folder_zip_or_jar ~/Downloads
+
+  - name: clipboard
+    help: copy to clipboard connector config (only working on MacOS)
+    args:
+    - name: enabled
+      required: false
+      default: "true"
+      help: editor
+    examples:
+    - playground config clipboard false
+    - playground config clipboard true
 
 - name: run
   group: Run
@@ -97,14 +310,58 @@ commands:
       playground run -f zendesk-source<tab> <ZENDESK_URL> <ZENDESK_USERNAME> <ZENDESK_PASSWORD>
     required: false
   dependencies:
-    fzf: visit $(blue_underlined https://github.com/junegunn/fzf#installation) to install
+    fzf: visit https://github.com/junegunn/fzf#installation to install
   help: |-
-    🕹️ Run any example, except for Confluent Cloud (in this case use run-ccloud command)
+    🕹️ Run any example
+
+    ⛅ When running Confluent Cloud (ccloud) example:
+
+      All you have to do is to be already logged in with confluent CLI.
+
+      By default, a new Confluent Cloud environment with a Cluster will be created.
+
+      You can configure the new cluster by setting:
+    
+      --cluster-type (or CLUSTER_TYPE environment variable): The type of cluster (possible values: `basic`, `standard` and `dedicated`, default `basic`)
+      --cluster-cloud (or CLUSTER_CLOUD environment variable): The Cloud provider (possible values: `aws`, `gcp` and `azure`, default `aws`)
+      --cluster-region (or CLUSTER_REGION environment variable): The Cloud region (use `confluent kafka region list` to get the list, default `eu-west-2` for aws, `westeurope`for azure and `europe-west2` for gcp)
+      --cluster-environment (or ENVIRONMENT environment variable) (optional): The environment id where want your new cluster (example: `txxxxx`) 
+
+      In case you want to use your own existing cluster, you need to setup, in addition to previous ones:
+
+      --cluster-name (or CLUSTER_NAME environment variable): The cluster name
+      --cluster-creds (or CLUSTER_CREDS environment variable): The Kafka api key and secret to use, it should be separated with colon (example: `<API_KEY>:<API_KEY_SECRET>`)
+      --cluster-schema-registry-creds (or SCHEMA_REGISTRY_CREDS environment variable) (optional, if not set, new one will be created): The Schema Registry api key and secret to use, it should be separated with colon (example: `<SR_API_KEY>:<SR_API_KEY_SECRET>`)
 
   flags:
+  - &environment-run
+    long: --environment
+    required: false
+    default: "plaintext"
+    arg: environment
+    allowed: [ccloud, plaintext, sasl-ssl, sasl-plain, 2way-ssl, sasl-scram, kraft-external-plaintext, kraft-plaintext, kerberos, ssl_kerberos, ldap-authorizer-sasl-plain, ldap-sasl-plain, rbac-sasl-plain]
+    help: |-
+      🔐 The environment to start when running a connector example 
+      
+      - plaintext
+      - ccloud
+      - 2way-ssl
+      - kerberos
+      - kraft-external-plaintext
+      - kraft-plaintext
+      - ldap-authorizer-sasl-plain
+      - ldap-sasl-plain
+      - rbac-sasl-plain
+      - sasl-plain
+      - sasl-scram
+      - sasl-ssl
+      - ssl_kerberos
+
+      Default is plaintext.
+      This is only supported when example is a connector example
   - long: --file
     short: -f
-    required: true
+    required: false
     validate: file_exists_with_trick
     arg: file
     completions:
@@ -117,16 +374,19 @@ commands:
       🎓 Tip: use <tab> completion to trigger fzf completion
   - long: --open
     short: -o
-    help: 📖 Opening example file with text editor set with config.ini (default is code)
+    help: 📖 Opening example file with text editor set with playground config editor <editor> (default is code)
   - &tag
     long: --tag
     arg: tag
     required: false
-    validate: minimal_cp_version
+    completions:
+      - $(playground get-tag-list "$cur")
     help: |-
       🎯 Confluent Platform (CP) version to use
 
-      Must be greater or equal to 5.0.0
+      Must be greater or equal to 5.3.0
+
+      🎓 Tip: use <tab> completion to trigger fzf completion
   - &connector-tag
     long: --connector-tag
     arg: connector_tag
@@ -135,6 +395,9 @@ commands:
       🔗 Connector version to use
 
       By default, for each connector, the latest available version on Confluent Hub is used
+
+      🎓 Tip: set to " " in order to select the version dynamically
+
     conflicts: [--connector-zip]
   - &connector-zip
     long: --connector-zip
@@ -150,7 +413,7 @@ commands:
       ❕ It must be absolute full path
 
       🎓 Tip: use <tab> completion to trigger fzf completion 
-              use folder_zip_or_jar (default: ~/Downloads) in config.ini file to configure where to search the files (current folder is always used)
+              use playground config folder_zip_or_jar <folder1> <folder2>... (default is home folder and current folder is always included) to configure where to search the files
 
   - &connector-jar
     long: --connector-jar
@@ -165,15 +428,26 @@ commands:
       ❕ It must be absolute full path
 
       🎓 Tip: use <tab> completion to trigger fzf completion 
-              use folder_zip_or_jar (default: ~/Downloads) in config.ini file to configure where to search the files (current folder is always used)
+              use playground config folder_zip_or_jar <folder1> <folder2>... (default is home folder and current folder is always included) to configure where to search the files
 
   - &enable-ksqldb
     long: --enable-ksqldb
     required: false
     help: |-
-      🚀 Enable ksqlDB
+      🚀 Enable ksqlDB 
+      
+      ❗ not supported with ccloud examples
 
       By default, ksqldb-server and ksqldb-cli containers are not started for every test
+  - &enable-rest-proxy
+    long: --enable-rest-proxy
+    required: false
+    help: |-
+      🧲 Enable Rest Proxy
+
+      ❗ not supported with ccloud examples
+
+      By default, rest-proxy container is not started for every test
   - &enable-control-center
     long: --enable-control-center
     required: false
@@ -214,8 +488,10 @@ commands:
     help: |-
       Enable Grafana, Prometheus and Pyroscope
 
-      📊 Grafana is reachable at http://127.0.0.1:3000
+      📊 Grafana is reachable at http://127.0.0.1:3000 (login/password is admin/password)
+
       🛡️ Prometheus is reachable at http://127.0.0.1:9090
+      
       📛 Pyroscope is reachable at http://127.0.0.1:4040
   - &enable-kcat
     long: --enable-kcat
@@ -226,11 +502,6 @@ commands:
       You can use it with:
 
       $ docker exec kcat kcat -b broker:9092 -L
-  - &enable-sr-maven-plugin-app
-    long: --enable-sr-maven-plugin-app
-    required: false
-    help: |- 
-      🔰 Enable Schema Registry Maven plugin App
   - &enable-sql-datagen
     long: --enable-sql-datagen
     required: false
@@ -238,6 +509,90 @@ commands:
       🌪️ Enable SQL Datagen injection
 
       This only works for Oracle, MySql, Postgres and Microsoft Sql Server source connector examples with JDBC and Debezium
+
+  - &cluster-cloud
+    long: --cluster-cloud
+    required: false
+    arg: cluster-cloud
+    allowed: [aws, gcp, azure]
+    help: |-
+      🌤 The cloud provider: aws, gcp or azure. Default is aws
+
+      🎓 Tip: you can also use CLUSTER_CLOUD environment variable
+  - &cluster-type
+    long: --cluster-type
+    required: false
+    arg: cluster-type
+    allowed: [basic, standard, dedicated]
+    help: |-
+      🔋 The cluster type: basic, standard or dedicated. Default is basic
+
+      🎓 Tip: you can also use CLUSTER_TYPE environment variable
+  - &cluster-region
+    long: --cluster-region
+    required: false
+    arg: cluster-region
+    completions:
+      - $(playground get-kafka-region-list "$cur")
+    help: |-
+      🗺 The Cloud region. 
+      
+      🎓 Tip: you can also use CLUSTER_REGION environment variable
+      🎓 Tip: use <tab> completion to trigger fzf completion
+
+  - &cluster-environment
+    long: --cluster-environment
+    required: false
+    arg: cluster-environment
+    validate: not_empty
+    completions:
+      - $(playground get-ccloud-environment-list "$cur")
+    help: |-
+      🌐 The environment id where want your new cluster (example: txxxxx)
+
+      ℹ️ Optional, if not set, new environment will be created
+
+      🎓 Tip: you can also use ENVIRONMENT environment variable
+      🎓 Tip: use <tab> completion to trigger fzf completion
+
+  - &cluster-name
+    long: --cluster-name
+    required: false
+    validate: not_empty
+    completions:
+      - $(playground get-ccloud-cluster-list "$cur")
+    arg: cluster-name
+    help: |-
+      🎰 The cluster name. 
+      
+      ❣️ Only required if you want to use your own existing cluster
+
+      🎓 Tip: you can also use CLUSTER_NAME environment variable
+      🎓 Tip: use <tab> completion to trigger fzf completion
+  - &cluster-creds
+    long: --cluster-creds
+    required: false
+    validate: not_empty
+    arg: cluster-creds
+    help: |-
+      🔒 The Kafka api key and secret to use, it should be separated with colon (example: <API_KEY>:<API_KEY_SECRET>)
+
+      ❣️ Only required if you want to use your own existing cluster
+
+      🎓 Tip: you can also use CLUSTER_CREDS environment variable
+  - &cluster-schema-registry-creds
+    long: --cluster-schema-registry-creds
+    required: false
+    validate: not_empty
+    arg: cluster-schema-registry-creds
+    help: |-
+      🔒 The Schema Registry api key and secret to use, it should be separated with colon (example: <SR_API_KEY>:<SR_API_KEY_SECRET>)
+
+      ℹ️ Optional, if not set, new credentials will be created
+
+      ❣️ Only required if you want to use your own existing cluster
+      
+      🎓 Tip: you can also use SCHEMA_REGISTRY_CREDS environment variable
   examples:
   - playground run -f zendesk-source<tab> --tag 7.2.1 --enable-control-center <ZENDESK_URL> <ZENDESK_USERNAME> <ZENDESK_PASSWORD>
   - playground run -f jdbc<tab> --connector-tag 10.6.0 --enable-jmx-grafana --open
@@ -245,7 +600,7 @@ commands:
 - name: re-run
   group: Run
   help: |-
-    ⚡ Simply re-run last example you ran with <playground run> or <playground run-ccloud>
+    ⚡ Simply re-run last example you ran with <playground run>
   catch_all:
     label: arguments
     help: |-
@@ -258,162 +613,145 @@ commands:
       playground run -f zendesk-source<tab> <ZENDESK_URL> <ZENDESK_USERNAME> <ZENDESK_PASSWORD>
     required: false
   dependencies:
-    fzf: visit $(blue_underlined https://github.com/junegunn/fzf#installation) to install
+    fzf: visit https://github.com/junegunn/fzf#installation to install
   flags:
     - long: --clear
       required: false
       help: |- 
         🧼 Clear any previous flags
+    - *environment-run
     - *tag
     - *connector-tag
     - *connector-zip
     - *connector-jar
     - *enable-ksqldb
+    - *enable-rest-proxy
     - *enable-control-center
     - *enable-conduktor
     - *enable-multiple-brokers
     - *enable-multiple-connect-workers
     - *enable-jmx-grafana
     - *enable-kcat
-    - *enable-sr-maven-plugin-app
     - *enable-sql-datagen
   examples:
   - playground re-run
-  - playground re-run --tag=6.2.1
+  - playground re-run --tag 6.2.1
 
-- name: run-ccloud
+
+- name: history
   group: Run
+  help: |-
+    🏰 Get an history of the examples which were run with run command and run it again
+  dependencies:
+    fzf: visit https://github.com/junegunn/fzf#installation to install
+
+- name: start-environment
+  group: Run
+  help: |-
+    🔐 Simply start an environment listed in http://tinyurl.com/y4ybbw32:
+
+    - ccloud
+    - 2way-ssl
+    - kerberos
+    - kraft-external-plaintext
+    - kraft-plaintext
+    - ldap-authorizer-sasl-plain
+    - ldap-sasl-plain
+    - mdc-kerberos
+    - mdc-plaintext
+    - mdc-sasl-plain
+    - plaintext
+    - rbac-sasl-plain
+    - sasl-plain
+    - sasl-scram
+    - sasl-ssl
+    - ssl_kerberos
+
+    Note: when running an example with <playground run>, it is already automatically done
   catch_all:
     label: arguments
     help: |-
       Arguments to use by example script
-
-      Most of examples support to get required options either by using arguments or environment variables.
-      
-      Example with Zendesk:
-
-      playground run -f zendesk-source<tab> <ZENDESK_URL> <ZENDESK_USERNAME> <ZENDESK_PASSWORD>
     required: false
-  dependencies:
-    fzf: visit $(blue_underlined https://github.com/junegunn/fzf#installation) to install
-    confluent: visit $(blue_underlined https://docs.confluent.io/confluent-cli/current/overview.html) to install
-  help: |-
-    ⛅ Run any Confluent Cloud (ccloud) example
-
-    All you have to do is to be already logged in with confluent CLI.
-
-    By default, a new Confluent Cloud environment with a Cluster will be created.
-
-    You can configure the new cluster by setting:
-
-    --cluster-cloud (or CLUSTER_CLOUD environment variable)
-    --cluster-region (or CLUSTER_REGION environment variable)
-    --cluster-environment (or ENVIRONMENT environment variable)
-
-    In case you want to use your own existing cluster, you need to setup, in addition to previous ones:
-
-    --cluster-name (or CLUSTER_NAME environment variable)
-    --cluster-creds (or CLUSTER_CREDS environment variable)
-    --cluster-schema-registry-creds (or SCHEMA_REGISTRY_CREDS environment variable)
-    
   flags:
-    - long: --file
-      short: -f
-      required: true
-      validate: file_exists_with_trick
-      arg: file
-      completions:
-        - $(playground get-examples-list-with-fzf --ccloud-only "$cur")
+    - &environment
+      long: --environment
+      required: false
+      default: "plaintext"
+      arg: environment
+      allowed: [ccloud, 2way-ssl, kerberos, kraft-external-plaintext, kraft-plaintext, ldap-authorizer-sasl-plain, ldap-sasl-plain, mdc-kerberos, mdc-plaintext, mdc-sasl-plain, plaintext, rbac-sasl-plain, sasl-plain, sasl-scram, sasl-ssl, ssl_kerberos]
       help: |-
-        🔖 Example file to run
+        🔐 The environment to start . 
+        
+        - ccloud
+        - 2way-ssl
+        - kerberos
+        - kraft-external-plaintext
+        - kraft-plaintext
+        - ldap-authorizer-sasl-plain
+        - ldap-sasl-plain
+        - mdc-kerberos
+        - mdc-plaintext
+        - mdc-sasl-plain
+        - plaintext
+        - rbac-sasl-plain
+        - sasl-plain
+        - sasl-scram
+        - sasl-ssl
+        - ssl_kerberos
+
+        Default is plaintext
+    - long: --docker-compose-override-file
+      short: -f
+      validate: file_exists
+      arg: docker-compose-override-file
+      help: |-
+        🔖 docker-compose override file
 
         ❕ It must be absolute full path
-
-        🎓 Tip: use <tab> completion to trigger fzf completion
-    - long: --open
-      short: -o
-      help: 📖 Opening example file with text editor set with config.ini (default is code)
     - *tag
-    - *connector-tag
-    - *connector-zip
-    - *connector-jar
+    - *enable-ksqldb
+    - *enable-rest-proxy
     - *enable-control-center
     - *enable-conduktor
+    - *enable-multiple-brokers
+    - *enable-multiple-connect-workers
+    - *enable-jmx-grafana
     - *enable-kcat
-    - &cluster-cloud
-      long: --cluster-cloud
-      required: false
-      arg: cluster-cloud
-      allowed: [aws, gcp, azure]
-      help: |-
-        🌤 The cloud provider: aws, gcp or azure. Default is aws
-
-        🎓 Tip: you can also use CLUSTER_CLOUD environment variable
-    - &cluster-region
-      long: --cluster-region
-      required: false
-      arg: cluster-region
-      completions:
-        - $(playground get-kafka-region-list)
-      help: |-
-        🗺 The Cloud region. 
-        
-        🎓 Tip: you can also use CLUSTER_REGION environment variable
-    - &cluster-environment
-      long: --cluster-environment
-      required: false
-      arg: cluster-environment
-      validate: not_empty
-      help: |-
-        🌐 The environment id where want your new cluster (example: env-xxxxx)
-
-        ℹ️ Optional, if not set, new environment will be created
-
-        🎓 Tip: you can also use ENVIRONMENT environment variable
-    - &cluster-name
-      long: --cluster-name
-      required: false
-      validate: not_empty
-      arg: cluster-name
-      help: |-
-        🎰 The cluster name. 
-        
-        ❣️ Only required if you want to use your own existing cluster
-
-        🎓 Tip: you can also use CLUSTER_NAME environment variable
-    - &cluster-creds
-      long: --cluster-creds
-      required: false
-      validate: not_empty
-      arg: cluster-creds
-      help: |-
-        🔒 The Kafka api key and secret to use, it should be separated with semi-colon (example: <API_KEY>:<API_KEY_SECRET>)
-
-        ❣️ Only required if you want to use your own existing cluster
-
-        🎓 Tip: you can also use CLUSTER_CREDS environment variable
-    - &cluster-schema-registry-creds
-      long: --cluster-schema-registry-creds
-      required: false
-      validate: not_empty
-      arg: cluster-schema-registry-creds
-      help: |-
-        🔒 The Schema Registry api key and secret to use, it should be separated with semi-colon (example: <SR_API_KEY>:<SR_API_KEY_SECRET>)
-
-        ℹ️ Optional, if not set, new credentials will be created
-
-        ❣️ Only required if you want to use your own existing cluster
-        
-        🎓 Tip: you can also use SCHEMA_REGISTRY_CREDS environment variable
   examples:
-  - playground run-ccloud mqtt<tab> --cluster-cloud aws --cluster-region eu-west-3 --enable-control-center --connector-tag 1.2.3
+  - playground start-environment
+  - playground start-environment --environment rbac-sasl-plain
+
+- name: switch-ccloud
+  group: Run
+  dependencies:
+    confluent: visit https://docs.confluent.io/confluent-cli/current/overview.html to install
+  help: |-
+    🌩️  Switch to ccloud environment.
+    
+    It will bootstrap ccloud environment based on your previously ran ccloud example.
+
+- name: switch-back
+  group: Run
+  help: |-
+    💺  Switch back from previous environment before switch-ccloud was called.
+
+- name: update-version
+  group: Run
+  help: |-
+    ✨ Update current confluent platform or connector(s) with new version(s)
+  flags:
+  - *tag
+  - *connector-tag
+  - *connector-zip
+  - *connector-jar
 
 - name: open
   group: Run
   dependencies:
-    fzf: visit $(blue_underlined https://github.com/junegunn/fzf#installation) to install
+    fzf: visit https://github.com/junegunn/fzf#installation to install
   help: |-
-    👐 When --file is not provided, simply open last example you ran with <playground run> or <playground run-ccloud>
+    👐 When --file is not provided, simply open last example you ran with <playground run>
 
     Otherwise, open any file from the playground using --file.
   flags:
@@ -436,6 +774,11 @@ commands:
   help: |-
     🛑 Stop currently running example
 
+- name: remove-all-docker-images
+  group: Run
+  help: |-
+    🧨 Remove all docker images (including docker volumes)
+
 - name: open-docs
   group: Run
   help: |-
@@ -445,189 +788,421 @@ commands:
     help: |-
       🌐 Only show url
 
-- name: bootstrap-reproduction-model
+- name: repro
+  expose: always
+  group: Repro
+  help: |-
+    👷‍♂️ Reproduction model commands
   environment_variables:
   - name: OUTPUT_FOLDER 
     help: 📁 Output folder where to generate bootstrapped files
     default: reproduction-models
-  group: Bootstrap
   dependencies:
-    fzf: visit $(blue_underlined https://github.com/junegunn/fzf#installation) to install
-  help: |-
-    🛠  Bootstrap reproduction model
-    
-    👉 Check documentation https://kafka-docker-playground.io/#/reusables?id=%f0%9f%9b%a0-bootstrap-reproduction-model
-  catch_all:
-    label: arguments
-    help: |-
-      Arguments to use by example script
+    fzf: visit https://github.com/junegunn/fzf#installation to install
+  commands:
 
-      Most of examples support to get required options either by using arguments or environment variables.
+  - name: export
+    help: |-
+      📤 Export as tgz file uncommitted reproduction models from the folder of current reproduction model
+    dependencies:
+      git: visit https://git-scm.com/downloads to install
+    flags:
+      - long: --all
+        required: false
+        help: |-
+          Export all uncommitted reproduction models
+
+  - name: import
+    help: |-
+      📥 Import tgz file which was created with export command
+    flags:
+    - long: --file
+      short: -f
+      arg: file
+      required: false
+      validate: file_exists_with_trick
+      completions:
+        - $(playground get-playground-repro-export-with-fzf "$cur")
+      help: |- 
+        🤐 playground_repro_export.tgz file
+
+        ❕ It must be absolute full path
+
+        🎓 Tip: use <tab> completion to trigger fzf completion 
+                use playground config folder_zip_or_jar <folder1> <folder2>... (default is home folder and current folder is always included) to configure where to search the files
+
+  - name: bootstrap
+    help: |-
+      🛠  Bootstrap reproduction model
       
-      Example with Zendesk:
+      👉 Check documentation https://kafka-docker-playground.io/#/reusables?id=%f0%9f%9b%a0-bootstrap-reproduction-model
+    catch_all:
+      label: arguments
+      help: |-
+        Arguments to use by example script
 
-      playground run -f zendesk-source<tab> <ZENDESK_URL> <ZENDESK_USERNAME> <ZENDESK_PASSWORD>
-    required: false
-  flags:
-  - *tag
-  - *connector-tag
-  - *connector-zip
-  - *connector-jar
-  - *enable-ksqldb
-  - *enable-control-center
-  - *enable-conduktor
-  - *enable-multiple-brokers
-  - *enable-multiple-connect-workers
-  - *enable-jmx-grafana
-  - *enable-kcat
-  - *enable-sr-maven-plugin-app
-  - *enable-sql-datagen
-  - *cluster-region
-  - *cluster-environment
-  - *cluster-name
-  - *cluster-creds
-  - *cluster-schema-registry-creds
+        Most of examples support to get required options either by using arguments or environment variables.
+        
+        Example with Zendesk:
 
-  - long: --file
-    short: -f
-    required: true
-    validate: file_exists_with_trick
-    arg: file
-    completions:
-      - $(playground get-examples-list-with-fzf --without-repro "$cur")
-    help: |-
-      🔖 Example file to use as basis
-      
-      ❕ It must be absolute full path
+        playground run -f zendesk-source<tab> <ZENDESK_URL> <ZENDESK_USERNAME> <ZENDESK_PASSWORD>
+      required: false
+    flags:
+    - *tag
+    - *connector-tag
+    - *connector-zip
+    - *connector-jar
+    - *enable-ksqldb
+    - *enable-rest-proxy
+    - *enable-control-center
+    - *enable-conduktor
+    - *enable-multiple-brokers
+    - *enable-multiple-connect-workers
+    - *enable-jmx-grafana
+    - *enable-kcat
+    - *enable-sql-datagen
+    - *cluster-type
+    - *cluster-region
+    - *cluster-environment
+    - *cluster-name
+    - *cluster-creds
+    - *cluster-schema-registry-creds
 
-      🎓 Tip: use <tab> completion to trigger fzf completion
+    - long: --file
+      short: -f
+      required: false
+      validate: file_exists_with_trick
+      arg: file
+      completions:
+        - $(playground get-examples-list-with-fzf --without-repro "$cur")
+      help: |-
+        🔖 Example file to use as basis, if not set, currently running example is used
+        
+        ❕ It must be absolute full path
 
-  - long: --description
-    short: -d
-    required: true
-    validate: not_empty
-    arg: description
-    help: |-
-      💭 Description for the reproduction model
+        🎓 Tip: use <tab> completion to trigger fzf completion
 
-  - long: --producer
-    short: -p
-    arg: producer-type
-    conflicts: [--pipeline]
-    default: "none"
-    allowed: 
-      - none
-      - avro
-      - avro-with-key
-      - protobuf
-      - protobuf-with-key
-      - json-schema
-      - json-schema-with-key
-    help: |-
-      ♨️ Java producer type to use
-      
-      One of avro, avro-with-key, protobuf, protobuf-with-key, json-schema, json-schema-with-key
+    - long: --description
+      short: -d
+      required: true
+      validate: not_empty
+      arg: description
+      help: |-
+        💭 Description for the reproduction model
 
-      🎓 Tip: 'with-key' will also produce key with selected converter, otherwise LongConverter is used
+    - long: --producer
+      private: true
+      short: -p
+      arg: producer-type
+      conflicts: [--pipeline]
+      default: "none"
+      allowed: 
+        - none
+        - avro
+        - avro-with-key
+        - protobuf
+        - protobuf-with-key
+        - json-schema
+        - json-schema-with-key
+      help: |-
+        ♨️ Java producer type to use
+        
+        One of avro, avro-with-key, protobuf, protobuf-with-key, json-schema, json-schema-with-key
 
-  - long: --nb-producers
-    short: -n
-    arg: nb-producers
-    validate: integer
-    default: ""
-    help: |-
-      2️⃣ Number of java producers to generate
+        🎓 Tip: Most of times, it's much simpler to use 'playground topic produce'. Use java producer only if you have very specific requirements such as specifying record timestamp or to do perf testing (even though CLI is also good for that)
 
-  - long: --producer-schema-key
-    required: false
-    help: |-
-      🔰 Schema to use for the key
+        🎓 Tip: 'with-key' will also produce key with selected converter, otherwise LongConverter is used
 
-      ✨ Copy and paste the schema you want to use for the key, save and close the file to continue
+    - long: --nb-producers
+      private: true
+      short: -n
+      arg: nb-producers
+      validate: integer
+      default: ""
+      help: |-
+        2️⃣ Number of java producers to generate
 
-  - long: --producer-schema-value
-    required: false
-    help: |-
-      🔰 Schema to use for the value
+    - long: --producer-schema-key
+      private: true
+      required: false
+      help: |-
+        🔰 Schema to use for the key
 
-      ✨ Copy and paste the schema you want to use for the key, save and close the file to continue
+        ✨ Copy and paste the schema you want to use for the key, save and close the file to continue
 
-  - long: --custom-smt
-    help: |-
-      ⚙️ Add a custom SMT (which is a no-op)
+    - long: --producer-schema-value
+      private: true
+      required: false
+      help: |-
+        🔰 Schema to use for the value
 
-  - long: --pipeline
-    required: false
-    validate: file_exists_with_trick
-    arg: sink_file
-    conflicts: [--producer]
-    completions:
-      - $(playground get-examples-list-with-fzf --without-repro --sink-only "$cur")
-    help: |-
-      🔖 Sink example file to use for creating a pipeline
-      
-      ❕ It must be absolute full path. 
+        ✨ Copy and paste the schema you want to use for the key, save and close the file to continue
 
-      🎓 Tip: use <tab> completion to trigger fzf completion
+    - long: --custom-smt
+      help: |-
+        ⚙️ Add a custom SMT (which is a no-op)
 
-  examples:
-  - playground bootstrap-reproduction-model -f hdfs2<tab> -d "simple test"
-  - playground bootstrap-reproduction-model -f /full/path/hdfs2-sink.sh -d "testing with avro producer" --producer avro --producer-schema-value myschema<tab>
-  - playground bootstrap-reproduction-model -f hdfs2<tab> -d "testing with 2 protobuf producers" --producer protobuf --nb-producers 2
-  - playground bootstrap-reproduction-model -f hdfs2<tab> -d "testing custom smt" --custom-smt
-  - playground bootstrap-reproduction-model -f debeziumpostgres<tab> -d "create pipeline" --pipeline jdbcsink<tab>
+    - long: --pipeline
+      required: false
+      validate: file_exists_with_trick
+      arg: sink_file
+      conflicts: [--producer]
+      repeatable: true
+      completions:
+        - $(playground get-examples-list-with-fzf --without-repro --sink-only "$cur")
+      help: |-
+        🔖 Sink example file to use for creating a pipeline. multiple --pipeline flags can be used to create a pipeline with multiple sinks.
+        
+        ❕ It must be absolute full path. 
+
+        🎓 Tip: use <tab> completion to trigger fzf completion
+
+    examples:
+    - playground repro bootstrap -f hdfs2<tab> -d "simple test"
+    - playground repro bootstrap -f /full/path/hdfs2-sink.sh -d "testing with avro producer" --producer avro --producer-schema-value myschema<tab>
+    - playground repro bootstrap -f hdfs2<tab> -d "testing with 2 protobuf producers" --producer protobuf --nb-producers 2
+    - playground repro bootstrap -f hdfs2<tab> -d "testing custom smt" --custom-smt
+    - playground repro bootstrap -f debeziumpostgres<tab> -d "create pipeline" --pipeline jdbcsink<tab>
 
 - name: get-docker-compose
   group: Kafka
   help: |-
     🐋 Get docker-compose
 
-- name: get-properties
-  group: Kafka
+- name: schema
+  expose: always
+  group: Schema
   help: |-
-    📝 Get properties file from a container
-    
-    👉 Check documentation https://kafka-docker-playground.io/#/how-to-use?id=%f0%9f%93%9d-see-properties-file
+     🔰 Schema commands
+  commands:
 
-  flags:
-  - &container
-    long: --container
-    short: -c
-    required: false
-    default: "connect"
-    arg: container
-    completions:
-      - $(docker ps --format '{{.Names}}')
+  - name: get
+    group: Schema
+    filters:
+    - not_mdc_environment
+    - schema_registry_running
     help: |-
-      🐳 Container name
+      🔰 Get all schemas versions for specified subject (if --subject is not specified, all subjects will be used)
+    flags:
+      - &subject
+        long: --subject
+        required: false
+        arg: subject
+        completions:
+          - $(playground get-subject-list)
+        help: |-
+          📛 Subject name
+      - &verbose
+        long: --verbose
+        short: -v
+        help: 🐞 Show command being ran.
 
-  examples:
-  - playground get-properties
-  - playground get-properties --container broker
-  - playground get-properties -c broker
+      - long: --deleted
+        required: false
+        help: |-
+          🧟 Include soft deleted subjects
+    examples:
+    - playground schema get
+    - playground schema get --subject <SUBJECT>
+    - playground schema get --deleted
 
-- name: get-all-schemas
-  group: Kafka
-  filters:
-  - not_mdc_environment
-  - schema_registry_running
-  help: |-
-    🔰 Get all schemas versions for all subjects
-  flags:
-    - long: --open
-      short: -o
-      help: |- 
-        🔖 Save output to a file and open with text editor set with config.ini (default is code)
+  - name: register
+    group: Schema
+    filters:
+    - not_mdc_environment
+    - schema_registry_running
+    help: |-
+      ⏺️ Register a schema in specified subject
+    flags:
+      - &subject_required
+        long: --subject
+        required: true
+        arg: subject
+        completions:
+          - $(playground get-subject-list)
+        help: |-
+          📛 Subject name
+      - *verbose
+      - long: --schema
+        arg: schema
+        completions:
+          - $(playground get-predefined-schemas "$cur")
+        default: "-"
+        required: false
+        help: |- 
+          🔥 You can either:
+          
+          * Set your own schema (avro, json-schema, protobuf) with stdin (see example section). 
 
-  examples:
-  - playground get-all-schemas
+          * Use completion to select predefined schemas (or use your own schema file) 🎓 Tip: use <tab> completion to trigger fzf completion
 
+    examples: |
+      playground schema register --subject test-protobuf << 'EOF'
+      syntax = "proto3";
+      
+      package com.github.vdesabou;
+      
+      message Customer {
+          int64 count = 1;
+          string first_name = 2;
+          string last_name = 3;
+          string address = 4;
+      }
+      EOF
+
+      playground schema register --subject test-avro << 'EOF'
+      {
+          "type": "record",
+          "namespace": "com.github.vdesabou",
+          "name": "Customer",
+          "fields": [
+              {
+                  "name": "count",
+                  "type": "long",
+                  "doc": "count"
+              },
+              {
+                  "name": "first_name",
+                  "type": "string",
+                  "doc": "First Name of Customer"
+              },
+              {
+                  "name": "last_name",
+                  "type": "string",
+                  "doc": "Last Name of Customer"
+              },
+              {
+                  "name": "address",
+                  "type": "string",
+                  "doc": "Address of Customer"
+              }
+          ]
+      }
+      EOF
+
+  - name: get-compatibility
+    filters:
+    - not_mdc_environment
+    - schema_registry_running
+    group: Schema
+    help: |-
+      🛡️ Get subject-level compatibility
+    flags:
+    - *subject_required
+    - *verbose
+
+  - name: set-compatibility
+    filters:
+    - not_mdc_environment
+    - schema_registry_running
+    group: Schema
+    help: |-
+      🛡️ Set subject-level compatibility
+    flags:
+    - *subject_required
+    - *verbose
+    - &compatibility-required
+      long: --compatibility
+      arg: compatibility
+      allowed: 
+        - BACKWARD
+        - BACKWARD_TRANSITIVE
+        - FORWARD
+        - FORWARD_TRANSITIVE
+        - FULL
+        - FULL_TRANSITIVE
+        - NONE
+      required: true
+      help: |-
+        Schema Registry compatibility rule
+
+  - name: get-mode
+    filters:
+    - not_mdc_environment
+    - schema_registry_running
+    group: Schema
+    help: |-
+      🔏 Get subject-level mode
+    flags:
+    - *subject_required
+    - *verbose
+
+  - name: set-mode
+    filters:
+    - not_mdc_environment
+    - schema_registry_running
+    group: Schema
+    help: |-
+      🔏 Set subject-level mode
+
+      To enable mode changes on a Schema Registry cluster, you must also set mode.mutability=true in the Schema Registry properties file before starting Schema Registry
+    flags:
+    - *subject_required
+    - *verbose
+    - long: --mode
+      arg: mode
+      allowed: 
+        - IMPORT
+        - READONLY
+        - READWRITE
+      required: true
+      help: |-
+        Schema Registry mode
+
+  - name: delete
+    filters:
+    - not_mdc_environment
+    - schema_registry_running
+    group: Schema
+    help: |-
+      🧟 Delete schema
+    flags:
+    - &subject_not_required
+      long: --subject
+      required: false
+      arg: subject
+      completions:
+        - $(playground get-subject-list)
+      help: |-
+        📛 Subject name to delete:
+          
+          if --version is provided, only that version will be deleted. Otherwise the complete subject will be deleted
+    - long: --version
+      required: false
+      validate: integer
+      arg: version
+      help: |-
+        🔢 Schema version of the provided subject to delete
+
+        Can only be used when --subject is provided
+    - long: --permanent
+      required: false
+      help: |-
+        💀 Hard delete (default is soft delete)
+    - *verbose
+        
 - name: debug
-  expose: true
+  expose: always
   group: Debug
   help: |-
     🐞 Debug commands
   commands:
+
+  - name: install-vscode-extension
+    help: |-
+      🪄 Install a slightly modified version of "Shell Script Command Completion" Visual Studio Code extension (https://marketplace.visualstudio.com/items?itemName=tetradresearch.vscode-h2o)
+
+      After installation, install "playground" command:
+
+      * Go on a .sh file
+
+      * Type Ctrl+Shift+P (or ⌘+⇧+P on macOS) and choose "Shell Completion: Load Command Spec (experimental)"" and then type "playground"
+      
+      👉 Check documentation https://kafka-docker-playground.io/#/cli?id=%f0%9f%aa%84-setup-shell-script-command-completion-visual-studio-code-extension
+    examples:
+    - playground install-vscode-extension
+    dependencies:
+      code: visit https://code.visualstudio.com/docs/setup/mac#_launching-from-the-command-line to install
 
   - name: enable-remote-debugging
     help: |-
@@ -635,7 +1210,16 @@ commands:
       
       👉 Check documentation https://kafka-docker-playground.io/#/reusables?id=%e2%9c%a8-remote-debugging
     flags:
-      - *container
+      - &container
+        long: --container
+        short: -c
+        required: false
+        default: "connect"
+        arg: container
+        completions:
+          - $(docker ps --format '{{.Names}}')
+        help: |-
+          🐳 Container name
     examples:
     - playground debug enable-remote-debugging
     - playground debug enable-remote-debugging --container broker
@@ -656,11 +1240,24 @@ commands:
     - playground debug testssl https://google.com
     - playground debug testssl pkc-xxxx.us-west-2.aws.confluent.cloud:9092
 
+  - name: generate-diagnostics
+    help: |-
+      ⛑️ Generate a diagnostic bundle with Diagnostics Bundle Tool
+
+      ⚠️ only connect and broker containers are supported for now
+
+      see https://docs.confluent.io/platform/current/tools/diagnostics-tool.html#collect-diagnostics
+    flags:
+      - *container
+    examples:
+    - playground debug generate-diagnostics
+    - playground debug generate-diagnostics --container broker
+
   - name: thread-dump
     help: |-
       🎯 Take a java thread dump
 
-      🔖 It will save output to a file and open with text editor set with config.ini (default is code)
+      🔖 It will save output to a file and open with text editor set with playground config editor <editor> (default is code)
     flags:
       - *container
     examples:
@@ -749,7 +1346,8 @@ commands:
     - name: get
       help: Get log levels
       flags:
-      - long: --package
+      - &package
+        long: --package
         short: -p
         required: false
         validate: not_empty
@@ -790,7 +1388,7 @@ commands:
     
     👉 Check documentation https://kafka-docker-playground.io/#/how-to-use?id=%f0%9f%94%a2-jmx-metrics
   dependencies:
-    java: visit $(blue_underlined https://openjdk.org/install/) to install
+    java: visit https://openjdk.org/install/ to install
   flags:
   - long: --component
     short: -c
@@ -803,7 +1401,7 @@ commands:
   - long: --open
     short: -o
     help: |- 
-      🔖 Save output to a file and open with text editor set with config.ini (default is code)
+      🔖 Save output to a file and open with text editor set with playground config editor <editor> (default is code)
 
   - long: --domain
     short: -d
@@ -818,11 +1416,24 @@ commands:
   - playground get-jmx-metrics -c broker
 
 - name: container
-  expose: true
+  expose: always
   group: Container
   help: |-
     🐳 Container commands
   commands:
+
+    - name: get-properties
+      help: |-
+        📝 Get properties file from a container
+        
+        👉 Check documentation https://kafka-docker-playground.io/#/how-to-use?id=%f0%9f%93%9d-see-properties-file
+
+      flags:
+      - *container
+      examples:
+      - playground get-properties
+      - playground get-properties --container broker
+      - playground get-properties -c broker
 
     - name: recreate
       group: Container
@@ -830,6 +1441,13 @@ commands:
         💫 Recreate container(s)
         
         👉 Check documentation https://kafka-docker-playground.io/#/how-to-use?id=%e2%99%bb%ef%b8%8f-re-create-containers
+      flags:
+      - long: --ignore-current-versions
+        required: false
+        help: |-
+          Ignore current confluent platform version
+
+          By default, the current version is used
 
     - name: get-ip-addresses
       group: Container
@@ -853,7 +1471,7 @@ commands:
       - long: --open
         short: -o
         help: |- 
-          🔖 Save output to a file and open with text editor set with config.ini (default is code)
+          🔖 Save output to a file and open with text editor set with playground config editor <editor> (default is code)
         conflicts: [--wait-for-log]
       - long: --wait-for-log
         short: -w
@@ -954,6 +1572,7 @@ commands:
       - *container
 
     - name: resume
+      alias: unpause
       group: Container
       help: |-
         ⏯️  Resume a container
@@ -970,7 +1589,7 @@ commands:
       - *container
 
 - name: topic
-  expose: true
+  expose: always
   group: Topic
   filters:
   - not_mdc_environment
@@ -1000,6 +1619,13 @@ commands:
       group: Topic
       help: |-
         📭 Display content of __consumer_offsets topic
+      flags:
+      - *verbose
+
+    - name: list
+      group: Topic
+      help: |-
+        🔘 List topics
 
     - name: describe
       group: Topic
@@ -1007,6 +1633,18 @@ commands:
         🔬 Describe topic
       flags:
       - *topic
+      - *verbose
+
+    - name: set-schema-compatibility
+      filters:
+      - schema_registry_running
+      group: Topic
+      help: |-
+        🛡️ Change topic's schema compatibility
+      flags:
+      - *topic
+      - *compatibility-required
+      - *verbose
 
     - name: consume
       filters:
@@ -1015,18 +1653,15 @@ commands:
       help: |-
         📥 Consume topic from beginning
       flags:
-      - &verbose
-        long: --verbose
-        short: -v
-        help: 🐞 Show command being ran.
+      - *verbose
       - *topic
       - long: --max-messages
         arg: max-messages
         validate: integer
         required: false
-        default: "50"
+        default: "10"
         help: |-
-          Max number of messages to display (default is 50)
+          Max number of messages to display (default is 10)
       - long: --min-expected-messages
         arg: min-expected-messages
         validate: integer
@@ -1063,6 +1698,34 @@ commands:
         help: |-
           🗳 Timestamp field name that represents when record was created in source system
 
+      - long: --key-subject
+        required: false
+        arg: key-subject
+        completions:
+          - $(playground get-subject-list)
+        help: |-
+          📛 Subject for key in schema-registry to use (useful when data was produced with --key-subject-name-strategy other than TopicNameStrategy)
+          
+          Note: --topic should be specified in this case.
+
+      - long: --value-subject
+        required: false
+        arg: value-subject
+        completions:
+          - $(playground get-subject-list)
+        help: |-
+          📛 Subject for value in schema-registry to use (useful when data was produced with --value-subject-name-strategy other than TopicNameStrategy)
+          
+          Note: --topic should be specified in this case.
+
+      - long: --max-characters
+        arg: max-characters
+        validate: integer
+        required: false
+        default: "2500"
+        help: |-
+          Max characters per message to display (default is 2500)
+
     - name: produce
       filters:
       - schema_registry_running
@@ -1070,8 +1733,40 @@ commands:
       help: |-
          📤 Produce to a topic
       flags:
-      - long: --input
-        arg: input
+
+      - long: --key
+        arg: key
+        required: false
+        completions:
+          - $(playground get-predefined-schemas "$cur")
+        help: |-
+          🗝️ Key to use. If not set, no key is used.
+
+          🔥 You can either:
+          
+          * Set your own schema (avro, json-schema, protobuf) within single quotes (see examples) 
+          
+          * You can also generate json data using json or sql format using syntax from https://github.com/MaterializeInc/datagen
+
+          * Use completion to select predefined schemas (or use your own schema file) 🎓 Tip: use <tab> completion to trigger fzf completion
+
+          * Directly set payload ("%g" can be used to generate a counter)
+
+          In case of 'raw' data (i.e not using schema):
+
+          If the key contain a number, it will be used as starting point and incremented for each record. 
+          
+          Example: key1 will start with key1, then key2, etc..
+          Example: mykey-10-suffix will start with mykey-10-suffix then mykey-11-suffix, etc..
+
+          "%g" can also be used to generate a counter
+
+          Example: key%g will start with key1, then key2, etc..
+
+          Otherwise, the key will be same for all records.
+
+      - long: --value
+        arg: value
         completions:
           - $(playground get-predefined-schemas "$cur")
         default: "-"
@@ -1085,9 +1780,15 @@ commands:
 
           * Use completion to select predefined schemas (or use your own schema file) 🎓 Tip: use <tab> completion to trigger fzf completion
 
-          * Directly set payload
+          * Directly set payload ("%g" can be used to generate a counter)
 
       - *verbose
+      - long: --debug
+        short: -d
+        required: false
+        private: true
+        help: |-
+          debug mode (internal)
       - long: --topic
         short: -t
         required: true
@@ -1103,6 +1804,26 @@ commands:
         default: "1"
         help: |-
           💯 Number of messages to produce (default is 1)
+             
+          🎓  - if > <value of --max-nb-messages-per-batch> (default 300000), messages will be sent in batches of <value of --max-nb-messages-per-batch> (default 300000) records
+              - if you set it to -1, an infinite number of records will also be sent in batches
+      - long: --max-nb-messages-per-batch
+        arg: max-nb-messages-per-batch
+        validate: integer
+        required: false
+        default: "300000"
+        help: |-
+          🔼 Max number of messages to send per batch when --nb-messages > --max-nb-messages-per-batch
+             if --nb-messages is set to -1, this is the number of messages sent per batch
+             default is 300000
+      - long: --sleep-time-between-batch
+        arg: sleep-time-between-batch
+        validate: integer
+        required: false
+        default: "0"
+        help: |-
+          💤 Sleep time in seconds between batches
+             default is 0
       - long: --nb-partitions
         arg: nb-partitions
         validate: integer
@@ -1112,19 +1833,52 @@ commands:
           🔢 Number of partitions for the topic. (default is 1)
           
           ❌ Important: If topic is existing, it will be re-created before producing to topic.
-      - long: --key
-        arg: key
+      - long: --compression-codec
+        arg: compression-codec
         required: false
+        allowed: 
+          - gzip
+          - snappy
+          - lz4
+          - zstd
         help: |-
-          🗝️ Key to use. If not set, no key is used.
+          🤐 The compression codec: either 'gzip', 'snappy', 'lz4', or 'zstd'
+          If not set, there is no compression
 
-          If the key contain a number, it will be used as starting point and incremented for each record. 
-          
-          Example: key1 will start with key1, then key1, etc..
-          Example: mykey-10-suffix will start with mykey-10-suffix then mykey-11-suffix, etc..
+      - &compatibility
+        long: --compatibility
+        arg: compatibility
+        allowed: 
+          - BACKWARD
+          - BACKWARD_TRANSITIVE
+          - FORWARD
+          - FORWARD_TRANSITIVE
+          - FULL
+          - FULL_TRANSITIVE
+          - NONE
+        help: |-
+          Schema Registry compatibility rule
 
-          Otherwise, the key will be same for all records.
-          
+      - &key-subject-name-strategy
+        long: --key-subject-name-strategy
+        arg: key-subject-name-strategy
+        allowed: 
+          - TopicNameStrategy
+          - RecordNameStrategy
+          - TopicRecordNameStrategy
+        help: |-
+          Key Subject Name Strategy
+
+      - &value-subject-name-strategy
+        long: --value-subject-name-strategy
+        arg: value-subject-name-strategy
+        allowed: 
+          - TopicNameStrategy
+          - RecordNameStrategy
+          - TopicRecordNameStrategy
+        help: |-
+          Value Subject Name Strategy
+
       - long: --headers
         arg: headers
         required: false
@@ -1134,6 +1888,13 @@ commands:
           Example: --headers "header1:value1,header2:value2"
 
           Note: CP 7.2+ is required.
+      - long: --forced-key
+        arg: forced-key
+        required: false
+        help: |-
+          ☢️ Key to use for all records. 
+          
+          🎓 Tip: use --generate-only first with avro, json-schema or protobuf to get skeleton of messages and then use --forced-key to send the message you need. 
       - long: --forced-value
         arg: forced-value
         required: false
@@ -1150,11 +1911,65 @@ commands:
       - long: --tombstone
         required: false
         help: |-
-          Generate tombstone (record with null value). 
+          ⚰️ Generate tombstone (record with null value). 
           
           --key must be set when this flag is used.
 
           Note: CP 7.2+ is required.
+      - long: --validate
+        required: false
+        help: |-
+          ☑️ Validate schema according to connect sink converter used
+
+      - long: --validate-config
+        arg: validate-config
+        help: |-
+          🔩 Converter configuration parameters to use 
+          
+          See docs: https://docs.confluent.io/platform/current/schema-registry/connect.html#using-kconnect-long-with-sr
+
+          🎓 Tip: you can pass multiple parameters by specifying --validate-config multiple times
+        required: false
+        repeatable: true
+        allowed: 
+          - scrub.invalid.names=true
+          - enhanced.avro.schema.support=true
+          - connect.meta.data=false
+          - object.additional.properties=false
+          - use.optional.for.nonrequired=true
+          - ignore.default.for.nullables=true
+          - generalized.sum.type.support=true
+          - enhanced.protobuf.schema.support=true
+          - generate.index.for.unions=false
+          - int.for.enums=true
+          - optional.for.nullables=true
+          - generate.struct.for.nulls=true
+          - wrapper.for.nullables=true
+          - wrapper.for.raw.primitives=false
+
+      - long: --producer-property
+        arg: producer-property
+        help: |-
+          🔩 Producer configuration parameters to use 
+          
+          See docs: https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#cp-config-producer
+
+          🎓 Tip: you can pass multiple parameters by specifying --producer-property multiple times
+
+          Example: --producer-property "max.request.size=990485760" --producer-property "client.id=myid"
+        required: false
+        repeatable: true
+
+      - long: --record-size
+        arg: record-size
+        validate: integer
+        required: false
+        default: "0"
+        help: |-
+          🏋️ Record size in bytes, eg. 1048576 for 1MB
+
+          📢 If size is > 1Mb, --producer-property max.request.size and topic max.message.bytes will be automatically set to support the record size.
+
       examples: |
 
         playground topic produce --tombstone --topic a-topic --key mykey
@@ -1182,31 +1997,54 @@ commands:
 
         playground topic produce -t topic-avro --nb-messages 10 << 'EOF'
         {
-            "type": "record",
-            "namespace": "com.github.vdesabou",
-            "name": "Customer",
-            "fields": [
-                {
-                    "name": "count",
-                    "type": "long",
-                    "doc": "count"
-                },
-                {
-                    "name": "first_name",
-                    "type": "string",
-                    "doc": "First Name of Customer"
-                },
-                {
-                    "name": "last_name",
-                    "type": "string",
-                    "doc": "Last Name of Customer"
-                },
-                {
-                    "name": "address",
-                    "type": "string",
-                    "doc": "Address of Customer"
-                }
-            ]
+          "fields": [
+            {
+              "name": "count",
+              "type": "long"
+            },
+            {
+              "name": "first_name",
+              "type": "string"
+            },
+            {
+              "name": "last_name",
+              "type": "string"
+            },
+            {
+              "default": null,
+              "name": "address",
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            {
+              "name": "last_sale_date",
+              "type": {
+                "logicalType": "timestamp-millis",
+                "type": "long"
+              }
+            },
+            {
+              "name": "last_sale_price",
+              "type": {
+                "logicalType": "decimal",
+                "precision": 15,
+                "scale": 2,
+                "type": "bytes"
+              }
+            },
+            {
+              "name": "last_connection",
+              "type": {
+                "logicalType": "date",
+                "type": "int"
+              }
+            }
+          ],
+          "name": "Customer",
+          "namespace": "com.github.vdesabou",
+          "type": "record"
         }
         EOF
 
@@ -1243,21 +2081,20 @@ commands:
         EOF
 
 
-        playground topic produce -t topic-proto --nb-messages 3 << 'EOF'
+        playground topic produce -t topic-proto --nb-messages 1 << 'EOF'
         syntax = "proto3";
 
-        message Order {
-          float         total = 1;
-          repeated Item items = 2;
+        package com.github.vdesabou;
 
-          message Item {
-            string name  = 1;
-            float  price = 2;
-          }
+        message Customer {
+            int64 count = 1;
+            string first_name = 2;
+            string last_name = 3;
+            string address = 4;
         }
         EOF
 
-        playground topic produce -t vincent-jsql --nb-messages 10 << 'EOF'
+        playground topic produce -t topic-jsql --nb-messages 10 << 'EOF'
         CREATE TABLE "notused"."notused" (
           "id" int PRIMARY KEY,
           "name" varchar COMMENT 'faker.internet.userName()',
@@ -1268,33 +2105,282 @@ commands:
         );
         EOF
 
-    - name: set-schema-compatibility
-      filters:
-      - schema_registry_running
-      group: Topic
-      help: |-
-        🛡️ Change topic's schema compatibility
-      flags:
-      - *topic
-      - long: --compatibility
-        arg: compatibility
-        allowed: 
-          - BACKWARD
-          - BACKWARD_TRANSITIVE
-          - FORWARD
-          - FORWARD_TRANSITIVE
-          - FULL
-          - FULL_TRANSITIVE
-          - NONE
-        required: true
-        help: |-
-          Schema Registry compatibility rule
+        playground topic produce -t topic-json --nb-messages 1 --producer-property "max.request.size=990485760" < bigjson.json
 
+        playground topic produce -t topic-string --nb-messages 5000 << 'EOF'
+        Ad et ut pariatur officia eos.
+        Nesciunt fugit nam libero ut qui itaque sed earum at itaque nesciunt eveniet atque.
+        Quidem libero quis quod et illum excepturi voluptas et in perspiciatis iusto neque.
+        Quibusdam commodi explicabo dolores molestiae qui delectus dolorum fugiat molestiae natus assumenda omnis expedita.
+        Et sunt aut architecto suscipit fugiat qui voluptate iure vel doloremque eum culpa.
+        Qui enim facilis eos similique aperiam totam eius et at dolor dolores.
+        Ut sunt quia qui quia consectetur aut reiciendis.
+        Modi adipisci iusto aut voluptatem dolores laudantium.
+        Sequi sint quia quibusdam molestias minus et aliquid voluptatum aliquam.
+        Rerum aut amet quo possimus nihil velit quisquam ut cumque.
+        Pariatur ad officiis voluptatibus quia vel corporis ea fugit adipisci porro.
+        EOF
+
+        # key and headers
+        # mykey1 %g can also be used
+        playground topic produce -t topic-json-multiple-lines --nb-messages 10 --key "mykey1" --headers "header1:value1,header2:value2" << 'EOF'
+        {"u_name": "scissors", "u_price": 2.75, "u_quantity": 3}
+        {"u_name": "tape", "u_price": 0.99, "u_quantity": 10}
+        {"u_name": "notebooks", "u_price": 1.99, "u_quantity": 5}
+        EOF
+
+        # avro key
+        playground topic produce -t topic-avro-with-key --nb-messages 10 --key '
+        {
+          "fields": [
+            {
+              "name": "id",
+              "type": "long"
+            }
+          ],
+          "name": "Key",
+          "namespace": "com.github.vdesabou",
+          "type": "record"
+        }
+        ' << 'EOF'
+        {
+          "fields": [
+            {
+              "doc": "count",
+              "name": "count",
+              "type": "long"
+            },
+            {
+              "doc": "First Name of Customer",
+              "name": "first_name",
+              "type": "string"
+            },
+            {
+              "doc": "Last Name of Customer",
+              "name": "last_name",
+              "type": "string"
+            }
+          ],
+          "name": "Customer",
+          "namespace": "com.github.vdesabou",
+          "type": "record"
+        }
+        EOF
+
+        # tombstone
+        playground topic produce -t topic-json-multiple-lines --tombstone --key "mykey1"
+
+        # input file
+        playground topic produce -t topic-avro-example3 < avro-schema.avsc
+
+        # record-size
+        playground topic produce -t topic-avro-example-big-size --nb-messages 3 --record-size 10000000 << 'EOF'
+        {
+          "fields": [
+            {
+              "doc": "count",
+              "name": "count",
+              "type": "long"
+            },
+            {
+              "doc": "First Name of Customer",
+              "name": "first_name",
+              "type": "string"
+            },
+            {
+              "doc": "Last Name of Customer",
+              "name": "last_name",
+              "type": "string"
+            },
+            {
+              "doc": "Address of Customer",
+              "name": "address",
+              "type": "string"
+            }
+          ],
+          "name": "Customer",
+          "namespace": "com.github.vdesabou",
+          "type": "record"
+        }
+        EOF
+
+        # validate
+        playground topic produce -t topic-json-schema-validate --nb-messages 3 --validate << 'EOF'
+        {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "additionalProperties": false,
+          "$id": "http://lh.test/Customer.schema.json",
+          "title": "Customer",
+          "description": "Customer description",
+          "type": "object",
+          "properties": {
+            "name": {
+              "description": "Customer name",
+              "type": "string",
+              "maxLength": 25
+            },
+            "surname": {
+              "description": "Customer surname",
+              "type": "string",
+              "minLength": 2
+            },
+            "email": {
+              "description": "Email",
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$"
+            },
+            "holiday": {
+              "oneOf": [
+                {
+                  "title": "Not included",
+                  "type": "null"
+                },
+                {}
+              ]
+            },
+            "f2": {}
+          },
+          "required": [
+            "name",
+            "surname"
+          ]
+        }
+        EOF
+
+        #  --value-subject-name-strategy
+        playground topic produce -t topic-avro-example-value-subject-name-strategy --nb-messages 10 --value-subject-name-strategy TopicRecordNameStrategy << 'EOF'
+        {
+          "fields": [
+            {
+              "doc": "count",
+              "name": "count",
+              "type": "long"
+            },
+            {
+              "doc": "First Name of Customer",
+              "name": "first_name",
+              "type": "string"
+            },
+            {
+              "doc": "Last Name of Customer",
+              "name": "last_name",
+              "type": "string"
+            },
+            {
+              "doc": "Address of Customer",
+              "name": "address",
+              "type": "string"
+            }
+          ],
+          "name": "Customer",
+          "namespace": "com.github.vdesabou",
+          "type": "record"
+        }
+        EOF
+
+        # --generate-only
+        playground topic produce -t topic-avro-example-forced-value --nb-messages 10  --generate-only << 'EOF'
+        {
+          "fields": [
+            {
+              "doc": "count",
+              "name": "count",
+              "type": "long"
+            },
+            {
+              "doc": "First Name of Customer",
+              "name": "first_name",
+              "type": "string"
+            },
+            {
+              "doc": "Last Name of Customer",
+              "name": "last_name",
+              "type": "string"
+            },
+            {
+              "doc": "Address of Customer",
+              "name": "address",
+              "type": "string"
+            },
+            {
+              "name": "createdDate",
+              "type": {
+                "logicalType": "timestamp-millis",
+                "type": "long"
+              }
+            },
+            {
+              "default": null,
+              "name": "warranty_expiration",
+              "type": [
+                "null",
+                {
+                  "logicalType": "date",
+                  "type": "int"
+                }
+              ]
+            }
+          ],
+          "name": "Customer",
+          "namespace": "com.github.vdesabou",
+          "type": "record"
+        }
+        EOF
+
+        # --forced-value
+        playground topic produce -t topic-avro-example-forced-value --nb-messages 1 --forced-value '{"count":4,"first_name":"Vincent","last_name":"de Saboulin","address":"xxx","createdDate":1697852606000,"warranty_expiration":{"int":19653}}' << 'EOF'
+        {
+          "fields": [
+            {
+              "doc": "count",
+              "name": "count",
+              "type": "long"
+            },
+            {
+              "doc": "First Name of Customer",
+              "name": "first_name",
+              "type": "string"
+            },
+            {
+              "doc": "Last Name of Customer",
+              "name": "last_name",
+              "type": "string"
+            },
+            {
+              "doc": "Address of Customer",
+              "name": "address",
+              "type": "string"
+            },
+            {
+              "name": "createdDate",
+              "type": {
+                "logicalType": "timestamp-millis",
+                "type": "long"
+              }
+            },
+            {
+              "default": null,
+              "name": "warranty_expiration",
+              "type": [
+                "null",
+                {
+                  "logicalType": "date",
+                  "type": "int"
+                }
+              ]
+            }
+          ],
+          "name": "Customer",
+          "namespace": "com.github.vdesabou",
+          "type": "record"
+        }
+        EOF
     - name: create
       group: Topic
       help: |-
         🆕 Create topic
       flags:
+      - *verbose
       - long: --topic
         short: -t
         required: true
@@ -1315,13 +2401,14 @@ commands:
         required: false
       examples: |
         playground topic create --topic atopic
-        playground topic create --topic atopic --nb-partitions 8 --config retention.ms=30000
+        playground topic create --topic atopic --nb-partitions 8 --config retention.ms=30000 --config cleanup.policy=compact
         
     - name: delete
       group: Topic
       help: |-
-        ❌ Delete topic
+        ❌ Delete topic and associated schema/subject if applicable
       flags:
+      - *verbose
       - long: --topic
         short: -t
         required: true
@@ -1330,132 +2417,99 @@ commands:
           - $(playground get-topic-list)
         help: |-
           🗳 Topic name
+      - long: --skip-delete-schema
+        arg: skip-delete-schema
+        required: false
+        help: |-
+          🔰 Do not delete subject/schema
 
-- name: ccloud-connector
-  expose: true
-  group: Connector
-  filters:
-  - ccloud_environment
-  dependencies:
-    confluent: visit $(blue_underlined https://docs.confluent.io/confluent-cli/current/overview.html) to install
+    - name: alter
+      group: Topic
+      help: |-
+        🪛 Alter topic config
+      flags:
+      - *verbose
+      - long: --topic
+        short: -t
+        required: true
+        arg: topic
+        completions:
+          - $(playground get-topic-list)
+        help: |-
+          🗳 Topic name
+      catch_all:
+        label: arguments
+        help: |-
+          Any arguments to be used with kafka-configs --alter. If the topic does not exist, it is created first.
+        required: false
+      examples: |
+        playground topic alter --topic atopic --add-config max.message.bytes=5242940
+
+- name: connector-plugin
+  expose: always
+  group: Connector-Plugin
   help: |-
-    🔗☁️ Fully Managed Connector commands
-  environment_variables:
-  - name: CLOUD_API_KEY
-    help: Cloud API key, see https://docs.confluent.io/cloud/current/access-management/authenticate/api-keys/api-keys.html#cloud-cloud-api-keys
-    required: true
-  - name: CLOUD_API_SECRET
-    help: Cloud API secret, see https://docs.confluent.io/cloud/current/access-management/authenticate/api-keys/api-keys.html#cloud-cloud-api-keys
-    required: true
+    🔌 Connector-plugin commands
 
   commands:
-  - name: status
-    help: 🧩 Show status of all connectors
-
-  - name: plugins
-    help: 🎨 Show all plugins installed
-
-  - name: pause
-    help: ⏸️  Pause connector
+  - name: search-jar
+    help: ☕ List jars for a connector plugin from confluent hub https://www.confluent.io/hub/
+          Search for specific class and display method signatures
+    dependencies:
+      javap: visit https://openjdk.org/install/ to install
     flags:
-    - &ccloudconnector
-      long: --connector
+    - &connector-plugin
+      long: --connector-plugin
       short: -c
-      required: false
-      arg: connector
+      required: true
+      arg: connector-plugin
       completions:
-        - $(playground get-ccloud-connector-list)
+        - $(playground get-connector-plugin "$cur")
       help: |-
-        🔗 Connector name
+        🔌 Connector plugin name
 
-        🎓 Tip: If not specified, the command will apply to all connectors
-
-  - name: resume
-    help: ⏯️  Resume connector
-    flags:
-    - *ccloudconnector
-
-  - name: delete
-    help: 🗑️  Delete connector
-    flags:
-    - *ccloudconnector
-
-  - name: show-lag
-    help: 🐢 Show lag of sink connector
-    flags:
-    - *ccloudconnector
-    - &waitforzerolag
-      long: --wait-for-zero-lag
+        🎓 Tip: use <tab> completion to trigger fzf completion
+    - *connector-tag
+    - long: --class
+      arg: class
+      required: false
       help: |- 
-        😴 Wait until lag becomes 0
+        ☕ Java class name to search for in all jars
+    examples: |
+      playground connector-plugin search-jar --connector-plugin confluentinc/kafka-connect-s3 --class WebIdentityTokenCredentialsProvider
 
-  - name: show-config
-    help: 🔩 Show all possible configuration parameters of connector
+  - name: versions
+    help: 💯 List versions for a connector plugin from confluent hub https://www.confluent.io/hub/
     flags:
-    - *ccloudconnector
-    - long: --open
-      short: -o
-      help: |- 
-        🔖 Save output to a file and open with text editor set with config.ini (default is code)
-    - long: --force-refresh
+    - *connector-plugin
+    - &force_refresh
+      long: --force-refresh
       required: false
       help: |-
         ☢️ Force refresh.
-
-  - name: create-or-update
-    help: 🧑‍🎨  Create or update connector
-    args:
-    - name: json
-      
-      # Set the default path value to -, which is the standard operator for stdin.
-      default: "-"
-      help: json (reads from stdin if empty)
-
-    flags:
-    - long: --connector
-      short: -c
-      required: true
-      arg: connector
-      completions:
-        - $(playground get-ccloud-connector-list)
+    - long: --last
+      arg: last
+      required: false
+      validate: integer
+      conflicts: [--all]
       help: |-
-        🔗 Connector name
-
+        🆕 Number of last versions to show
     examples: |
-      playground ccloud-connector create-or-update --connector HttpSink << EOF
-      {
-          "connector.class": "HttpSink",
-          "name": "HttpSink",
-          "kafka.auth.mode": "KAFKA_API_KEY",
-          "kafka.api.key": "$CLOUD_KEY",
-          "kafka.api.secret": "$CLOUD_SECRET",
-          "topics": "http-topic",
-          "input.data.format": "AVRO",
-          "http.api.url": "http://httpstat.us/200/",
-          "behavior.on.error": "fail",
-          "tasks.max" : "1"
-      }
-      EOF
+      playground connector-plugin versions --connector-plugin confluentinc/kafka-connect-s3
 
 - name: connector
-  expose: true
+  expose: always
   group: Connector
   filters:
   - not_mdc_environment
-  - connect_running
   help: |-
     🔗 Connector commands
 
   commands:
   - name: status
     help: 🧩 Show status of all connectors
-
-  - name: plugins
-    help: 🎨 Show all plugins installed
-
-  - name: pause
-    help: ⏸️  Pause connector
     flags:
+    - *verbose
     - &connector
       long: --connector
       short: -c
@@ -1468,46 +2522,159 @@ commands:
 
         🎓 Tip: If not specified, the command will apply to all connectors
 
+  - name: plugins
+    help: 🎨 Show all connector plugins installed. You can also display transforms, converters and predicates using --all flag
+    flags:
+    - *verbose
+    - long: --all
+      required: false
+      help: |-
+        🌕 Show also transforms, converters, predicates available
+
+  - name: pause
+    help: ⏸️  Pause connector
+    flags:
+    - *verbose
+    - *connector
+
   - name: versions
-    help:  🧞 Get current and latest version available on Confluent Hub for connector(s) used in example
+    help:  |
+      🧞 Get current and latest versions available on Confluent Hub for connector(s) used in example
 
   - name: restart
     help: ♻️  Restart connector
     flags:
+    - *verbose
+    - *connector
+
+  - name: stop
+    help: 🛑 Stop connector (only available if CP > 7.5 )
+    flags:
+    - *verbose
     - *connector
 
   - name: resume
+    alias: unpause
     help: ⏯️  Resume connector
     flags:
+    - *verbose
     - *connector
 
   - name: delete
     help: 🗑️  Delete connector
     flags:
+    - *verbose
     - *connector
 
   - name: show-lag
-    help: 🐢 Show lag of sink connector
+    help: |
+      🐢 Show lag of sink connector
+
+      It will run until all lag becomes 0 (press ctrl-c to exit)
     flags:
+    - *verbose
     - *connector
-    - *waitforzerolag
+    - long: --interval
+      arg: interval
+      validate: integer
+      required: false
+      default: "20"
+      help: |-
+        Interval between lag checks (default is 20 seconds).
 
   - name: show-config
+    help:  |
+      🧰 Show current connector config that was applied
+      
+      use --force-rest-endpoint to get results with REST API /config endpoint (https://docs.confluent.io/platform/current/connect/references/restapi.html#get--connectors-(string-name)-config)
+    flags:
+    - *verbose
+    - *connector
+    - &noclipboard
+      long: --no-clipboard
+      required: false
+      private: true
+      help: |-
+        do not copy to clipboard (internal)
+    - long: --force-rest-endpoint
+      required: false
+      help: |-
+        ☢️ Force using REST API /config endpoint (https://docs.confluent.io/platform/current/connect/references/restapi.html#get--connectors-(string-name)-config)
+
+  - name: show-config-parameters
     help: 🔩 Show all possible configuration parameters of connector
     flags:
+    - *verbose
     - *connector
     - long: --open
       short: -o
       help: |- 
-        🔖 Save output to a file and open with text editor set with config.ini (default is code)
-    - long: --force-refresh
+        🔖 Save output to a file and open with text editor set with playground config editor <editor> (default is code)
+    - *force_refresh
+    -  &only_show_file_path
+      long: --only-show-file-path
+      required: false
+      private: true
+      help: |-
+        📂 Only show the path of the file containing the configuration parameters
+    - &only_show_json
+      long: --only-show-json
       required: false
       help: |-
-        ☢️ Force refresh.
+        📗 Only show list of all available parameters for connector (with default value when applicable)
+    -  &only_show_json_file_path
+      long: --only-show-json-file-path
+      required: false
+      private: true
+      help: |-
+        📂 Only show the path of the json file containing the configuration parameters
+
+  - name: select-config
+    help: |-
+      🗜️ Easily select config from all possible configuration parameters of connector
+
+      🎓 Tip: use <tab> to select multiple config at once !
+    dependencies:
+      fzf: visit https://github.com/junegunn/fzf#installation to install
+    flags:
+    - *connector
+
+  - name: snippets
+    help: 🔌 useful snippets
+    flags:
+    - long: --converter
+      required: false
+      arg: converter
+      allowed: 
+        - avro
+        - protobuf
+        - json-schema
+        - json
+        - json-schema-enabled
+        - string
+        - bytearray
+      help: |-
+        🔌 Converter
+    - long: --dlq
+      required: false
+      help: |- 
+        💀 dlq
+    examples: |
+      playground connector snippets --converter avro --dlq
+
+  - name: open-docs
+    help: |-
+      🧑‍🎓 Open connector documentation of currently running conector(s)
+    flags:
+    - long: --only-show-url
+      help: |-
+        🌐 Only show url
 
   - name: log-level
     help: |-
       🧬 Set connect log level
+
+      🎓 Tip: it will also set io.confluent.kafka.schemaregistry.client.rest.RestService (to see schema registry rest requests) and org.apache.kafka.connect.runtime.TransformationChain (to see records before and after SMTs)
     flags:
     - *connector
     - *level
@@ -1522,6 +2689,7 @@ commands:
       help: json (reads from stdin if empty)
 
     flags:
+    - *verbose
     - long: --connector
       short: -c
       required: true
@@ -1537,6 +2705,13 @@ commands:
       required: false
       help: |-
         ❕Log level
+
+        ⚠️ Not available for ccloud connectors
+    - *package
+    - long: --validate
+      required: false
+      help: |-
+        ✅ Validate config using PUT /connector-plugins/(string:name)/config/validate (https://docs.confluent.io/platform/current/connect/references/restapi.html#put--connector-plugins-(string-name)-config-validate)
     examples: |
       playground connector create-or-update -c filestream-sink << EOF
       {
@@ -1549,6 +2724,13 @@ commands:
           "value.converter.schemas.enable": "false"
       }
       EOF
+
+  - name: update
+    help: 🛠️ Update connector configuration by opening current connector config in text editor set with playground config editor <editor> (default is code). Once file is saved, the new configuration is updated.
+    flags:
+    - *connector
+    examples: |
+      playground connector update -c filestream-sink
 
   examples:
   - playground connector status

@@ -4,7 +4,8 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
-
+logwarn "Azure Data Lake Storage Gen1 will be retired 29 February 2024"
+check_if_continue
 
 if [ ! -z "$AZ_USER" ] && [ ! -z "$AZ_PASS" ]
 then
@@ -52,7 +53,7 @@ AZURE_DATALAKE_CLIENT_PASSWORD=$(az ad app credential reset --id $AZURE_DATALAKE
 if [ "$AZURE_DATALAKE_CLIENT_PASSWORD" == "" ]
 then
   logerror "password could not be retrieved"
-  if [ -z "$CI" ]
+  if [ -z "$GITHUB_RUN_NUMBER" ]
   then
     az ad app credential reset --id $AZURE_DATALAKE_CLIENT_ID
   fi
@@ -79,10 +80,11 @@ sed -e "s|:AZURE_DATALAKE_CLIENT_ID:|$AZURE_DATALAKE_CLIENT_ID|g" \
     ../../connect/connect-azure-data-lake-storage-gen1-sink/data.template > ../../connect/connect-azure-data-lake-storage-gen1-sink/data
 
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Creating Data Lake Storage Gen1 Sink connector"
-playground connector create-or-update --connector azure-datalake-gen1-sink << EOF
+playground connector create-or-update --connector azure-datalake-gen1-sink  << EOF
 {
     "connector.class": "io.confluent.connect.azure.datalake.gen1.AzureDataLakeGen1StorageSinkConnector",
     "tasks.max": "1",
@@ -124,6 +126,7 @@ az dls fs download --account "${AZURE_DATALAKE_ACCOUNT_NAME}" --overwrite --sour
 docker run --rm -v /tmp:/tmp vdesabou/avro-tools tojson /tmp/datalake_topic+0+0000000000.avro
 
 log "Deleting resource group"
+check_if_continue
 az group delete --name $AZURE_RESOURCE_GROUP --yes --no-wait
 
 log "Deleting active directory app"

@@ -36,7 +36,8 @@ log "🔐 Generate keys and certificates used for SSL"
 docker run -u0 --rm -v $PWD:/tmp ${CP_CONNECT_IMAGE}:${CONNECT_TAG} bash -c "/tmp/certs-create.sh > /dev/null 2>&1 && chown -R $(id -u $USER):$(id -g $USER) /tmp/ && chmod a+r /tmp/*"
 cd ${DIR}
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.mtls.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.mtls.yml"
 
 
 log "Set the channel authentication to required so that both the server and client will need to provide a trusted certificate"
@@ -57,28 +58,28 @@ DISPLAY CHANNEL(DEV.APP.SVRCONN)
 EOF
 
 log "Creating IBM MQ source connector"
-playground connector create-or-update --connector ibm-mq-source-mtls << EOF
+playground connector create-or-update --connector ibm-mq-source-mtls  << EOF
 {
-               "connector.class": "io.confluent.connect.ibm.mq.IbmMQSourceConnector",
-               "kafka.topic": "MyKafkaTopicName",
-               "mq.hostname": "ibmmq",
-               "mq.port": "1414",
-               "mq.transport.type": "client",
-               "mq.queue.manager": "QM1",
-               "mq.channel": "DEV.APP.SVRCONN",
-               "mq.username": "",
-               "mq.password": "",
-               "jms.destination.name": "DEV.QUEUE.1",
-               "jms.destination.type": "queue",
-               "mq.tls.truststore.location": "/tmp/truststore.jks",
-               "mq.tls.truststore.password": "confluent",
-               "mq.tls.keystore.location": "/tmp/keystore.jks",
-               "mq.tls.keystore.password": "confluent",
-               "mq.ssl.cipher.suite":"TLS_RSA_WITH_AES_128_CBC_SHA256",
-               "confluent.license": "",
-               "confluent.topic.bootstrap.servers": "broker:9092",
-               "confluent.topic.replication.factor": "1"
-          }
+     "connector.class": "io.confluent.connect.ibm.mq.IbmMQSourceConnector",
+     "kafka.topic": "MyKafkaTopicName",
+     "mq.hostname": "ibmmq",
+     "mq.port": "1414",
+     "mq.transport.type": "client",
+     "mq.queue.manager": "QM1",
+     "mq.channel": "DEV.APP.SVRCONN",
+     "mq.username": "",
+     "mq.password": "",
+     "jms.destination.name": "DEV.QUEUE.1",
+     "jms.destination.type": "queue",
+     "mq.tls.truststore.location": "/tmp/truststore.jks",
+     "mq.tls.truststore.password": "confluent",
+     "mq.tls.keystore.location": "/tmp/keystore.jks",
+     "mq.tls.keystore.password": "confluent",
+     "mq.ssl.cipher.suite":"TLS_RSA_WITH_AES_128_CBC_SHA256",
+     "confluent.license": "",
+     "confluent.topic.bootstrap.servers": "broker:9092",
+     "confluent.topic.replication.factor": "1"
+}
 EOF
 
 sleep 5

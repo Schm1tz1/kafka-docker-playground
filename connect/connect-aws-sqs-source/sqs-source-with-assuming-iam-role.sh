@@ -28,7 +28,8 @@ else
      export CONNECT_CONTAINER_HOME_DIR="/root"
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.with-assuming-iam-role.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.with-assuming-iam-role.yml"
 
 QUEUE_NAME=pg${USER}sqs${TAG}
 QUEUE_NAME=${QUEUE_NAME//[-._]/}
@@ -59,7 +60,7 @@ aws sqs send-message-batch --queue-url $QUEUE_URL --entries file://send-message-
 cd -
 
 log "Creating SQS Source connector"
-playground connector create-or-update --connector sqs-source << EOF
+playground connector create-or-update --connector sqs-source  << EOF
 {
      "connector.class": "io.confluent.connect.sqs.source.SqsSourceConnector",
      "tasks.max": "1",

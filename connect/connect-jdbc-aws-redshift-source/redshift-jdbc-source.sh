@@ -8,7 +8,7 @@ if [ ! -f ${PWD}/redshift-jdbc42-2.1.0.17/redshift-jdbc42-2.1.0.17.jar ]
 then
      mkdir -p redshift-jdbc42-2.1.0.17
      cd redshift-jdbc42-2.1.0.17
-     wget https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/2.1.0.17/redshift-jdbc42-2.1.0.17.zip
+     wget -q https://s3.amazonaws.com/redshift-downloads/drivers/jdbc/2.1.0.17/redshift-jdbc42-2.1.0.17.zip
      unzip redshift-jdbc42-2.1.0.17.zip
      cd -
 fi
@@ -27,8 +27,8 @@ else
         if [ -f $HOME/.aws/credentials ]
         then
             logwarn "💭 AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are set based on $HOME/.aws/credentials"
-            export AWS_ACCESS_KEY_ID=$( grep "^aws_access_key_id" $HOME/.aws/credentials| awk -F'=' '{print $2;}' )
-            export AWS_SECRET_ACCESS_KEY=$( grep "^aws_secret_access_key" $HOME/.aws/credentials| awk -F'=' '{print $2;}' ) 
+            export AWS_ACCESS_KEY_ID=$( grep "^aws_access_key_id" $HOME/.aws/credentials | head -1 | awk -F'=' '{print $2;}' )
+            export AWS_SECRET_ACCESS_KEY=$( grep "^aws_secret_access_key" $HOME/.aws/credentials | head -1 | awk -F'=' '{print $2;}' ) 
         fi
     fi
     if [ -z "$AWS_REGION" ]
@@ -49,14 +49,38 @@ else
      export CONNECT_CONTAINER_HOME_DIR="/root"
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 CLUSTER_NAME=pg${USER}jdbcredshift${TAG}
 CLUSTER_NAME=${CLUSTER_NAME//[-._]/}
 
-set +e
 log "Delete AWS Redshift cluster, if required"
-aws redshift delete-cluster --cluster-identifier $CLUSTER_NAME --skip-final-cluster-snapshot
+set +e
+RETRIES=3
+# Set the retry interval in seconds
+RETRY_INTERVAL=60
+# Attempt to delete the cluster
+for i in $(seq 1 $RETRIES); do
+    log "Attempt $i to delete cluster $CLUSTER_NAME"
+    if aws redshift delete-cluster --cluster-identifier $CLUSTER_NAME --skip-final-cluster-snapshot
+    then
+        log "Cluster $CLUSTER_NAME deleted successfully"
+        sleep 120
+        log "Delete security group sg$CLUSTER_NAME, if required"
+        aws ec2 delete-security-group --group-name sg$CLUSTER_NAME
+        break
+    else
+        error=$(aws redshift delete-cluster --cluster-identifier $CLUSTER_NAME --skip-final-cluster-snapshot 2>&1)
+        if [[ $error == *"InvalidClusterState"* ]]
+        then
+            logwarn "InvalidClusterState error encountered. Retrying in $RETRY_INTERVAL seconds..."
+            sleep $RETRY_INTERVAL
+        else
+            logwarn "Error deleting cluster $CLUSTER_NAME: $error"
+        fi
+    fi
+done
 log "Delete security group sg$CLUSTER_NAME, if required"
 aws ec2 delete-security-group --group-name sg$CLUSTER_NAME
 set -e
@@ -110,11 +134,11 @@ SELECT * from CUSTOMERS;
 EOF
 
 log "Creating JDBC AWS Redshift source connector"
-playground connector create-or-update --connector redshift-jdbc-source << EOF
+playground connector create-or-update --connector redshift-jdbc-source  << EOF
 {
      "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
      "tasks.max": "1",
-     "connection.url": "jdbc:postgresql://$CLUSTER:5439/dev?user=masteruser&password=myPassword1&ssl=false",
+     "connection.url": "jdbc:redshift://$CLUSTER:5439/dev?user=masteruser&password=myPassword1&ssl=false",
      "table.whitelist": "customers",
      "mode": "timestamp+incrementing",
      "timestamp.column.name": "update_ts",
@@ -125,23 +149,6 @@ playground connector create-or-update --connector redshift-jdbc-source << EOF
      "errors.log.include.messages": "true"
 }
 EOF
-
-# [2023-07-24 16:31:50,676] ERROR [redshift-jdbc-source|worker] Error while trying to get updated table list, ignoring and waiting for next table poll interval (io.confluent.connect.jdbc.source.TableMonitorThread:178)
-# org.postgresql.util.PSQLException: ERROR: type "e" does not exist
-#         at org.postgresql.core.v3.QueryExecutorImpl.receiveErrorResponse(QueryExecutorImpl.java:2676)
-#         at org.postgresql.core.v3.QueryExecutorImpl.processResults(QueryExecutorImpl.java:2366)
-#         at org.postgresql.core.v3.QueryExecutorImpl.execute(QueryExecutorImpl.java:356)
-#         at org.postgresql.jdbc.PgStatement.executeInternal(PgStatement.java:496)
-#         at org.postgresql.jdbc.PgStatement.execute(PgStatement.java:413)
-#         at org.postgresql.jdbc.PgStatement.executeWithFlags(PgStatement.java:333)
-#         at org.postgresql.jdbc.PgStatement.executeCachedSql(PgStatement.java:319)
-#         at org.postgresql.jdbc.PgStatement.executeWithFlags(PgStatement.java:295)
-#         at org.postgresql.jdbc.PgStatement.executeQuery(PgStatement.java:244)
-#         at org.postgresql.jdbc.PgDatabaseMetaData.getTables(PgDatabaseMetaData.java:1343)
-#         at io.confluent.connect.jdbc.dialect.GenericDatabaseDialect.tableIds(GenericDatabaseDialect.java:428)
-#         at io.confluent.connect.jdbc.source.TableMonitorThread.updateTables(TableMonitorThread.java:175)
-#         at io.confluent.connect.jdbc.source.TableMonitorThread.run(TableMonitorThread.java:85)
-
 
 sleep 5
 

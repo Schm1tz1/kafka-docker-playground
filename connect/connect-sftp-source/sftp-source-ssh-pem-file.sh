@@ -11,7 +11,8 @@ ssh-keygen -t rsa -b 4096 -f ssh_host_rsa_key -P "mypassword"
 ssh-keygen -p -f ssh_host_rsa_key -m pem -P mypassword -N mypassword -b 2048
 openssl rsa -in ssh_host_rsa_key -outform pem -passin pass:mypassword > ssh_host_rsa_key.pem
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.ssh-pem-file.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.ssh-pem-file.yml"
 
 docker exec sftp-server bash -c "
 mkdir -p /chroot/home/foo/upload/input
@@ -26,7 +27,7 @@ docker cp csv-sftp-source.csv sftp-server:/chroot/home/foo/upload/input/
 rm -f csv-sftp-source.csv
 
 log "Creating CSV SFTP Source connector"
-playground connector create-or-update --connector sftp-source-ssh-pem-file << EOF
+playground connector create-or-update --connector sftp-source-ssh-pem-file  << EOF
 {
      "tasks.max": "1",
      "connector.class": "io.confluent.connect.sftp.SftpCsvSourceConnector",

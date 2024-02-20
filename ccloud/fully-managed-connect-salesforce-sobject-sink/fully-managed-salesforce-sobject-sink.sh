@@ -88,13 +88,7 @@ sed -e "s|:PUSH_TOPIC_NAME:|$PUSH_TOPICS_NAME|g" \
 
 bootstrap_ccloud_environment
 
-if [ -f /tmp/delta_configs/env.delta ]
-then
-     source /tmp/delta_configs/env.delta
-else
-     logerror "ERROR: /tmp/delta_configs/env.delta has not been generated"
-     exit 1
-fi
+
 
 set +e
 playground topic delete --topic sfdc-pushtopic-leads
@@ -102,9 +96,9 @@ sleep 3
 playground topic create --topic sfdc-pushtopic-leads
 set -e
 
-docker-compose build
-docker-compose down -v --remove-orphans
-docker-compose up -d
+docker compose build
+docker compose down -v --remove-orphans
+docker compose up -d
 
 # the Salesforce PushTopic source connector is used to get data into Kafka and the Salesforce SObject sink connector is used to export data from Kafka to Salesforce
 
@@ -125,11 +119,11 @@ log "Creating Salesforce PushTopics Source connector"
 connector_name="SalesforcePushTopicSource"
 set +e
 log "Deleting fully managed connector $connector_name, it might fail..."
-playground ccloud-connector delete --connector $connector_name
+playground connector delete --connector $connector_name
 set -e
 
 log "Creating fully managed connector"
-playground ccloud-connector create-or-update --connector $connector_name << EOF
+playground connector create-or-update --connector $connector_name << EOF
 {
      "connector.class": "SalesforcePushTopicSource",
      "name": "SalesforcePushTopicSource",
@@ -166,11 +160,11 @@ log "Creating Salesforce SObject Sink connector"
 connector_name="SalesforceSObjectSink"
 set +e
 log "Deleting fully managed connector $connector_name, it might fail..."
-playground ccloud-connector delete --connector $connector_name
+playground connector delete --connector $connector_name
 set -e
 
 log "Creating fully managed connector"
-playground ccloud-connector create-or-update --connector $connector_name << EOF
+playground connector create-or-update --connector $connector_name << EOF
 {
      "connector.class": "SalesforceSObjectSink",
      "name": "SalesforceSObjectSink",

@@ -5,15 +5,9 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
 #############
-${DIR}/../../ccloud/environment/start.sh "${PWD}/docker-compose-connect-onprem-to-cloud.yml"
+playground start-environment --environment ccloud --docker-compose-override-file "${PWD}/docker-compose-connect-onprem-to-cloud.yml"
 
-if [ -f /tmp/delta_configs/env.delta ]
-then
-     source /tmp/delta_configs/env.delta
-else
-     logerror "ERROR: /tmp/delta_configs/env.delta has not been generated"
-     exit 1
-fi
+
 #############
 
 log "Creating topic in Confluent Cloud (auto.create.topics.enable=false)"
@@ -22,14 +16,32 @@ playground topic create --topic products-avro
 set -e
 
 log "Sending messages to topic products-avro on source OnPREM cluster"
-docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic products-avro --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"name","type":"string"},
-{"name":"price", "type": "float"}, {"name":"quantity", "type": "int"}]}' << EOF
-{"name": "scissors", "price": 2.75, "quantity": 3}
-{"name": "tape", "price": 0.99, "quantity": 10}
-{"name": "notebooks", "price": 1.99, "quantity": 5}
+playground topic produce -t products-avro --nb-messages 3 << 'EOF'
+{
+  "fields": [
+    {
+      "name": "id",
+      "type": "int"
+    },
+    {
+      "name": "product",
+      "type": "string"
+    },
+    {
+      "name": "quantity",
+      "type": "int"
+    },
+    {
+      "name": "price",
+      "type": "float"
+    }
+  ],
+  "name": "myrecord",
+  "type": "record"
+}
 EOF
 
-playground connector create-or-update --connector replicate-onprem-to-cloud << EOF
+playground connector create-or-update --connector replicate-onprem-to-cloud  << EOF
 {
      "connector.class":"io.confluent.connect.replicator.ReplicatorSourceConnector",
      "src.consumer.group.id": "replicate-onprem-to-cloud",
@@ -66,4 +78,4 @@ EOF
 # "value.converter.connect.meta.data": false
 
 log "Verify we have received the data in products-avro topic"
-timeout 60 docker container exec -e BOOTSTRAP_SERVERS="$BOOTSTRAP_SERVERS" -e SASL_JAAS_CONFIG="$SASL_JAAS_CONFIG" -e SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO="$SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO" -e SCHEMA_REGISTRY_URL="$SCHEMA_REGISTRY_URL" connect bash -c 'kafka-avro-console-consumer --topic products-avro --bootstrap-server $BOOTSTRAP_SERVERS --consumer-property ssl.endpoint.identification.algorithm=https --consumer-property sasl.mechanism=PLAIN --consumer-property security.protocol=SASL_SSL --consumer-property sasl.jaas.config="$SASL_JAAS_CONFIG" --property basic.auth.credentials.source=USER_INFO --property schema.registry.basic.auth.user.info="$SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO" --property schema.registry.url=$SCHEMA_REGISTRY_URL --from-beginning --max-messages 3'
+playground topic consume --topic products-avro --min-expected-messages 3 --timeout 60

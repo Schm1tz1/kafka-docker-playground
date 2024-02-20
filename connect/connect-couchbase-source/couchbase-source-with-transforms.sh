@@ -4,7 +4,8 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.with-transforms.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.with-transforms.yml"
 
 log "Creating Couchbase cluster"
 docker exec couchbase bash -c "/opt/couchbase/bin/couchbase-cli cluster-init --cluster-username Administrator --cluster-password password --services=data,index,query"
@@ -14,7 +15,7 @@ docker exec couchbase bash -c "/opt/couchbase/bin/cbdocloader -c localhost:8091 
 set -e
 
 log "Creating Couchbase Source connector with transforms"
-playground connector create-or-update --connector couchbase-source << EOF
+playground connector create-or-update --connector couchbase-source  << EOF
 {
                "connector.class": "com.couchbase.connect.kafka.CouchbaseSourceConnector",
                "tasks.max": "2",

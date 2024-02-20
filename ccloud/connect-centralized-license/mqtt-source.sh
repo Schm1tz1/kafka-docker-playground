@@ -24,19 +24,13 @@ playground topic delete --topic $MQTT_TOPIC
 set -e
 
 
-${DIR}/../../ccloud/environment/start.sh "${PWD}/docker-compose.mqtt-source.yml"
+playground start-environment --environment ccloud --docker-compose-override-file "${PWD}/docker-compose.mqtt-source.yml"
 
-if [ -f /tmp/delta_configs/env.delta ]
-then
-     source /tmp/delta_configs/env.delta
-else
-     logerror "ERROR: /tmp/delta_configs/env.delta has not been generated"
-     exit 1
-fi
+
 #############
 
 log "Creating MQTT Source connector"
-playground connector create-or-update --connector mqtt-source << EOF
+playground connector create-or-update --connector mqtt-source  << EOF
 {
      "connector.class": "io.confluent.connect.mqtt.MqttSourceConnector",
      "tasks.max": "1",

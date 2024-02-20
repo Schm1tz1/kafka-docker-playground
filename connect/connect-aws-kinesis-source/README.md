@@ -29,19 +29,19 @@ Make sure that region corresponds to the one used by the test (eu-west-3 by defa
 Simply run:
 
 ```
-$ playground run -f kinesis-source<tab>
+$ playground run -f kinesis-source<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path>
 ```
 
 If you want to assume IAM roles:
 
 ```
-$ playground run -f kinesis-source-with-assuming-iam-role<tab> (in that case `~/.aws/credentials-with-assuming-iam-role` file must be set)
+$ playground run -f kinesis-source-with-assuming-iam-role<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path> (in that case `~/.aws/credentials-with-assuming-iam-role` file must be set)
 ```
 
 or with AssumeRole using custom AWS credentials provider (⚠️ custom code is just an example, there is no support for it):
 
 ```
-$ playground run -f kinesis-source-with-assuming-iam-role<tab>
+$ playground run -f kinesis-source-with-assuming-iam-role<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path>
 ```
 
 ## Details of what the script is doing
@@ -49,19 +49,19 @@ $ playground run -f kinesis-source-with-assuming-iam-role<tab>
 Create a Kinesis stream `kafka_docker_playground` in $AWS_REGION region:
 
 ```
-$ aws kinesis create-stream --stream-name $KINESIS_STREAM_NAME --shard-count 1
+$ aws kinesis create-stream --stream-name $KINESIS_STREAM_NAME --shard-count 1 --region $AWS_REGION
 ```
 
 Insert records in Kinesis stream:
 
 ```
-$ aws kinesis put-record --stream-name $KINESIS_STREAM_NAME --partition-key 123 --data test-message-1
+$ aws kinesis put-record --stream-name $KINESIS_STREAM_NAME --partition-key 123 --data test-message-1 --region $AWS_REGION
 ```
 
 The connector is created with:
 
 ```
-playground connector create-or-update --connector kinesis-source << EOF
+playground connector create-or-update --connector kinesis-source  << EOF
 {
         "connector.class":"io.confluent.connect.kinesis.KinesisSourceConnector",
                "tasks.max": "1",
@@ -84,7 +84,7 @@ playground topic consume --topic kinesis_topic --min-expected-messages 1 --timeo
 Delete your stream and clean up resources to avoid incurring any unintended charges:
 
 ```
-aws kinesis delete-stream --stream-name $KINESIS_STREAM_NAME
+aws kinesis delete-stream --stream-name $KINESIS_STREAM_NAME --region $AWS_REGION
 ```
 
 N.B: Control Center is reachable at [http://127.0.0.1:9021](http://127.0.0.1:9021])

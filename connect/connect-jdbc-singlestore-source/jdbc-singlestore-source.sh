@@ -20,11 +20,12 @@ cd ../../connect/connect-jdbc-singlestore-source
 if [ ! -f ${PWD}/mysql-connector-java-5.1.45.jar ]
 then
      log "Downloading mysql-connector-java-5.1.45.jar"
-     wget https://repo1.maven.org/maven2/mysql/mysql-connector-java/5.1.45/mysql-connector-java-5.1.45.jar
+     wget -q https://repo1.maven.org/maven2/mysql/mysql-connector-java/5.1.45/mysql-connector-java-5.1.45.jar
 fi
 cd -
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Starting singlestore cluster"
 docker start singlestore
@@ -79,7 +80,7 @@ docker exec singlestore memsql -u root -proot -e "USE db;select * from applicati
 
 
 log "Creating JDBC Singlestore source connector"
-playground connector create-or-update --connector jdbc-singlestore-source << EOF
+playground connector create-or-update --connector jdbc-singlestore-source  << EOF
 {
                "connector.class":"io.confluent.connect.jdbc.JdbcSourceConnector",
                "tasks.max":"1",

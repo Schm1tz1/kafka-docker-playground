@@ -2,7 +2,7 @@
 version: '3.5'
 services:
   mysql:
-    image: mysql:latest
+    image: mysql:8.1
     hostname: mysql
     container_name: mysql
     volumes:
@@ -17,9 +17,6 @@ services:
 
   connect:
     depends_on:
-      - zookeeper
-      - broker
-      - schema-registry
       - mysql
     environment:
       CONNECT_PLUGIN_PATH: /usr/share/confluent-hub-components/debezium-debezium-connector-mysql

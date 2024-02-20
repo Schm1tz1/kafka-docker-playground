@@ -12,12 +12,30 @@ Quickly test [Snowflake Sink](https://docs.snowflake.com/en/user-guide/kafka-con
 
 Go to [Snowflake](https://www.snowflake.com) and register an account. You'll receive an email to setup your account and access to a 30 day trial instance.
 
+To get the `SNOWFLAKE_ACCOUNT_NAME`, go there and click on url:
+
+![ui](ui.jpg)
+
+This will give you an url like:
+
+```
+https://<SNOWFLAKE_ACCOUNT_NAME>.snowflakecomputing.com
+```
+
+Example:
+
+```
+https://of77992.eu-west-2.aws.snowflakecomputing.com
+```
+
+`SNOWFLAKE_ACCOUNT_NAME` should be set with `of77992.eu-west-2.aws`
+
 ## How to run
 
 Simply run:
 
 ```bash
-$ playground run -f snowflake-sink<tab> <SNOWFLAKE_ACCOUNT_NAME> <SNOWFLAKE_USERNAME> <SNOWFLAKE_PASSWORD>
+$ playground run -f snowflake-sink<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path> <SNOWFLAKE_ACCOUNT_NAME> <SNOWFLAKE_USERNAME> <SNOWFLAKE_PASSWORD>
 ```
 
 Note: you can also export these values as environment variable
@@ -111,7 +129,7 @@ $ curl -X PUT \
                "tasks.max": "1",
                "snowflake.url.name":"$SNOWFLAKE_URL",
                "snowflake.user.name":"$PLAYGROUND_USER",
-               "snowflake.user.role":"$PLAYGROUND_CONNECTOR_ROLE",
+               
                "snowflake.private.key":"${file:/data:private.key}",
                "snowflake.private.key.passphrase": "confluent",
                "snowflake.database.name":"$PLAYGROUND_DB",

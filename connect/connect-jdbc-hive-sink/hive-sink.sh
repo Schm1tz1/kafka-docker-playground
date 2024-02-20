@@ -4,21 +4,24 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
+logerror "addBatch() method is not implemented on Hive"
+
 if [ ! -f ${DIR}/hive-jdbc-3.1.2-standalone.jar ]
 then
      log "Getting hive-jdbc-3.1.2-standalone.jar"
-     wget https://repo1.maven.org/maven2/org/apache/hive/hive-jdbc/3.1.2/hive-jdbc-3.1.2-standalone.jar
+     wget -q https://repo1.maven.org/maven2/org/apache/hive/hive-jdbc/3.1.2/hive-jdbc-3.1.2-standalone.jar
 fi
 
 if [ ! -f ${DIR}/presto.jar ]
 then
      log "Getting presto-cli-0.183-executable.jar"
-     wget https://repo1.maven.org/maven2/com/facebook/presto/presto-cli/0.183/presto-cli-0.183-executable.jar
+     wget -q https://repo1.maven.org/maven2/com/facebook/presto/presto-cli/0.183/presto-cli-0.183-executable.jar
      mv presto-cli-0.183-executable.jar presto.jar
      chmod +x presto.jar
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 sleep 30
 
@@ -32,24 +35,61 @@ show databases
 EOF
 
 log "Sending messages to topic pokes"
-seq -f "{\"foo\": %g,\"bar\": \"a string\"}" 10 | docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic pokes --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"foo","type":"int"},{"name":"bar","type":"string"}]}'
-
-log "Creating JDBC Hive sink connector"
-playground connector create-or-update --connector jdbc-hive-sink << EOF
+playground topic produce -t pokes --nb-messages 10 --forced-value "{\"foo\": %g,\"bar\": \"a string\"}" << 'EOF'
 {
-               "connector.class" : "io.confluent.connect.jdbc.JdbcSinkConnector",
-               "tasks.max" : "1",
-               "connection.url": "jdbc:hive2://hive-server:10000/default",
-               "auto.create": "true",
-               "auto.evolve": "true",
-               "topics": "pokes",
-               "pk.mode": "record_value",
-               "pk.fields": "foo",
-               "table.name.format": "default.\${topic}"
-          }
+  "fields": [
+    {
+      "name": "foo",
+      "type": "int"
+    },
+    {
+      "name": "bar",
+      "type": "string"
+    }
+  ],
+  "name": "myrecord",
+  "type": "record"
+}
 EOF
 
-#
+log "Creating JDBC Hive sink connector"
+playground connector create-or-update --connector jdbc-hive-sink  << EOF
+{
+     "connector.class" : "io.confluent.connect.jdbc.JdbcSinkConnector",
+     "tasks.max" : "1",
+     "connection.url": "jdbc:hive2://hive-server:10000/default",
+     "auto.create": "true",
+     "auto.evolve": "true",
+     "topics": "pokes",
+     "pk.mode": "record_value",
+     "pk.fields": "foo",
+     "table.name.format": "default.\${topic}"
+}
+EOF
+
+# [2023-10-09 11:13:45,400] WARN [jdbc-hive-sink|task-0] Write of 10 records failed, remainingRetries=8 (io.confluent.connect.jdbc.sink.JdbcSinkTask:101)
+# java.sql.SQLFeatureNotSupportedException: Method not supported
+#         at org.apache.hive.jdbc.HivePreparedStatement.addBatch(HivePreparedStatement.java:78)
+#         at io.confluent.connect.jdbc.sink.PreparedStatementBinder.bindRecord(PreparedStatementBinder.java:115)
+#         at io.confluent.connect.jdbc.sink.BufferedRecords.flush(BufferedRecords.java:183)
+#         at io.confluent.connect.jdbc.sink.JdbcDbWriter.write(JdbcDbWriter.java:80)
+#         at io.confluent.connect.jdbc.sink.JdbcSinkTask.put(JdbcSinkTask.java:90)
+#         at org.apache.kafka.connect.runtime.WorkerSinkTask.deliverMessages(WorkerSinkTask.java:593)
+#         at org.apache.kafka.connect.runtime.WorkerSinkTask.poll(WorkerSinkTask.java:340)
+#         at org.apache.kafka.connect.runtime.WorkerSinkTask.iteration(WorkerSinkTask.java:238)
+#         at org.apache.kafka.connect.runtime.WorkerSinkTask.execute(WorkerSinkTask.java:207)
+#         at org.apache.kafka.connect.runtime.WorkerTask.doRun(WorkerTask.java:229)
+#         at org.apache.kafka.connect.runtime.WorkerTask.run(WorkerTask.java:284)
+#         at org.apache.kafka.connect.runtime.isolation.Plugins.lambda$withClassLoader$1(Plugins.java:181)
+#         at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:515)
+#         at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+#         at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1128)
+#         at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:628)
+#         at java.base/java.lang.Thread.run(Thread.java:829)
+#         Suppressed: java.sql.SQLFeatureNotSupportedException: Method not supported
+#                 at org.apache.hive.jdbc.HiveConnection.rollback(HiveConnection.java:1340)
+#                 at io.confluent.connect.jdbc.sink.JdbcDbWriter.write(JdbcDbWriter.java:86)
+#                 ... 13 more
 
 sleep 10
 

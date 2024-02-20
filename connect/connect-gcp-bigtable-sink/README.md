@@ -44,7 +44,7 @@ Rename it to `keyfile.json`and place it in `./keyfile.json` or use environment v
 Simply run:
 
 ```bash
-$ playground run -f gcp-bigtable<tab> <GCP_PROJECT> <INSTANCE>
+$ playground run -f gcp-bigtable<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path> <GCP_PROJECT> <INSTANCE>
 ```
 
 Note: you can also export these values as environment variable
@@ -54,7 +54,8 @@ Note: you can also export these values as environment variable
 Create a BigTable Instance and Database
 
 ```bash
-$ docker run -i --volumes-from gcloud-config google/cloud-sdk:latest gcloud bigtable instances create $INSTANCE --project $GCP_PROJECT --cluster $INSTANCE --cluster-zone=us-east1-c --display-name="playground-bigtable-instance" --instance-type=DEVELOPMENT
+$ docker run -i --volumes-from gcloud-config google/cloud-sdk:latest gcloud bigtable instances create $INSTANCE --project $GCP_PROJECT --cluster-config=id=$INSTANCE,zone=us-east1-c --display-name="playground-bigtable-instance"
+
 ```
 
 Sending messages to topic `stats`
@@ -70,7 +71,7 @@ EOF
 Creating GCP BigTbale Sink connector
 
 ```bash
-playground connector create-or-update --connector gcp-bigtable-sink << EOF
+playground connector create-or-update --connector gcp-bigtable-sink  << EOF
 {
                "connector.class": "io.confluent.connect.gcp.bigtable.BigtableSinkConnector",
                "tasks.max" : "1",

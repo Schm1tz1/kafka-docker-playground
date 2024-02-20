@@ -41,8 +41,8 @@ else
         if [ -f $HOME/.aws/credentials ]
         then
             logwarn "💭 AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are set based on $HOME/.aws/credentials"
-            export AWS_ACCESS_KEY_ID=$( grep "^aws_access_key_id" $HOME/.aws/credentials| awk -F'=' '{print $2;}' )
-            export AWS_SECRET_ACCESS_KEY=$( grep "^aws_secret_access_key" $HOME/.aws/credentials| awk -F'=' '{print $2;}' ) 
+            export AWS_ACCESS_KEY_ID=$( grep "^aws_access_key_id" $HOME/.aws/credentials | head -1 | awk -F'=' '{print $2;}' )
+            export AWS_SECRET_ACCESS_KEY=$( grep "^aws_secret_access_key" $HOME/.aws/credentials | head -1 | awk -F'=' '{print $2;}' ) 
         fi
     fi
     if [ -z "$AWS_REGION" ]
@@ -101,10 +101,11 @@ EOF
 log "Upload JSON file to AWS S3 bucket $AWS_BUCKET_NAME"
 aws s3 cp /tmp/track.json s3://$AWS_BUCKET_NAME/
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.s3.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.s3.yml"
 
 log "Creating S3 JSON FilePulse Source connector"
-playground connector create-or-update --connector filepulse-source-s3-json << EOF
+playground connector create-or-update --connector filepulse-source-s3-json  << EOF
 {
     "connector.class":"io.streamthoughts.kafka.connect.filepulse.source.FilePulseSourceConnector",
     "aws.access.key.id": "\${file:/data:aws.access.key.id}",

@@ -4,7 +4,8 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.kerberos.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.kerberos.yml"
 
 # following https://www.confluent.io/blog/containerized-testing-with-kerberos-and-ssh/
 log "Add kerberos principals"
@@ -49,7 +50,7 @@ docker exec connect kinit sshuser -k -t /tmp/sshuser.keytab
 # docker exec -i --privileged --user root connect bash -c "yum update -y && yum install openssh-clients -y"
 
 log "Creating SFTP Sink connector"
-playground connector create-or-update --connector sftp-sink-kerberos << EOF
+playground connector create-or-update --connector sftp-sink-kerberos  << EOF
 {
                "topics": "test_sftp_sink",
                "tasks.max": "1",

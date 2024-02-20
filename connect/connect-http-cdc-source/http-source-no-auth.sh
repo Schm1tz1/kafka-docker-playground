@@ -6,18 +6,19 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.no-auth.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.no-auth.yml"
 
 log "Creating http-source connector"
-playground connector create-or-update --connector http-cdc-source << EOF
+playground connector create-or-update --connector http-cdc-source  << EOF
 {
-               "tasks.max": "1",
-               "connector.class": "com.github.castorm.kafka.connect.http.HttpSourceConnector",
-               "key.converter": "org.apache.kafka.connect.storage.StringConverter",
-               "value.converter": "org.apache.kafka.connect.storage.StringConverter",
-               "http.request.url": "http://httpserver:8080/api/messages",
-               "kafka.topic": "http-topic-messages"
-          }
+     "tasks.max": "1",
+     "connector.class": "com.github.castorm.kafka.connect.http.HttpSourceConnector",
+     "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+     "value.converter": "org.apache.kafka.connect.storage.StringConverter",
+     "http.request.url": "http://httpserver:8080/api/messages",
+     "kafka.topic": "http-topic-messages"
+}
 EOF
 
 

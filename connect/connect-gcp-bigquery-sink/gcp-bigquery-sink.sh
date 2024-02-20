@@ -30,6 +30,9 @@ cd -
 DATASET=pg${USER}ds${GITHUB_RUN_NUMBER}${TAG}
 DATASET=${DATASET//[-._]/}
 
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
+
 log "Doing gsutil authentication"
 set +e
 docker rm -f gcloud-config
@@ -47,12 +50,8 @@ set -e
 log "Create dataset $GCP_PROJECT.$DATASET"
 docker run -i --volumes-from gcloud-config google/cloud-sdk:latest bq --project_id "$GCP_PROJECT" mk --dataset --description "used by playground" "$DATASET"
 
-
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
-
-
 log "Creating GCP BigQuery Sink connector"
-playground connector create-or-update --connector gcp-bigquery-sink << EOF
+playground connector create-or-update --connector gcp-bigquery-sink  << EOF
 {
     "connector.class": "com.wepay.kafka.connect.bigquery.BigQuerySinkConnector",
     "tasks.max" : "1",

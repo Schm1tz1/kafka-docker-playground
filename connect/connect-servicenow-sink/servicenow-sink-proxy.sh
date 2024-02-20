@@ -9,6 +9,7 @@ source ${DIR}/../../scripts/utils.sh
 function wait_for_end_of_hibernation () {
      MAX_WAIT=600
      CUR_WAIT=0
+     set +e
      log "⌛ Waiting up to $MAX_WAIT seconds for end of hibernation to happen (it can take several minutes)"
      curl -X POST "${SERVICENOW_URL}/api/now/table/incident" --user admin:"$SERVICENOW_PASSWORD" -H 'Accept: application/json' -H 'Content-Type: application/json' -H 'cache-control: no-cache' -d '{"short_description": "This is test"}' > /tmp/out.txt 2>&1
      while [[ $(cat /tmp/out.txt) =~ "Sign in to the site to wake your instance" ]]
@@ -22,6 +23,7 @@ function wait_for_end_of_hibernation () {
           fi
      done
      log "The instance is ready !"
+     set -e
 }
 
 SERVICENOW_URL=${SERVICENOW_URL:-$1}
@@ -45,54 +47,69 @@ then
      exit 1
 fi
 
-if [ ! -z "$CI" ]
+if [ ! -z "$GITHUB_RUN_NUMBER" ]
 then
      # this is github actions
      set +e
      log "Waking up servicenow instance..."
-     docker run -e USERNAME="$SERVICENOW_DEVELOPER_USERNAME" -e PASSWORD="$SERVICENOW_DEVELOPER_PASSWORD" ruthless/servicenow-instance-wakeup:latest
+     docker run -e USERNAME="$SERVICENOW_DEVELOPER_USERNAME" -e PASSWORD="$SERVICENOW_DEVELOPER_PASSWORD" vdesabou/servicenowinstancewakeup:latest
      set -e
      wait_for_end_of_hibernation
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.proxy.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.proxy.yml"
 
 log "Sending messages to topic test_table"
-docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic test_table --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"u_name","type":"string"},
-{"name":"u_price", "type": "float"}, {"name":"u_quantity", "type": "int"}]}' << EOF
-{"u_name": "scissors", "u_price": 2.75, "u_quantity": 3}
-{"u_name": "tape", "u_price": 0.99, "u_quantity": 10}
-{"u_name": "notebooks", "u_price": 1.99, "u_quantity": 5}
+playground topic produce -t test_table --nb-messages 3 << 'EOF'
+{
+  "fields": [
+    {
+      "name": "u_name",
+      "type": "string"
+    },
+    {
+      "name": "u_price",
+      "type": "float"
+    },
+    {
+      "name": "u_quantity",
+      "type": "int"
+    }
+  ],
+  "name": "myrecord",
+  "type": "record"
+}
 EOF
 
 log "Creating ServiceNow Sink connector"
-playground connector create-or-update --connector servicenow-sink << EOF
+playground connector create-or-update --connector servicenow-sink  << EOF
 {
-                    "connector.class": "io.confluent.connect.servicenow.ServiceNowSinkConnector",
-                    "topics": "test_table",
-                    "proxy.url": "nginx-proxy:8888",
-                    "servicenow.url": "$SERVICENOW_URL",
-                    "tasks.max": "1",
-                    "servicenow.table": "u_test_table",
-                    "servicenow.user": "admin",
-                    "servicenow.password": "$SERVICENOW_PASSWORD",
-                    "key.converter": "io.confluent.connect.avro.AvroConverter",
-                    "key.converter.schema.registry.url": "http://schema-registry:8081",
-                    "value.converter": "io.confluent.connect.avro.AvroConverter",
-                    "value.converter.schema.registry.url": "http://schema-registry:8081",
-                    "reporter.bootstrap.servers": "broker:9092",
-                    "reporter.error.topic.name": "test-error",
-                    "reporter.error.topic.replication.factor": 1,
-                    "reporter.error.topic.key.format": "string",
-                    "reporter.error.topic.value.format": "string",
-                    "reporter.result.topic.name": "test-result",
-                    "reporter.result.topic.key.format": "string",
-                    "reporter.result.topic.value.format": "string",
-                    "reporter.result.topic.replication.factor": 1,
-                    "confluent.license": "",
-                    "confluent.topic.bootstrap.servers": "broker:9092",
-                    "confluent.topic.replication.factor": "1"
-          }
+     "connector.class": "io.confluent.connect.servicenow.ServiceNowSinkConnector",
+     "topics": "test_table",
+     "proxy.url": "nginx-proxy:8888",
+     "servicenow.url": "$SERVICENOW_URL",
+     "tasks.max": "1",
+     "servicenow.table": "u_test_table",
+     "servicenow.user": "admin",
+     "servicenow.password": "$SERVICENOW_PASSWORD",
+     "key.converter": "io.confluent.connect.avro.AvroConverter",
+     "key.converter.schema.registry.url": "http://schema-registry:8081",
+     "value.converter": "io.confluent.connect.avro.AvroConverter",
+     "value.converter.schema.registry.url": "http://schema-registry:8081",
+     "reporter.bootstrap.servers": "broker:9092",
+     "reporter.error.topic.name": "test-error",
+     "reporter.error.topic.replication.factor": 1,
+     "reporter.error.topic.key.format": "string",
+     "reporter.error.topic.value.format": "string",
+     "reporter.result.topic.name": "test-result",
+     "reporter.result.topic.key.format": "string",
+     "reporter.result.topic.value.format": "string",
+     "reporter.result.topic.replication.factor": 1,
+     "confluent.license": "",
+     "confluent.topic.bootstrap.servers": "broker:9092",
+     "confluent.topic.replication.factor": "1"
+}
 EOF
 
 

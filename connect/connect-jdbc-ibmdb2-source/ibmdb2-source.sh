@@ -26,9 +26,9 @@ else
   profile_ksqldb_command="--profile ksqldb"
 fi
 
-docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} down -v --remove-orphans
+docker compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} down -v --remove-orphans
 log "Starting up ibmdb2 container to get db2jcc4.jar"
-docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d ibmdb2
+docker compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d ibmdb2
 
 rm -f ${DIR}/db2jcc4.jar
 log "Getting db2jcc4.jar"
@@ -50,17 +50,19 @@ fi
 done
 log "ibmdb2 DB has started!"
 
-docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d
-
-command="source ${DIR}/../../scripts/utils.sh && docker-compose -f ${DIR}/../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d"
-echo "$command" > /tmp/playground-command
+docker compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d
+set_profiles
+command="source ${DIR}/../../scripts/utils.sh && docker compose -f ${DIR}/../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d"
+playground state set run.docker_command "$command"
+playground state set run.environment "plaintext"
 log "✨ If you modify a docker-compose file and want to re-create the container(s), run cli command playground container recreate"
 
 
 ../../scripts/wait-for-connect-and-controlcenter.sh
 
 # Keep it for utils.sh
-# ${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+# PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+#playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 # sample DB is used https://www.ibm.com/docs/en/db2/11.5?topic=samples-sample-database
 log "List tables"
@@ -71,18 +73,18 @@ db2 LIST TABLES
 EOF
 
 log "Creating JDBC IBM DB2 source connector"
-playground connector create-or-update --connector ibmdb2-source << EOF
+playground connector create-or-update --connector ibmdb2-source  << EOF
 {
-               "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
-               "tasks.max": "1",
-               "connection.url":"jdbc:db2://ibmdb2:25010/sample",
-               "connection.user":"db2inst1",
-               "connection.password":"passw0rd",
-               "mode": "bulk",
-               "topic.prefix": "db2-",
-               "errors.log.enable": "true",
-               "errors.log.include.messages": "true"
-          }
+  "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
+  "tasks.max": "1",
+  "connection.url":"jdbc:db2://ibmdb2:25010/sample",
+  "connection.user":"db2inst1",
+  "connection.password":"passw0rd",
+  "mode": "bulk",
+  "topic.prefix": "db2-",
+  "errors.log.enable": "true",
+  "errors.log.include.messages": "true"
+}
 EOF
 
 

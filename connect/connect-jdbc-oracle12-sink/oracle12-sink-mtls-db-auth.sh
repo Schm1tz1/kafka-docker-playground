@@ -7,7 +7,8 @@ source ${DIR}/../../scripts/utils.sh
 create_or_get_oracle_image "linuxx64_12201_database.zip" "../../connect/connect-jdbc-oracle12-sink/ora-setup-scripts"
 
 # required to make utils.sh script being able to work, do not remove:
-# ${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+# PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+#playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 if [ ! -z "$CONNECTOR_TAG" ]
 then
@@ -23,14 +24,14 @@ if ! version_gt $JDBC_CONNECTOR_VERSION "9.9.9"; then
           logerror "ERROR: ${DIR}/ojdbc8.jar is missing. It must be downloaded manually in order to acknowledge user agreement"
           exit 1
      fi
-     docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.mtls-db-auth.yml" down -v --remove-orphans
+     docker compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.mtls-db-auth.yml" down -v --remove-orphans
      log "Starting up oracle container to get generated cert from oracle server wallet"
-     docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.mtls-db-auth.yml" up -d oracle
+     docker compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.mtls-db-auth.yml" up -d oracle
 else
      log "ojdbc jar is shipped with connector (starting with 10.0.0)"
-     docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.no-ojdbc-mtls.yml" down -v --remove-orphans
+     docker compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.no-ojdbc-mtls.yml" down -v --remove-orphans
      log "Starting up oracle container to get generated cert from oracle server wallet"
-     docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.no-ojdbc-mtls.yml" up -d oracle
+     docker compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.no-ojdbc-mtls.yml" up -d oracle
 fi
 
 
@@ -171,14 +172,16 @@ log "Sleeping 60 seconds"
 sleep 60
 
 if ! version_gt $JDBC_CONNECTOR_VERSION "9.9.9"; then
-     docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.mtls-db-auth.yml" up -d
-     command="source ${DIR}/../../scripts/utils.sh && docker-compose -f ../../environment/plaintext/docker-compose.yml -f ${PWD}/docker-compose.plaintext.mtls-db-auth.yml up -d ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d"
-     echo "$command" > /tmp/playground-command
+     docker compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.mtls-db-auth.yml" up -d
+     command="source ${DIR}/../../scripts/utils.sh && docker compose -f ../../environment/plaintext/docker-compose.yml -f ${PWD}/docker-compose.plaintext.mtls-db-auth.yml up -d ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d"
+     playground state set run.docker_command "$command"
+playground state set run.environment "plaintext"
      log "✨ If you modify a docker-compose file and want to re-create the container(s), run cli command playground container recreate"
 else
-     docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.no-ojdbc-mtls.yml" up -d
-     command="source ${DIR}/../../scripts/utils.sh && docker-compose -f ../../environment/plaintext/docker-compose.yml -f ${PWD}/docker-compose.plaintext.no-ojdbc-mtls.yml up -d ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d"
-     echo "$command" > /tmp/playground-command
+     docker compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.no-ojdbc-mtls.yml" up -d
+     command="source ${DIR}/../../scripts/utils.sh && docker compose -f ../../environment/plaintext/docker-compose.yml -f ${PWD}/docker-compose.plaintext.no-ojdbc-mtls.yml up -d ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d"
+     playground state set run.docker_command "$command"
+playground state set run.environment "plaintext"
      log "✨ If you modify a docker-compose file and want to re-create the container(s), run cli command playground container recreate"
 fi
 
@@ -188,7 +191,7 @@ sleep 10
 
 log "Creating Oracle sink connector"
 
-playground connector create-or-update --connector oracle-sink-mtls-db-auth << EOF
+playground connector create-or-update --connector oracle-sink-mtls-db-auth  << EOF
 {
   "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
   "tasks.max": "1",

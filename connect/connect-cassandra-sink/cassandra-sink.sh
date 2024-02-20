@@ -4,7 +4,8 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 
 log "Getting value for cassandra.local.datacenter (2.0.x only), see https://docs.confluent.io/kafka-connect-cassandra/current/index.html#upgrading-to-version-2-0-x"
@@ -25,7 +26,7 @@ playground topic produce -t topic1 --nb-messages 10 --forced-value '{"f1": "valu
 EOF
 
 log "Creating Cassandra Sink connector"
-playground connector create-or-update --connector cassandra-sink << EOF
+playground connector create-or-update --connector cassandra-sink  << EOF
 {
      "connector.class": "io.confluent.connect.cassandra.CassandraSinkConnector",
      "tasks.max": "1",

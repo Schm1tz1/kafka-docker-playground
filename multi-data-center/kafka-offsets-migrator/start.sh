@@ -7,7 +7,7 @@ source ${DIR}/../../scripts/utils.sh
 if [ ! -f offset_translator.py ]
 then
      log "Downloading offset_translator.py"
-     wget https://raw.githubusercontent.com/bb01100100/kafka-offsets-migrator/master/offset_translator.py
+     wget -q https://raw.githubusercontent.com/bb01100100/kafka-offsets-migrator/master/offset_translator.py
 fi
 
 ${DIR}/../../environment/mdc-plaintext/start.sh "${PWD}/docker-compose.mdc-plaintext.yml"
@@ -20,7 +20,7 @@ docker container exec -i connect-europe bash -c "kafka-console-consumer --bootst
 
 log "Replicate from Europe to US"
 docker container exec connect-us \
-playground connector create-or-update --connector replicate-europe-to-us << EOF
+playground connector create-or-update --connector replicate-europe-to-us  << EOF
 {
           "connector.class":"io.confluent.connect.replicator.ReplicatorSourceConnector",
           "key.converter": "io.confluent.connect.replicator.util.ByteArrayConverter",

@@ -4,7 +4,7 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
-
+logwarn "Using JDBC with snowflake comes with caveats, see https://github.com/vdesabou/kafka-docker-playground/blob/084a41e82b2bb4ef0f2c98e46bd68cf2a9bf780d/connect/connect-jdbc-snowflake-source/README.md?plain=1#L8C1-L8C11"
 
 PLAYGROUND_DB=PLAYGROUND_DB${TAG}
 PLAYGROUND_DB=${PLAYGROUND_DB//[-._]/}
@@ -24,7 +24,7 @@ then
      # newest versions do not work well with timestamp date, getting:
      # WARN JDBC type 2014 (TIMESTAMPIZ) not currently supported
      log "Downloading snowflake-jdbc-3.13.16.jar"
-     wget https://repo1.maven.org/maven2/net/snowflake/snowflake-jdbc/3.13.16/snowflake-jdbc-3.13.16.jar
+     wget -q https://repo1.maven.org/maven2/net/snowflake/snowflake-jdbc/3.13.16/snowflake-jdbc-3.13.16.jar
 fi
 cd -
 
@@ -60,7 +60,7 @@ docker run -u0 --rm -v $PWD:/tmp ${CP_CONNECT_IMAGE}:${CONNECT_TAG} bash -c "ope
 # Generate public key from private key. You can share your public key.
 docker run -u0 --rm -v $PWD:/tmp ${CP_CONNECT_IMAGE}:${CONNECT_TAG} bash -c "openssl rsa -in /tmp/snowflake_key.p8 -pubout -out /tmp/snowflake_key.pub -passin pass:confluent && chown -R $(id -u $USER):$(id -g $USER) /tmp/"
 
-if [ -z "$CI" ]
+if [ -z "$GITHUB_RUN_NUMBER" ]
 then
     # not running with github actions
     # workaround for issue on linux, see https://github.com/vdesabou/kafka-docker-playground/issues/851#issuecomment-821151962
@@ -129,7 +129,8 @@ USE ROLE SECURITYADMIN;
 GRANT ROLE $PLAYGROUND_CONNECTOR_ROLE TO USER $PLAYGROUND_USER;
 EOF
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Create table foo"
 docker run --rm -i -e SNOWSQL_PWD="$SNOWFLAKE_PASSWORD" -e RSA_PUBLIC_KEY="$RSA_PUBLIC_KEY" kurron/snowsql --username $SNOWFLAKE_USERNAME -a $SNOWFLAKE_ACCOUNT_NAME << EOF
@@ -144,16 +145,32 @@ insert into FOO (f1) values ('value2');
 insert into FOO (f1) values ('value3');
 EOF
 
+log "Create a view MYVIEWFORFOO"
+docker run --rm -i -e SNOWSQL_PWD="$SNOWFLAKE_PASSWORD" -e RSA_PUBLIC_KEY="$RSA_PUBLIC_KEY" kurron/snowsql --username $SNOWFLAKE_USERNAME -a $SNOWFLAKE_ACCOUNT_NAME << EOF
+USE ROLE $PLAYGROUND_CONNECTOR_ROLE;
+USE DATABASE $PLAYGROUND_DB;
+USE SCHEMA PUBLIC;
+USE WAREHOUSE $PLAYGROUND_WAREHOUSE;
+create or replace view MYVIEWFORFOO as select id,f1, convert_timezone('UTC', update_ts) as update_ts from FOO;
+EOF
+
+docker run --rm -i -e SNOWSQL_PWD="$SNOWFLAKE_PASSWORD" -e RSA_PUBLIC_KEY="$RSA_PUBLIC_KEY" kurron/snowsql --username $SNOWFLAKE_USERNAME -a $SNOWFLAKE_ACCOUNT_NAME << EOF
+USE ROLE SECURITYADMIN;
+grant select on view $PLAYGROUND_DB.PUBLIC.MYVIEWFORFOO to role $PLAYGROUND_CONNECTOR_ROLE;
+EOF
 
 # https://docs.snowflake.com/en/user-guide/jdbc-configure.html#jdbc-driver-connection-string
 CONNECTION_URL="jdbc:snowflake://$SNOWFLAKE_ACCOUNT_NAME.snowflakecomputing.com/?warehouse=$PLAYGROUND_WAREHOUSE&db=$PLAYGROUND_DB&role=$PLAYGROUND_CONNECTOR_ROLE&schema=PUBLIC&user=$PLAYGROUND_USER&private_key_file=/tmp/snowflake_key.p8&private_key_file_pwd=confluent&tracing=ALL"
+VIEW="$PLAYGROUND_DB.PUBLIC.MYVIEWFORFOO"
+
 log "Creating JDBC Snowflake Source connector"
-playground connector create-or-update --connector jdbc-snowflake-source << EOF
+playground connector create-or-update --connector jdbc-snowflake-source  << EOF
 {
      "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
      "tasks.max": "1",
      "connection.url": "$CONNECTION_URL",
-     "table.whitelist": "FOO",
+     "table.whitelist": "$VIEW",
+     "table.types": "VIEW",
      "mode": "timestamp+incrementing",
      "timestamp.column.name": "UPDATE_TS",
      "incrementing.column.name": "ID",
@@ -166,6 +183,5 @@ EOF
 
 sleep 15
 
-log "Verifying topic snowflake-FOO"
-playground topic consume --topic snowflake-FOO --min-expected-messages 3 --timeout 60
-
+log "Verifying topic snowflake-MYVIEWFORFOO"
+playground topic consume --topic snowflake-MYVIEWFORFOO --min-expected-messages 3 --timeout 60

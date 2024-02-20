@@ -10,13 +10,7 @@ verify_installed "ansible-playbook"
 
 bootstrap_ccloud_environment
 
-if [ -f /tmp/delta_configs/env.delta ]
-then
-     source /tmp/delta_configs/env.delta
-else
-     logerror "ERROR: /tmp/delta_configs/env.delta has not been generated"
-     exit 1
-fi
+
 
 # Offer to refresh images
 ret=$(docker images --format "{{.Repository}}|{{.Tag}}|{{.CreatedSince}}" | grep vdesabou/cp-ansible-playground-connect | grep "$TAG" | cut -d "|" -f 3)
@@ -88,8 +82,8 @@ sed -e "s|_BOOTSTRAP_SERVER_|$BOOTSTRAP_SERVER:9092|g" \
 # copy custom files
 cp ${DIR}/${HOSTS_FILE} ${DIR}/cp-ansible/
 
-docker-compose down -v --remove-orphans
-docker-compose up -d
+docker compose down -v --remove-orphans
+docker compose up -d
 
 cd ${DIR}/cp-ansible
 

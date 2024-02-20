@@ -28,13 +28,7 @@ check_if_continue
 
 bootstrap_ccloud_environment
 
-if [ -f /tmp/delta_configs/env.delta ]
-then
-     source /tmp/delta_configs/env.delta
-else
-     logerror "ERROR: /tmp/delta_configs/env.delta has not been generated"
-     exit 1
-fi
+
 
 create_or_get_oracle_image "LINUX.X64_193000_db_home.zip" "../../ccloud/fully-managed-connect-cdc-oracle19-source/ora-setup-scripts-cdb-table"
 
@@ -43,9 +37,9 @@ playground topic delete --topic ORCLCDB.C__MYUSER.CUSTOMERS
 playground topic delete --topic redo-log-topic
 set -e
 
-docker-compose build
-docker-compose down -v --remove-orphans
-docker-compose up -d
+docker compose build
+docker compose down -v --remove-orphans
+docker compose up -d
 
 # Verify Oracle DB has started within MAX_WAIT seconds
 MAX_WAIT=2500
@@ -146,27 +140,27 @@ docker exec -i oracle sqlplus C\#\#MYUSER/mypassword@//localhost:1521/ORCLCDB <<
      END;
      /
 
-     insert into CUSTOMERS (id, first_name, last_name, email, gender, club_status, comments) values (1, 'Rica', 'Blaisdell', 'rblaisdell0@rambler.ru', 'Female', 'bronze', 'Universal optimal hierarchy');
-     insert into CUSTOMERS (id, first_name, last_name, email, gender, club_status, comments) values (2, 'Ruthie', 'Brockherst', 'rbrockherst1@ow.ly', 'Female', 'platinum', 'Reverse-engineered tangible interface');
-     insert into CUSTOMERS (id, first_name, last_name, email, gender, club_status, comments) values (3, 'Mariejeanne', 'Cocci', 'mcocci2@techcrunch.com', 'Female', 'bronze', 'Multi-tiered bandwidth-monitored capability');
-     insert into CUSTOMERS (id, first_name, last_name, email, gender, club_status, comments) values (4, 'Hashim', 'Rumke', 'hrumke3@sohu.com', 'Male', 'platinum', 'Self-enabling 24/7 firmware');
-     insert into CUSTOMERS (id, first_name, last_name, email, gender, club_status, comments) values (5, 'Hansiain', 'Coda', 'hcoda4@senate.gov', 'Male', 'platinum', 'Centralized full-range approach');
+     insert into CUSTOMERS (first_name, last_name, email, gender, club_status, comments) values ('Rica', 'Blaisdell', 'rblaisdell0@rambler.ru', 'Female', 'bronze', 'Universal optimal hierarchy');
+     insert into CUSTOMERS (first_name, last_name, email, gender, club_status, comments) values ('Ruthie', 'Brockherst', 'rbrockherst1@ow.ly', 'Female', 'platinum', 'Reverse-engineered tangible interface');
+     insert into CUSTOMERS (first_name, last_name, email, gender, club_status, comments) values ('Mariejeanne', 'Cocci', 'mcocci2@techcrunch.com', 'Female', 'bronze', 'Multi-tiered bandwidth-monitored capability');
+     insert into CUSTOMERS (first_name, last_name, email, gender, club_status, comments) values ('Hashim', 'Rumke', 'hrumke3@sohu.com', 'Male', 'platinum', 'Self-enabling 24/7 firmware');
+     insert into CUSTOMERS (first_name, last_name, email, gender, club_status, comments) values ('Hansiain', 'Coda', 'hcoda4@senate.gov', 'Male', 'platinum', 'Centralized full-range approach');
      exit;
 EOF
 
 log "Getting ngrok hostname and port"
-NGROK_URL=$(curl --silent http://127.0.0.1:4551/api/tunnels | jq -r '.tunnels[0].public_url')
+NGROK_URL=$(curl --silent http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[0].public_url')
 NGROK_HOSTNAME=$(echo $NGROK_URL | cut -d "/" -f3 | cut -d ":" -f 1)
 NGROK_PORT=$(echo $NGROK_URL | cut -d "/" -f3 | cut -d ":" -f 2)
 
 connector_name="OracleCdcSource"
 set +e
 log "Deleting fully managed connector $connector_name, it might fail..."
-playground ccloud-connector delete --connector $connector_name
+playground connector delete --connector $connector_name
 set -e
 
 log "Creating fully managed connector"
-playground ccloud-connector create-or-update --connector $connector_name << EOF
+playground connector create-or-update --connector $connector_name << EOF
 {
      "connector.class": "OracleCdcSource",
      "name": "OracleCdcSource",
@@ -197,11 +191,46 @@ wait_for_ccloud_connector_up $connector_name 300
 log "Waiting 20s for connector to read existing data"
 sleep 20
 
-log "Running SQL scripts"
-for script in ../../ccloud/fully-managed-connect-cdc-oracle19-source/sample-sql-scripts/*.sh
-do
-     $script "ORCLCDB"
-done
+log "Insert 2 customers in CUSTOMERS table"
+docker exec -i oracle sqlplus C\#\#MYUSER/mypassword@//localhost:1521/ORCLCDB << EOF
+     insert into CUSTOMERS (first_name, last_name, email, gender, club_status, comments) values ('Frantz', 'Kafka', 'fkafka@confluent.io', 'Male', 'bronze', 'Evil is whatever distracts');
+     insert into CUSTOMERS (first_name, last_name, email, gender, club_status, comments) values ('Gregor', 'Samsa', 'gsamsa@confluent.io', 'Male', 'platinium', 'How about if I sleep a little bit longer and forget all this nonsense');
+     exit;
+EOF
+
+log "Update CUSTOMERS with email=fkafka@confluent.io"
+docker exec -i oracle sqlplus C\#\#MYUSER/mypassword@//localhost:1521/ORCLCDB << EOF
+     update CUSTOMERS set club_status = 'gold' where email = 'fkafka@confluent.io';
+     exit;
+EOF
+
+log "Deleting CUSTOMERS with email=fkafka@confluent.io"
+docker exec -i oracle sqlplus C\#\#MYUSER/mypassword@//localhost:1521/ORCLCDB << EOF
+     delete from CUSTOMERS where email = 'fkafka@confluent.io';
+     exit;
+EOF
+
+log "Altering CUSTOMERS table with an optional column"
+docker exec -i oracle sqlplus C\#\#MYUSER/mypassword@//localhost:1521/ORCLCDB << EOF
+     ALTER SESSION SET CONTAINER=CDB\$ROOT;
+     EXECUTE DBMS_LOGMNR_D.BUILD(OPTIONS=>DBMS_LOGMNR_D.STORE_IN_REDO_LOGS);
+     alter table CUSTOMERS add (
+          country VARCHAR(50)
+     );
+     ALTER SESSION SET CONTAINER=CDB\$ROOT;
+     EXECUTE DBMS_LOGMNR_D.BUILD(OPTIONS=>DBMS_LOGMNR_D.STORE_IN_REDO_LOGS);
+     exit;
+EOF
+
+log "Populating CUSTOMERS table after altering the structure"
+docker exec -i oracle sqlplus C\#\#MYUSER/mypassword@//localhost:1521/ORCLCDB << EOF
+     insert into CUSTOMERS (first_name, last_name, email, gender, club_status, comments, country) values ('Josef', 'K', 'jk@confluent.io', 'Male', 'bronze', 'How is it even possible for someone to be guilty', 'Poland');
+     update CUSTOMERS set club_status = 'silver' where email = 'gsamsa@confluent.io';
+     update CUSTOMERS set club_status = 'gold' where email = 'gsamsa@confluent.io';
+     update CUSTOMERS set club_status = 'gold' where email = 'jk@confluent.io';
+     commit;
+     exit;
+EOF
 
 log "Waiting 20s for connector to read new data"
 sleep 20
@@ -209,13 +238,13 @@ sleep 20
 log "Verifying topic ORCLCDB.C__MYUSER.CUSTOMERS: there should be 13 records"
 playground topic consume --topic ORCLCDB.C__MYUSER.CUSTOMERS --min-expected-messages 13 --timeout 60
 
-log "Verifying topic redo-log-topic: there should be 15 records"
-playground topic consume --topic redo-log-topic --min-expected-messages 15 --timeout 60
+log "Verifying topic redo-log-topic: there should be 14 records"
+playground topic consume --topic redo-log-topic --min-expected-messages 14 --timeout 60
 
-log "🚚 If you're planning to inject more data, have a look at https://github.com/vdesabou/kafka-docker-playground/blob/master/connect/connect-cdc-oracle19-source/README.md#note-on-redologrowfetchsize"
+
 
 
 log "Do you want to delete the fully managed connector $connector_name ?"
 check_if_continue
 
-playground ccloud-connector delete --connector $connector_name
+playground connector delete --connector $connector_name

@@ -13,13 +13,13 @@ fi
 # make sure control-center is not disabled
 export ENABLE_CONTROL_CENTER=true
 
-${DIR}/../../ccloud/environment/start.sh "${PWD}/docker-compose-executable-onprem-to-cloud.yml" -a -b
+playground start-environment --environment ccloud --docker-compose-override-file "${PWD}/docker-compose-executable-onprem-to-cloud.yml" "-a -b"
 
-if [ -f /tmp/delta_configs/env.delta ]
+if [ -f ${DIR}/../../.ccloud/env.delta ]
 then
-     source /tmp/delta_configs/env.delta
+     source ${DIR}/../../.ccloud/env.delta
 else
-     logerror "ERROR: /tmp/delta_configs/env.delta has not been generated"
+     logerror "ERROR: ${DIR}/../../.ccloud/env.delta has not been generated"
      exit 1
 fi
 
@@ -52,18 +52,36 @@ curl -X DELETE -u $SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO $SCHEMA_REGISTRY_URL/sub
 set -e
 
 log "Sending messages to topic executable-products-avro on source OnPREM cluster"
-docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic executable-products-avro --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"name","type":"string"},
-{"name":"price", "type": "float"}, {"name":"quantity", "type": "int"}]}' << EOF
-{"name": "scissors", "price": 2.75, "quantity": 3}
-{"name": "tape", "price": 0.99, "quantity": 10}
-{"name": "notebooks", "price": 1.99, "quantity": 5}
+playground topic produce -t executable-products-avro --nb-messages 3 << 'EOF'
+{
+  "fields": [
+    {
+      "name": "id",
+      "type": "int"
+    },
+    {
+      "name": "product",
+      "type": "string"
+    },
+    {
+      "name": "quantity",
+      "type": "int"
+    },
+    {
+      "name": "price",
+      "type": "float"
+    }
+  ],
+  "name": "myrecord",
+  "type": "record"
+}
 EOF
 
 log "Starting replicator executable"
-docker-compose -f ../../ccloud/environment/docker-compose.yml -f ${PWD}/docker-compose-executable-onprem-to-cloud.yml -f docker-compose-executable-onprem-to-cloud-avro-replicator.yml up -d
+docker compose -f ../../ccloud/environment/docker-compose.yml -f ${PWD}/docker-compose-executable-onprem-to-cloud.yml -f docker-compose-executable-onprem-to-cloud-avro-replicator.yml up -d
 ../../scripts/wait-for-connect-and-controlcenter.sh replicator $@
 
 sleep 50
-log "Verify we have received the data in executable-products-avro topic"
-timeout 60 docker container exec -e BOOTSTRAP_SERVERS="$BOOTSTRAP_SERVERS" -e SASL_JAAS_CONFIG="$SASL_JAAS_CONFIG" -e SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO="$SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO" -e SCHEMA_REGISTRY_URL="$SCHEMA_REGISTRY_URL" connect bash -c 'kafka-avro-console-consumer --topic executable-products-avro --bootstrap-server $BOOTSTRAP_SERVERS --consumer-property ssl.endpoint.identification.algorithm=https --consumer-property sasl.mechanism=PLAIN --consumer-property security.protocol=SASL_SSL --consumer-property sasl.jaas.config="$SASL_JAAS_CONFIG" --property basic.auth.credentials.source=USER_INFO --property schema.registry.basic.auth.user.info="$SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO" --property schema.registry.url=$SCHEMA_REGISTRY_URL --from-beginning --max-messages 3'
 
+log "Verify we have received the data in executable-products-avro topic"
+playground topic consume --topic executable-products-avro --min-expected-messages 3 --timeout 60

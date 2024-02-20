@@ -30,22 +30,16 @@ check_if_continue
 
 bootstrap_ccloud_environment
 
-if [ -f /tmp/delta_configs/env.delta ]
-then
-     source /tmp/delta_configs/env.delta
-else
-     logerror "ERROR: /tmp/delta_configs/env.delta has not been generated"
-     exit 1
-fi
 
-docker-compose build
-docker-compose down -v --remove-orphans
-docker-compose up -d
+
+docker compose build
+docker compose down -v --remove-orphans
+docker compose up -d
 
 sleep 5
 
 log "Getting ngrok hostname and port"
-NGROK_URL=$(curl --silent http://127.0.0.1:4551/api/tunnels | jq -r '.tunnels[0].public_url')
+NGROK_URL=$(curl --silent http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[0].public_url')
 NGROK_HOSTNAME=$(echo $NGROK_URL | cut -d "/" -f3 | cut -d ":" -f 1)
 NGROK_PORT=$(echo $NGROK_URL | cut -d "/" -f3 | cut -d ":" -f 2)
 
@@ -57,11 +51,11 @@ docker exec rabbitmq_producer bash -c "python /producer.py myqueue 5"
 connector_name="RabbitMQSource"
 set +e
 log "Deleting fully managed connector $connector_name, it might fail..."
-playground ccloud-connector delete --connector $connector_name
+playground connector delete --connector $connector_name
 set -e
 
 log "Creating fully managed connector"
-playground ccloud-connector create-or-update --connector $connector_name << EOF
+playground connector create-or-update --connector $connector_name << EOF
 {
      "connector.class": "RabbitMQSource",
      "name": "RabbitMQSource",
@@ -91,4 +85,4 @@ playground topic consume --topic rabbitmq --min-expected-messages 5 --timeout 60
 log "Do you want to delete the fully managed connector $connector_name ?"
 check_if_continue
 
-playground ccloud-connector delete --connector $connector_name
+playground connector delete --connector $connector_name

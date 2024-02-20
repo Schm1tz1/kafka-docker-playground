@@ -10,35 +10,36 @@ then
     exit 111
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 # Note in this simple example, if you get into an issue with permissions at the local HDFS level, it may be easiest to unlock the permissions unless you want to debug that more.
 docker exec namenode bash -c "/opt/hadoop-2.7.4/bin/hdfs dfs -chmod 777  /"
 
 log "Creating HDFS Sink connector"
-playground connector create-or-update --connector hdfs-sink << EOF
+playground connector create-or-update --connector hdfs-sink  << EOF
 {
-               "connector.class":"io.confluent.connect.hdfs.HdfsSinkConnector",
-               "tasks.max":"1",
-               "topics":"test_hdfs",
-               "store.url":"hdfs://namenode:8020",
-               "flush.size":"3",
-               "hadoop.conf.dir":"/etc/hadoop/",
-               "partitioner.class":"io.confluent.connect.hdfs.partitioner.FieldPartitioner",
-               "partition.field.name":"f1",
-               "rotate.interval.ms":"120000",
-               "logs.dir":"/tmp",
-               "hive.integration": "true",
-               "hive.metastore.uris": "thrift://hive-metastore:9083",
-               "hive.database": "testhive",
-               "confluent.license": "",
-               "confluent.topic.bootstrap.servers": "broker:9092",
-               "confluent.topic.replication.factor": "1",
-               "key.converter":"org.apache.kafka.connect.storage.StringConverter",
-               "value.converter":"io.confluent.connect.avro.AvroConverter",
-               "value.converter.schema.registry.url":"http://schema-registry:8081",
-               "schema.compatibility":"BACKWARD"
-          }
+  "connector.class":"io.confluent.connect.hdfs.HdfsSinkConnector",
+  "tasks.max":"1",
+  "topics":"test_hdfs",
+  "store.url":"hdfs://namenode:8020",
+  "flush.size":"3",
+  "hadoop.conf.dir":"/etc/hadoop/",
+  "partitioner.class":"io.confluent.connect.hdfs.partitioner.FieldPartitioner",
+  "partition.field.name":"f1",
+  "rotate.interval.ms":"120000",
+  "logs.dir":"/tmp",
+  "hive.integration": "true",
+  "hive.metastore.uris": "thrift://hive-metastore:9083",
+  "hive.database": "testhive",
+  "confluent.license": "",
+  "confluent.topic.bootstrap.servers": "broker:9092",
+  "confluent.topic.replication.factor": "1",
+  "key.converter":"org.apache.kafka.connect.storage.StringConverter",
+  "value.converter":"io.confluent.connect.avro.AvroConverter",
+  "value.converter.schema.registry.url":"http://schema-registry:8081",
+  "schema.compatibility":"BACKWARD"
+}
 EOF
 
 
@@ -79,7 +80,7 @@ cat /tmp/result.log
 grep "value1" /tmp/result.log
 
 log "Creating HDFS Source connector"
-playground connector create-or-update --connector hdfs2-source << EOF
+playground connector create-or-update --connector hdfs2-source  << EOF
 {
           "connector.class":"io.confluent.connect.hdfs2.Hdfs2SourceConnector",
           "tasks.max":"1",

@@ -34,7 +34,8 @@ then
      cd ${OLDDIR}
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 
 log "Sending EMS messages m1 m2 m3 m4 m5 in queue connector-quickstart"
@@ -49,7 +50,7 @@ java tibjmsMsgProducer -user admin -queue connector-quickstart m1 m2 m3 m4 m5'
 
 
 log "Creating TIBCO EMS source connector"
-playground connector create-or-update --connector tibco-ems-source << EOF
+playground connector create-or-update --connector tibco-ems-source  << EOF
 {
                "connector.class": "io.confluent.connect.tibco.TibcoSourceConnector",
                     "tasks.max": "1",

@@ -83,7 +83,8 @@ sed -e "s|:AZURE_COSMOSDB_DB_ENDPOINT_URI:|$AZURE_COSMOSDB_DB_ENDPOINT_URI|g" \
     -e "s|:TOPIC_MAP:|$TOPIC_MAP|g" \
     ../../connect/connect-azure-cosmosdb-sink/data.template > ../../connect/connect-azure-cosmosdb-sink/data
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Write data to topic hotels"
 playground topic produce -t hotels --nb-messages 3 << 'EOF'
@@ -95,7 +96,7 @@ EOF
 
 # https://github.com/microsoft/kafka-connect-cosmosdb/blob/dev/doc/README_Sink.md
 log "Creating Azure Cosmos DB Sink connector"
-playground connector create-or-update --connector azure-cosmosdb-sink << EOF
+playground connector create-or-update --connector azure-cosmosdb-sink  << EOF
 {
     "connector.class": "com.azure.cosmos.kafka.connect.sink.CosmosDBSinkConnector",
     "tasks.max": "1",
@@ -122,6 +123,7 @@ grep "HolidayInn" /tmp/result.log
 grep "Motel8" /tmp/result.log
 
 log "Delete Cosmos DB instance"
+check_if_continue
 az cosmosdb delete -g $AZURE_RESOURCE_GROUP -n $AZURE_COSMOSDB_SERVER_NAME --yes
 
 log "Deleting resource group"

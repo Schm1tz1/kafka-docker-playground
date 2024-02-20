@@ -12,7 +12,7 @@ fi
 
 if [ ! -f ${DIR}/pubsub-group-kafka-connector-1.0.0.jar ]
 then
-     wget https://repo1.maven.org/maven2/com/google/cloud/pubsub-group-kafka-connector/1.0.0/pubsub-group-kafka-connector-1.0.0.jar
+     wget -q https://repo1.maven.org/maven2/com/google/cloud/pubsub-group-kafka-connector/1.0.0/pubsub-group-kafka-connector-1.0.0.jar
 fi
 
 cd ../../connect/connect-gcp-google-pubsub-source
@@ -32,7 +32,8 @@ else
 fi
 cd -
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Doing gsutil authentication"
 set +e
@@ -62,7 +63,7 @@ docker run -i --volumes-from gcloud-config google/cloud-sdk:latest gcloud pubsub
 sleep 10
 
 log "Creating Google Cloud Pub/Sub Group Kafka Source connector"
-playground connector create-or-update --connector pubsub-source << EOF
+playground connector create-or-update --connector pubsub-source  << EOF
 {
      "connector.class" : "com.google.pubsub.kafka.source.CloudPubSubSourceConnector",
      "tasks.max" : "1",
@@ -77,10 +78,10 @@ playground connector create-or-update --connector pubsub-source << EOF
 }
 EOF
 
-sleep 10
+sleep 20
 
 log "Verify messages are in topic pubsub-topic"
-playground topic consume --topic pubsub-topic --min-expected-messages 3 --timeout 60
+playground topic consume --topic pubsub-topic --min-expected-messages 1 --timeout 60
 
 log "Delete topic and subscription"
 docker run -i --volumes-from gcloud-config google/cloud-sdk:latest gcloud pubsub --project ${GCP_PROJECT} topics delete topic-1

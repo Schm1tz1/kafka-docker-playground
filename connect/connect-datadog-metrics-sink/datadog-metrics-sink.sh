@@ -30,7 +30,8 @@ then
      cd ${OLDDIR}
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Sending messages to topic datadog-metrics-topic"
 TIMESTAMP=`date +%s`
@@ -90,7 +91,7 @@ playground topic produce -t datadog-metrics-topic --nb-messages 1 --forced-value
 EOF
 
 log "Creating Datadog metrics sink connector"
-playground connector create-or-update --connector datadog-metrics-sink << EOF
+playground connector create-or-update --connector datadog-metrics-sink  << EOF
 {
      "connector.class": "io.confluent.connect.datadog.metrics.DatadogMetricsSinkConnector",
      "tasks.max": "1",

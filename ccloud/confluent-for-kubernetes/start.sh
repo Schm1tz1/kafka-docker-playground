@@ -7,13 +7,7 @@ source ${DIR}/../../scripts/utils.sh
 
 bootstrap_ccloud_environment
 
-if [ -f /tmp/delta_configs/env.delta ]
-then
-     source /tmp/delta_configs/env.delta
-else
-     logerror "ERROR: /tmp/delta_configs/env.delta has not been generated"
-     exit 1
-fi
+
 
 verify_docker_and_memory
 verify_installed "kubectl"

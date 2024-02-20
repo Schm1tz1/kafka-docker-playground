@@ -6,14 +6,15 @@ source ${DIR}/../../scripts/utils.sh
 
 cd ${DIR}/security
 log "🔐 Generate keys and certificates used for SSL using rmohr/activemq:5.15.9 image"
-docker run -u0 --rm -v $PWD:/tmp rmohr/activemq:5.15.9 bash -c "/tmp/certs-create.sh && chown -R $(id -u $USER):$(id -g $USER) /tmp/"
+docker run -u0 --rm -v $PWD:/tmp rmohr/activemq:5.15.9 bash -c "/tmp/certs-create.sh > /dev/null 2>&1 && chown -R $(id -u $USER):$(id -g $USER) /tmp/"
 cd ${DIR}
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.mtls.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.mtls.yml"
 
 
 log "Creating ActiveMQ source connector"
-playground connector create-or-update --connector active-mq-source-mtls << EOF
+playground connector create-or-update --connector active-mq-source-mtls  << EOF
 {
      "connector.class": "io.confluent.connect.activemq.ActiveMQSourceConnector",
      "kafka.topic": "MyKafkaTopicName",

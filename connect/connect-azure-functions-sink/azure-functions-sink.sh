@@ -43,20 +43,30 @@ az storage account create \
     --location $AZURE_REGION \
     --sku Standard_LRS
 
-rm -rf $PWD/LocalFunctionProj
+if [[ "$OSTYPE" == "darwin"* ]]
+then
+    # workaround for issue on linux, see https://github.com/vdesabou/kafka-docker-playground/issues/851#issuecomment-821151962
+    rm -rf $PWD/LocalFunctionProj
+else
+    # on CI, docker is run as runneradmin user, need to use sudo
+    ls -lrt
+    sudo rm -rf $PWD/LocalFunctionProj
+    ls -lrt
+fi
+
 log "Creating local functions project with HTTP trigger"
 # https://docs.microsoft.com/en-us/azure/azure-functions/functions-create-first-azure-function-azure-cli?pivots=programming-language-javascript&tabs=bash%2Cbrowser
-docker run -v $PWD/LocalFunctionProj:/LocalFunctionProj mcr.microsoft.com/azure-functions/node:3.0-node12-core-tools bash -c "func init LocalFunctionProj --javascript && cd LocalFunctionProj && func new --name HttpExample --template \"HTTP trigger\" --authlevel \"anonymous\""
+docker run -v $PWD/LocalFunctionProj:/LocalFunctionProj mcr.microsoft.com/azure-functions/node:4-node14-core-tools bash -c "func init LocalFunctionProj --javascript && cd LocalFunctionProj && func new --name HttpExample --template \"HTTP trigger\" --authlevel \"anonymous\""
 
 log "Creating functions app $AZURE_FUNCTIONS_NAME"
-az functionapp create --consumption-plan-location $AZURE_REGION --name $AZURE_FUNCTIONS_NAME --resource-group $AZURE_RESOURCE_GROUP --runtime node --storage-account $AZURE_STORAGE_NAME --runtime-version 14 --functions-version 3 --tags owner_email=$AZ_USER
+az functionapp create --consumption-plan-location $AZURE_REGION --name $AZURE_FUNCTIONS_NAME --resource-group $AZURE_RESOURCE_GROUP --runtime node --storage-account $AZURE_STORAGE_NAME --runtime-version 16 --functions-version 4 --tags owner_email=$AZ_USER --disable-app-insights true
 
 log "Publishing functions app, it will take a while"
 max_attempts="10"
 sleep_interval="60"
 attempt_num=1
 
-until docker run -v $PWD/LocalFunctionProj:/LocalFunctionProj mcr.microsoft.com/azure-functions/node:3.0-node12-core-tools bash -c "az login -u \"$AZ_USER\" -p \"$AZ_PASS\" && cd LocalFunctionProj && func azure functionapp publish \"$AZURE_FUNCTIONS_NAME\""
+until docker run -v $PWD/LocalFunctionProj:/LocalFunctionProj mcr.microsoft.com/azure-functions/node:4-node14-core-tools bash -c "az login -u \"$AZ_USER\" -p \"$AZ_PASS\" > /dev/null 2>&1 && cd LocalFunctionProj && func azure functionapp publish \"$AZURE_FUNCTIONS_NAME\""
 do
     if (( attempt_num == max_attempts ))
     then
@@ -70,12 +80,13 @@ do
 done
 
 
-output=$(docker run -v $PWD/LocalFunctionProj:/LocalFunctionProj mcr.microsoft.com/azure-functions/node:3.0-node12-core-tools bash -c "az login -u \"$AZ_USER\" -p \"$AZ_PASS\" > /dev/null && cd LocalFunctionProj && func azure functionapp list-functions $AZURE_FUNCTIONS_NAME --show-keys")
+output=$(docker run -v $PWD/LocalFunctionProj:/LocalFunctionProj mcr.microsoft.com/azure-functions/node:4-node14-core-tools bash -c "az login -u \"$AZ_USER\" -p \"$AZ_PASS\" > /dev/null 2>&1 && cd LocalFunctionProj && func azure functionapp list-functions $AZURE_FUNCTIONS_NAME --show-keys")
 FUNCTIONS_URL=$(echo $output | grep -Eo 'https://[^ >]+'|head -1)
 
 log "Functions URL is $FUNCTIONS_URL"
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Sending messages to topic functions-test"
 playground topic produce -t functions-test --nb-messages 3 --key "key1" << 'EOF'
@@ -83,7 +94,7 @@ value%g
 EOF
 
 log "Creating Azure Functions Sink connector"
-playground connector create-or-update --connector azure-functions-sink << EOF
+playground connector create-or-update --connector azure-functions-sink  << EOF
 {
     "connector.class": "io.confluent.connect.azure.functions.AzureFunctionsSinkConnector",
     "tasks.max": "1",
@@ -114,4 +125,5 @@ log "Confirm that the messages were delivered to the result topic in Kafka"
 playground topic consume --topic test-result --min-expected-messages 3 --timeout 60
 
 log "Deleting resource group"
+check_if_continue
 az group delete --name $AZURE_RESOURCE_GROUP --yes --no-wait

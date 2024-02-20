@@ -12,13 +12,7 @@ verify_installed "helm"
 
 bootstrap_ccloud_environment
 
-if [ -f /tmp/delta_configs/env.delta ]
-then
-     source /tmp/delta_configs/env.delta
-else
-     logerror "ERROR: /tmp/delta_configs/env.delta has not been generated"
-     exit 1
-fi
+
 
 # https://github.com/confluentinc/cp-helm-charts#appendix-create-a-local-kubernetes-cluster
 set +e

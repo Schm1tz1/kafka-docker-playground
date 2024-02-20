@@ -8,11 +8,12 @@ cd ../../connect/connect-jdbc-sap-hana-source
 if [ ! -f ${PWD}/ngdbc-2.12.9.jar ]
 then
      log "Downloading ngdbc-2.12.9.jar "
-     wget https://repo1.maven.org/maven2/com/sap/cloud/db/jdbc/ngdbc/2.12.9/ngdbc-2.12.9.jar
+     wget -q https://repo1.maven.org/maven2/com/sap/cloud/db/jdbc/ngdbc/2.12.9/ngdbc-2.12.9.jar
 fi
 cd -
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 
 # Verify SAP HANA has started within MAX_WAIT seconds
@@ -39,7 +40,7 @@ EOF
 cat /tmp/result.log
 
 log "Creating SAP HANA JDBC Source connector"
-playground connector create-or-update --connector jdbc-sap-hana-source << EOF
+playground connector create-or-update --connector jdbc-sap-hana-source  << EOF
 {
                "tasks.max": "1",
                "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",

@@ -20,10 +20,11 @@ if [ ! -f ${DIR}/singlestore-jdbc-client-1.0.1.jar ]
 then
      # install deps
      log "Getting singlestore-jdbc-client-1.0.1.jar"
-     wget https://repo.maven.apache.org/maven2/com/singlestore/singlestore-jdbc-client/1.0.1/singlestore-jdbc-client-1.0.1.jar
+     wget -q https://repo.maven.apache.org/maven2/com/singlestore/singlestore-jdbc-client/1.0.1/singlestore-jdbc-client-1.0.1.jar
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Starting singlestore cluster"
 docker start singlestore
@@ -48,7 +49,7 @@ playground topic produce -t mytable --nb-messages 3 --forced-value '{"f1":"value
 EOF
 
 log "Creating Singlestore sink connector"
-playground connector create-or-update --connector singlestore-sink << EOF
+playground connector create-or-update --connector singlestore-sink  << EOF
 {
   "connector.class":"com.singlestore.kafka.SingleStoreSinkConnector",
   "tasks.max":"1",

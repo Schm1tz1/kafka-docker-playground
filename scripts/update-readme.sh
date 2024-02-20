@@ -105,7 +105,7 @@ do
     if [[ "$test" == "connect"* ]]
     then
       # if it is a connector test, get connector_path
-      docker_compose_file=$(grep "environment" "$script" | grep DIR | grep start.sh | cut -d "/" -f 7 | cut -d '"' -f 1 | head -n1)
+      docker_compose_file=$(grep "start-environment" "$script" |  awk '{print $6}' | cut -d "/" -f 2 | cut -d '"' -f 1 | tail -n1 | xargs)
       if [ "${docker_compose_file}" != "" ] && [ -f "${test}/${docker_compose_file}" ]
       then
         connector_path=$(grep "CONNECT_PLUGIN_PATH" "${test}/${docker_compose_file}" | grep -v KSQL_CONNECT_PLUGIN_PATH | cut -d "/" -f 5)
@@ -158,7 +158,7 @@ do
         
         if [ ! -f /tmp/${gh_run_id}_1.json ]
         then
-          for i in {1..10}; do
+          for i in {1..20}; do
             curl -s -u vdesabou:$GH_TOKEN -H "Accept: application/vnd.github.v3+json" \
             -o "/tmp/${gh_run_id}_${i}.json" \
             "https://api.github.com/repos/vdesabou/kafka-docker-playground/actions/runs/${gh_run_id}/jobs?per_page=100&page=${i}"
@@ -166,7 +166,7 @@ do
         fi
         
         v=$(echo $image_version | sed -e 's/\./[.]/g')
-        for i in {1..10}; do
+        for i in {1..20}; do
           html_url=$(cat "/tmp/${gh_run_id}_${i}.json" | jq ".jobs |= map(select(.name | test(\"${v}.*${test}\")))" | jq '[.jobs | .[] | {name: .name, html_url: .html_url }]' | jq '.[0].html_url' | sed -e 's/^"//' -e 's/"$//')
           if [ "$html_url" != "" ] && [ "$html_url" != "null" ]; then 
               break

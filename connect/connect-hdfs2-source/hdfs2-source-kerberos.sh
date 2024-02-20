@@ -10,12 +10,28 @@ then
     exit 111
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.kerberos.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.kerberos.yml"
 
-sleep 30
+sleep 20
 
 # Note in this simple example, if you get into an issue with permissions at the local HDFS level, it may be easiest to unlock the permissions unless you want to debug that more.
+set +e
 docker exec hadoop bash -c "echo password | kinit && /usr/local/hadoop/bin/hdfs dfs -chmod 777  /"
+if [ $? -ne 0 ]
+then
+  playground container restart --container hadoop
+
+  sleep 20
+
+  docker exec hadoop bash -c "echo password | kinit && /usr/local/hadoop/bin/hdfs dfs -chmod 777  /"
+  if [ $? -ne 0 ]
+  then
+    logerror "failed to start hadoop !"
+    exit 1
+  fi
+fi
+set -e
 
 log "Add connect kerberos principal"
 docker exec -i kdc kadmin.local << EOF
@@ -36,30 +52,30 @@ then
 fi
 
 log "Creating HDFS Sink connector"
-playground connector create-or-update --connector hdfs-sink-kerberos << EOF
+playground connector create-or-update --connector hdfs-sink-kerberos  << EOF
 {
-               "connector.class":"io.confluent.connect.hdfs.HdfsSinkConnector",
-               "tasks.max":"1",
-               "topics":"test_hdfs",
-               "store.url":"hdfs://hadoop.kerberos.local:9000",
-               "flush.size":"3",
-               "hadoop.conf.dir":"/etc/hadoop/",
-               "partitioner.class":"io.confluent.connect.hdfs.partitioner.FieldPartitioner",
-               "partition.field.name":"f1",
-               "rotate.interval.ms":"120000",
-               "logs.dir":"/logs",
-               "hdfs.authentication.kerberos": "true",
-               "connect.hdfs.principal": "connect/connect.kerberos.local@EXAMPLE.COM",
-               "connect.hdfs.keytab": "/tmp/connect.keytab",
-               "hdfs.namenode.principal": "nn/hadoop.kerberos.local@EXAMPLE.COM",
-               "confluent.license": "",
-               "confluent.topic.bootstrap.servers": "broker:9092",
-               "confluent.topic.replication.factor": "1",
-               "key.converter":"org.apache.kafka.connect.storage.StringConverter",
-               "value.converter":"io.confluent.connect.avro.AvroConverter",
-               "value.converter.schema.registry.url":"http://schema-registry:8081",
-               "schema.compatibility":"BACKWARD"
-          }
+  "connector.class":"io.confluent.connect.hdfs.HdfsSinkConnector",
+  "tasks.max":"1",
+  "topics":"test_hdfs",
+  "store.url":"hdfs://hadoop.kerberos.local:9000",
+  "flush.size":"3",
+  "hadoop.conf.dir":"/etc/hadoop/",
+  "partitioner.class":"io.confluent.connect.hdfs.partitioner.FieldPartitioner",
+  "partition.field.name":"f1",
+  "rotate.interval.ms":"120000",
+  "logs.dir":"/logs",
+  "hdfs.authentication.kerberos": "true",
+  "connect.hdfs.principal": "connect/connect.kerberos.local@EXAMPLE.COM",
+  "connect.hdfs.keytab": "/tmp/connect.keytab",
+  "hdfs.namenode.principal": "nn/hadoop.kerberos.local@EXAMPLE.COM",
+  "confluent.license": "",
+  "confluent.topic.bootstrap.servers": "broker:9092",
+  "confluent.topic.replication.factor": "1",
+  "key.converter":"org.apache.kafka.connect.storage.StringConverter",
+  "value.converter":"io.confluent.connect.avro.AvroConverter",
+  "value.converter.schema.registry.url":"http://schema-registry:8081",
+  "schema.compatibility":"BACKWARD"
+}
 EOF
 
 log "Sending messages to topic test_hdfs"
@@ -91,7 +107,7 @@ docker run --rm -v /tmp:/tmp vdesabou/avro-tools tojson /tmp/test_hdfs+0+0000000
 # docker exec connect kinit -kt /tmp/connect.keytab connect/connect.kerberos.local
 
 log "Creating HDFS Source connector"
-playground connector create-or-update --connector hdfs2-source-kerberos << EOF
+playground connector create-or-update --connector hdfs2-source-kerberos  << EOF
 {
           "connector.class":"io.confluent.connect.hdfs2.Hdfs2SourceConnector",
           "tasks.max":"1",

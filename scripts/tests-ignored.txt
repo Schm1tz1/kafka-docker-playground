@@ -11,3 +11,18 @@ cdc-oracle21-pdb-table-mtls-db-auth.sh
 start-ldaps.sh
 update_run.sh
 get_logminer_memory_stats.sh
+# filepulse always getting issue with buckets
+s3-csv.sh
+s3-json.sh
+
+# failing too often due to https://github.com/Knappek/docker-hadoop-secure#unable-to-obtain-kerberos-password
+hdfs2-sink-kerberos.sh
+hdfs2-source-kerberos.sh
+# getting same issue as https://github.com/confluentinc/kafka-connect-jdbc/issues/1140
+redshift-jdbc-sink.sh
+
+snowflake-sink-snowpipe-streaming.sh
+
+# no need to test in CI
+azure-cognitive-search-sink-proxy.sh
+s3-sink-with-short-lived-creds.sh

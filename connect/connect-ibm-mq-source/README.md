@@ -10,7 +10,7 @@ Using IBM MQ Docker [image](https://hub.docker.com/r/ibmcom/mq/)
 
 N.B: if you're a Confluent employee, please check this [link](https://confluent.slack.com/archives/C0116NM415F/p1636391410032900).
 
-Download [IBM-MQ-Install-Java-All.jar](https://ibm.biz/mq92javaclient) (for example `9.2.0.3-IBM-MQ-Install-Java-All.jar`) and place it in `./IBM-MQ-Install-Java-All.jar`
+Download [IBM-MQ-Install-Java-All.jar](https://ibm.biz/mq92javaclient) (for example `9.3.4.0-IBM-MQ-Install-Java-All.jar`) and place it in `./IBM-MQ-Install-Java-All.jar`
 
 ![IBM download page](Screenshot1.png)
 
@@ -19,19 +19,19 @@ Download [IBM-MQ-Install-Java-All.jar](https://ibm.biz/mq92javaclient) (for exam
 Without SSL:
 
 ```
-$ playground run -f ibm-mq<tab>
+$ playground run -f ibm-mq<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path>
 ```
 
 with SSL encryption:
 
 ```
-$ playground run -f ibm-mq-ssl<tab>
+$ playground run -f ibm-mq-ssl<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path>
 ```
 
 with SSL encryption + Mutual TLS authentication:
 
 ```
-$ playground run -f ibm-mq-mtls<tab>
+$ playground run -f ibm-mq-mtls<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path>
 ```
 
 ## Details of what the script is doing

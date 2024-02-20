@@ -23,13 +23,7 @@ done
 
 bootstrap_ccloud_environment
 
-if [ -f /tmp/delta_configs/env.delta ]
-then
-     source /tmp/delta_configs/env.delta
-else
-     logerror "ERROR: /tmp/delta_configs/env.delta has not been generated"
-     exit 1
-fi
+
 
 if [ ! -z "$AZ_USER" ] && [ ! -z "$AZ_PASS" ]
 then
@@ -80,18 +74,18 @@ AZURE_EVENT_CONNECTION_STRING=$(az eventhubs namespace authorization-rule keys l
     --namespace-name $AZURE_EVENT_HUBS_NAMESPACE \
     --name "RootManageSharedAccessKey" | jq -r '.primaryConnectionString')
     
-docker-compose build
-docker-compose down -v --remove-orphans
-docker-compose up -d
+docker compose build
+docker compose down -v --remove-orphans
+docker compose up -d
 
 connector_name="AzureEventHubsSource"
 set +e
 log "Deleting fully managed connector $connector_name, it might fail..."
-playground ccloud-connector delete --connector $connector_name
+playground connector delete --connector $connector_name
 set -e
 
 log "Creating fully managed connector"
-playground ccloud-connector create-or-update --connector $connector_name << EOF
+playground connector create-or-update --connector $connector_name << EOF
 {
     "connector.class": "AzureEventHubsSource",
     "name": "AzureEventHubsSource",
@@ -124,7 +118,8 @@ playground topic consume --topic event_hub_topic --min-expected-messages 2 --tim
 log "Do you want to delete the fully managed connector $connector_name ?"
 check_if_continue
 
-playground ccloud-connector delete --connector $connector_name
+playground connector delete --connector $connector_name
 
 log "Deleting resource group"
+check_if_continue
 az group delete --name $AZURE_RESOURCE_GROUP --yes --no-wait

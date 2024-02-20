@@ -30,7 +30,8 @@ else
      log "🛑 SQL_DATAGEN is not set"
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Create table"
 docker exec -i mysql mysql --user=root --password=password --database=mydb << EOF
@@ -75,7 +76,7 @@ INSERT INTO team (
 EOF
 
 log "Creating Debezium MySQL source connector"
-playground connector create-or-update --connector debezium-mysql-source << EOF
+playground connector create-or-update --connector debezium-mysql-source  << EOF
 {
   "connector.class": "io.debezium.connector.mysql.MySqlConnector",
   "tasks.max": "1",

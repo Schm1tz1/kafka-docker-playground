@@ -9,7 +9,7 @@ cd ../../connect/connect-databricks-delta-lake-sink
 if [ ! -f ${DIR}/SparkJDBC42.jar ]
 then
      log "Getting SparkJDBC42.jar"
-     wget https://databricks-bi-artifacts.s3.us-east-2.amazonaws.com/simbaspark-drivers/jdbc/2.6.22/SimbaSparkJDBC42-2.6.22.1040.zip
+     wget -q https://databricks-bi-artifacts.s3.us-east-2.amazonaws.com/simbaspark-drivers/jdbc/2.6.22/SimbaSparkJDBC42-2.6.22.1040.zip
      unzip SimbaSparkJDBC42-2.6.22.1040.zip
      rm -rf docs EULA.txt
      rm -f SimbaSparkJDBC42-2.6.22.1040.zip
@@ -67,7 +67,8 @@ then
      exit 1
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Empty bucket <$DATABRICKS_AWS_BUCKET_NAME>, if required"
 set +e
@@ -94,7 +95,7 @@ curl -s -X PUT \
 wait_for_datagen_connector_to_inject_data "pageviews" "1"
 
 log "Creating Databricks Delta Lake Sink connector"
-playground connector create-or-update --connector databricks-delta-lake-sink << EOF
+playground connector create-or-update --connector databricks-delta-lake-sink  << EOF
 {
      "connector.class": "io.confluent.connect.databricks.deltalake.DatabricksDeltaLakeSinkConnector",
      "topics": "pageviews",

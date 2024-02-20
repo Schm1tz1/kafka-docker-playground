@@ -4,18 +4,19 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.failed-to-flush-timed-out-while-connector-stopped.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.failed-to-flush-timed-out-while-connector-stopped.yml"
 log "Generating data"
 docker exec -i connect bash -c "mkdir -p /tmp/kafka-connect/examples/ && curl -sSL -k 'https://api.mockaroo.com/api/17c84440?count=500&key=25fd9c80' -o /tmp/kafka-connect/examples/file.json"
 
 docker exec --privileged --user root -i broker yum install -y libmnl
-docker exec --privileged --user root -i broker bash -c 'wget http://vault.centos.org/8.1.1911/BaseOS/x86_64/os/Packages/iproute-tc-4.18.0-15.el8.x86_64.rpm && rpm -i --nodeps --nosignature http://vault.centos.org/8.1.1911/BaseOS/x86_64/os/Packages/iproute-tc-4.18.0-15.el8.x86_64.rpm'
+docker exec --privileged --user root -i broker bash -c 'wget -q http://vault.centos.org/8.1.1911/BaseOS/x86_64/os/Packages/iproute-tc-4.18.0-15.el8.x86_64.rpm && rpm -i --nodeps --nosignature http://vault.centos.org/8.1.1911/BaseOS/x86_64/os/Packages/iproute-tc-4.18.0-15.el8.x86_64.rpm'
 
 log "Adding latency"
 add_latency broker connect 1000ms
 
 log "Creating FileStream Source connector"
-playground connector create-or-update --connector filestream-source << EOF
+playground connector create-or-update --connector filestream-source  << EOF
 {
                "tasks.max": "1",
                "connector.class": "org.apache.kafka.connect.file.FileStreamSourceConnector",

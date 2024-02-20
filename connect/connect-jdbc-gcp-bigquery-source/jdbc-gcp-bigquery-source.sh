@@ -14,7 +14,7 @@ if [ ! -f ${PWD}/GoogleBigQueryJDBC42/GoogleBigQueryJDBC42.jar ]
 then
     mkdir -p GoogleBigQueryJDBC42
     cd GoogleBigQueryJDBC42
-    wget https://storage.googleapis.com/simba-bq-release/jdbc/SimbaBigQueryJDBC42-1.3.2.1003.zip
+    wget -q https://storage.googleapis.com/simba-bq-release/jdbc/SimbaBigQueryJDBC42-1.3.2.1003.zip
     unzip SimbaBigQueryJDBC42-1.3.2.1003.zip
     cd -
 fi
@@ -63,11 +63,12 @@ log "Insert a row"
 docker run -i --volumes-from gcloud-config google/cloud-sdk:latest bq --project_id "$GCP_PROJECT" query --nouse_legacy_sql "INSERT INTO $DATASET.customers(first_name,last_name,email,updated_at) VALUES ('Sally','Thomas','sally.thomas@acme.com', CURRENT_TIMESTAMP());" > /tmp/result.log  2>&1
 cat /tmp/result.log
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 
 log "Creating JDBC GCP BigQuery Source connector"
-playground connector create-or-update --connector jdbc-gcp-bigquery-source << EOF
+playground connector create-or-update --connector jdbc-gcp-bigquery-source  << EOF
 {
     "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
     "tasks.max": "1",

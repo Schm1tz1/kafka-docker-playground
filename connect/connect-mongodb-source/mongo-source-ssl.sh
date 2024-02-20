@@ -68,7 +68,8 @@ fi
 cd -
 
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.ssl.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.ssl.yml"
 
 # https://www.mongodb.com/docs/manual/tutorial/configure-ssl-clients/
 log "Initialize MongoDB replica set"
@@ -93,7 +94,7 @@ sleep 2
 # https://www.mongodb.com/docs/kafka-connector/current/security-and-authentication/tls-and-x509/
 # https://www.mongodb.com/docs/drivers/java/sync/current/fundamentals/connection/tls/
 log "Creating MongoDB source connector"
-playground connector create-or-update --connector mongodb-source << EOF
+playground connector create-or-update --connector mongodb-source  << EOF
 {
      "connector.class" : "com.mongodb.kafka.connect.MongoSourceConnector",
      "tasks.max" : "1",

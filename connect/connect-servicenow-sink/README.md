@@ -11,18 +11,20 @@ Quickly test [ServiceNow Sink](https://docs.confluent.io/current/connect/kafka-c
 ## Register a test account
 
 Go to [ServiceNow developer portal](https://developer.servicenow.com) and register an account.
-Click on `Manage`->`Instance` and register for a New-York instance. After some time (about one hour in my case) on the waiting list, you should receive an email with details of your test instance.
+Click on `Manage`->`Instance` and register for a Vancouver instance. After some time (about one hour in my case) on the waiting list, you should receive an email with details of your test instance.
 
 ## Create the test_table in ServiceNow
 
-![create table](Screenshot1.png)
+![create table](Screenshot1.jpg)
+
+Do not set ACL
 
 ## How to run
 
 Simply run:
 
 ```bash
-$ playground run -f servicenow-sink<tab> <SERVICENOW_URL> <SERVICENOW_PASSWORD>
+$ playground run -f servicenow-sink<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path> <SERVICENOW_URL> <SERVICENOW_PASSWORD>
 ```
 
 Note: you can also export these values as environment variable

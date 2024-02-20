@@ -12,7 +12,7 @@ fi
 if [ ! -f ${DIR}/neo4j-streams-sink-tester-1.0.jar ]
 then
      log "Downloading neo4j-streams-sink-tester-1.0.jar"
-     wget https://github.com/conker84/neo4j-streams-sink-tester/releases/download/1/neo4j-streams-sink-tester-1.0.jar
+     wget -q https://github.com/conker84/neo4j-streams-sink-tester/releases/download/1/neo4j-streams-sink-tester-1.0.jar
 fi
 
 if [[ "$OSTYPE" == "darwin"* ]]
@@ -26,7 +26,8 @@ else
     ls -lrt
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Sending 1000 messages to topic my-topic using neo4j-streams-sink-tester"
 docker exec connect java -jar /tmp/neo4j-streams-sink-tester-1.0.jar -f AVRO -e 1000 -Dkafka.bootstrap.server=broker:9092 -Dkafka.schema.registry.url=http://schema-registry:8081
@@ -51,7 +52,7 @@ EOF
 cat /tmp/result.log
 grep "AVRO" /tmp/result.log | grep "Surname A"
 
-if [ -z "$CI" ]
+if [ -z "$GITHUB_RUN_NUMBER" ]
 then
      log "Verify data is present in Neo4j http://localhost:7474 (neo4j/connect), see README"
      open "http://localhost:7474/"

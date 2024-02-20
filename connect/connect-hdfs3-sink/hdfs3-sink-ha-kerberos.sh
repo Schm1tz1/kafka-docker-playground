@@ -4,10 +4,16 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.ha-kerberos.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.ha-kerberos.yml"
 
-log "Wait 120 seconds while hadoop is installing"
-sleep 120
+log "Wait 80 seconds while hadoop is installing"
+sleep 80
+
+log "namenode1 becomes primary"
+docker exec namenode1 bash -c "kinit -kt /opt/hadoop/etc/hadoop/nn.keytab nn/namenode1.kerberos-demo.local;hdfs haadmin -transitionToActive nn1"
+
+sleep 10
 
 # Note in this simple example, if you get into an issue with permissions at the local HDFS level, it may be easiest to unlock the permissions unless you want to debug that more.
 docker exec namenode1 bash -c "kinit -kt /opt/hadoop/etc/hadoop/nn.keytab nn/namenode1.kerberos-demo.local && /opt/hadoop/bin/hdfs dfs -chmod 777  /"
@@ -31,29 +37,29 @@ then
 fi
 
 log "Creating HDFS Sink connector"
-playground connector create-or-update --connector hdfs3-sink-ha-kerberos << EOF
+playground connector create-or-update --connector hdfs3-sink-ha-kerberos  << EOF
 {
-               "connector.class":"io.confluent.connect.hdfs3.Hdfs3SinkConnector",
-               "tasks.max":"1",
-               "topics":"test_hdfs",
-               "store.url":"hdfs://sh",
-               "flush.size":"3",
-               "hadoop.conf.dir":"/opt/hadoop/etc/hadoop/",
-               "partitioner.class": "io.confluent.connect.storage.partitioner.DefaultPartitioner",
-               "rotate.interval.ms":"120000",
-               "logs.dir":"/logs",
-               "hdfs.authentication.kerberos": "true",
-               "connect.hdfs.principal": "connect/connect.kerberos-demo.local@EXAMPLE.COM",
-               "connect.hdfs.keytab": "/tmp/connect.keytab",
-               "hdfs.namenode.principal": "nn/namenode1.kerberos-demo.local@EXAMPLE.COM",
-               "confluent.license": "",
-               "confluent.topic.bootstrap.servers": "broker:9092",
-               "confluent.topic.replication.factor": "1",
-               "key.converter":"org.apache.kafka.connect.storage.StringConverter",
-               "value.converter":"io.confluent.connect.avro.AvroConverter",
-               "value.converter.schema.registry.url":"http://schema-registry:8081",
-               "schema.compatibility":"BACKWARD"
-          }
+  "connector.class":"io.confluent.connect.hdfs3.Hdfs3SinkConnector",
+  "tasks.max":"1",
+  "topics":"test_hdfs",
+  "store.url":"hdfs://sh",
+  "flush.size":"3",
+  "hadoop.conf.dir":"/opt/hadoop/etc/hadoop/",
+  "partitioner.class": "io.confluent.connect.storage.partitioner.DefaultPartitioner",
+  "rotate.interval.ms":"120000",
+  "logs.dir":"/logs",
+  "hdfs.authentication.kerberos": "true",
+  "connect.hdfs.principal": "connect/connect.kerberos-demo.local@EXAMPLE.COM",
+  "connect.hdfs.keytab": "/tmp/connect.keytab",
+  "hdfs.namenode.principal": "nn/namenode1.kerberos-demo.local@EXAMPLE.COM",
+  "confluent.license": "",
+  "confluent.topic.bootstrap.servers": "broker:9092",
+  "confluent.topic.replication.factor": "1",
+  "key.converter":"org.apache.kafka.connect.storage.StringConverter",
+  "value.converter":"io.confluent.connect.avro.AvroConverter",
+  "value.converter.schema.registry.url":"http://schema-registry:8081",
+  "schema.compatibility":"BACKWARD"
+}
 EOF
 
 log "Sending messages to topic test_hdfs"

@@ -3,27 +3,29 @@ version: '3.5'
 services:
 
   httpserver:
-    image: vdesabou/http-sink-demo
+    build:
+      context: ../../connect/connect-http-sink/httpserver-oauth2
     hostname: httpserver
     container_name: httpserver
     ports:
-      - "8080:8080"
-    environment:
-      SPRING_PROFILES_ACTIVE: 'oauth2'
+      - "9006:9006"
 
-  # https://github.com/shkoliar/docker-ngrok
+  # https://ngrok.com/docs/using-ngrok-with/docker/
   ngrok:
-    image: shkoliar/ngrok:latest
+    image: ngrok/ngrok:latest
     hostname: ngrok
     container_name: ngrok
     ports:
-      - 4551:4551
+      - 4040:4040
+    restart: unless-stopped
     links:
       - httpserver
+    command:
+      - "start"
+      - "--all"
+      - "--config"
+      - "/etc/ngrok.yml"
+    volumes:
+      - ../../ccloud/fully-managed-connect-http-sink/ngrok.yml:/etc/ngrok.yml
     environment:
-      DOMAIN: httpserver
-      PORT: 8080
-      PROTOCOL: tcp
-      REGION: eu
-      AUTH_TOKEN: $NGROK_AUTH_TOKEN
-      DEBUG: "true"
+      NGROK_AUTHTOKEN: $NGROK_AUTH_TOKEN

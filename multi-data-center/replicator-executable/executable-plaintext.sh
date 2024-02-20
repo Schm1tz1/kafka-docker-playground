@@ -19,13 +19,15 @@ log "Sending sales in US cluster"
 seq -f "us_sale_%g ${RANDOM}" 10 | docker container exec -i broker-us kafka-console-producer --broker-list localhost:9092 --topic sales_US
 
 log "Starting replicator instances"
-docker-compose -f ../../environment/mdc-plaintext/docker-compose.yml -f docker-compose.mdc-plaintext.replicator.yml up -d
+docker compose -f ../../environment/mdc-plaintext/docker-compose.yml -f docker-compose.mdc-plaintext.replicator.yml up -d
 
 ../../scripts/wait-for-connect-and-controlcenter.sh replicator-us $@
 ../../scripts/wait-for-connect-and-controlcenter.sh replicator-europe $@
 
+sleep 120
+
 log "Verify we have received the data in all the sales_ topics in EUROPE"
-timeout 60 docker container exec broker-europe kafka-console-consumer --bootstrap-server localhost:9092 --whitelist "sales_.*" --from-beginning --max-messages 20 --property metadata.max.age.ms 30000
+docker container exec broker-europe timeout 120 kafka-console-consumer --bootstrap-server localhost:9092 --whitelist "sales_.*" --from-beginning --max-messages 20 --property metadata.max.age.ms 30000
 
 log "Verify we have received the data in all the sales_ topics in the US"
-timeout 60 docker container exec broker-us kafka-console-consumer --bootstrap-server localhost:9092 --whitelist "sales_.*" --from-beginning --max-messages 20 --property metadata.max.age.ms 30000
+docker container exec broker-us timeout 120 kafka-console-consumer --bootstrap-server localhost:9092 --whitelist "sales_.*" --from-beginning --max-messages 20 --property metadata.max.age.ms 30000

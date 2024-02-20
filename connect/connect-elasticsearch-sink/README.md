@@ -14,7 +14,7 @@ Quickly test [Elasticsearch Sink](https://docs.confluent.io/current/connect/kafk
 Simply run:
 
 ```
-$ playground run -f elasticsearch-sink<tab>
+$ playground run -f elasticsearch-sink<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path>
 ```
 
 ## Details of what the script is doing
@@ -22,7 +22,7 @@ $ playground run -f elasticsearch-sink<tab>
 The connector is created with:
 
 ```
-playground connector create-or-update --connector elasticsearch-sink << EOF
+playground connector create-or-update --connector elasticsearch-sink  << EOF
 {
         "connector.class": "io.confluent.connect.elasticsearch.ElasticsearchSinkConnector",
           "tasks.max": "1",

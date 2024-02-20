@@ -77,10 +77,11 @@ sed -e "s|:AZURE_SAS_KEY:|$AZURE_SAS_KEY|g" \
     -e "s|:AZURE_EVENT_HUBS_NAME:|$AZURE_EVENT_HUBS_NAME|g" \
     ../../connect/connect-azure-event-hubs-source/data.template > ../../connect/connect-azure-event-hubs-source/data
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Creating Azure Event Hubs Source connector"
-playground connector create-or-update --connector azure-event-hubs-source << EOF
+playground connector create-or-update --connector azure-event-hubs-source  << EOF
 {
     "connector.class": "io.confluent.connect.azure.eventhubs.EventHubsSourceConnector",
     "kafka.topic": "event_hub_topic",
@@ -110,4 +111,5 @@ log "Verifying topic event_hub_topic"
 playground topic consume --topic event_hub_topic --min-expected-messages 2 --timeout 60
 
 log "Deleting resource group"
+check_if_continue
 az group delete --name $AZURE_RESOURCE_GROUP --yes --no-wait

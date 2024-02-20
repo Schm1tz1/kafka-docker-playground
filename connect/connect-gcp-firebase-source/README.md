@@ -67,55 +67,5 @@ You should see:
 Simply run:
 
 ```bash
-$ playground run -f gcp-firebase-source<tab> <GCP_PROJECT>
+$ playground run -f gcp-firebase-source<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path> <GCP_PROJECT>
 ```
-
-## Details of what the script is doing
-
-
-Creating GCP Firebase Source connector
-
-```bash
-$ curl -X PUT \
-     -H "Content-Type: application/json" \
-     --data '{
-               "connector.class" : "io.confluent.connect.firebase.FirebaseSourceConnector",
-                    "tasks.max" : "1",
-                    "gcp.firebase.credentials.path": "/tmp/keyfile.json",
-                    "gcp.firebase.database.reference": "https://$GCP_PROJECT.firebaseio.com/musicBlog",
-                    "gcp.firebase.snapshot":"true",
-                    "confluent.topic.bootstrap.servers": "broker:9092",
-                    "confluent.topic.replication.factor": "1"
-          }' \
-     http://localhost:8083/connectors/firebase-source/config | jq .
-```
-
-Verify messages are in topic `artists`
-
-```bash
-playground topic consume --topic artists --min-expected-messages 3 --timeout 60
-```
-
-Results:
-
-```json
-{"genre":"Pop","name":"Michael Jackson"}
-{"genre":"American folk","name":"Bob Dylan"}
-{"genre":"Rock","name":"Freddie Mercury"}
-```
-
-Verify messages are in topic `songs`
-
-```bash
-playground topic consume --topic songs --min-expected-messages 3 --timeout 60
-```
-
-Results:
-
-```json
-{"artist":"Michael Jackson","title":"billie jean"}
-{"artist":"Bob Dylan","title":"hurricane"}
-{"artist":"Freddie Mercury","title":"bohemian rhapsody"}
-```
-
-N.B: Control Center is reachable at [http://127.0.0.1:9021](http://127.0.0.1:9021])

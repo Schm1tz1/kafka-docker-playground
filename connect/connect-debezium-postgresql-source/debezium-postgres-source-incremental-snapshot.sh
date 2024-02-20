@@ -10,7 +10,8 @@ then
     exit 111
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 
 log "Create customers table:"
@@ -136,7 +137,7 @@ EOF
 
 
 log "Creating Debezium PostgreSQL source connector with customers table"
-playground connector create-or-update --connector debezium-postgres-source << EOF
+playground connector create-or-update --connector debezium-postgres-source  << EOF
 {
   "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
   "tasks.max": "1",
@@ -175,7 +176,7 @@ playground topic consume --topic asgard.public.customers2 --min-expected-message
 set -e
 
 log "Creating Debezium PostgreSQL source connector with customers and customers2 table"
-playground connector create-or-update --connector debezium-postgres-source << EOF
+playground connector create-or-update --connector debezium-postgres-source  << EOF
 {
               "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
               "tasks.max": "1",

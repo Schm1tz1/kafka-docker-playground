@@ -35,46 +35,25 @@ By default, a new Confluent Cloud environment with a Cluster will be created.
 You can configure the cluster by setting environment variables:
 
 * `CLUSTER_CLOUD`: The Cloud provider (possible values: `aws`, `gcp` and `azure`, default `aws`)
-* `CLUSTER_REGION`: The Cloud region (use `confluent kafka region list` to get the list, default `eu-west-2`)
+* `CLUSTER_REGION`: The Cloud region (use `confluent kafka region list` to get the list, default `eu-west-2` for aws, `westeurope`for azure and `europe-west2` for gcp)
 * `CLUSTER_TYPE`: The type of cluster (possible values: `basic`, `standard` and `dedicated`, default `basic`)
-* `ENVIRONMENT` (optional): The environment id where want your new cluster (example: `env-xxxxx`) 
+* `ENVIRONMENT` (optional): The environment id where want your new cluster (example: `txxxxx`) 
 
 In case you want to use your own existing cluster, you need to setup these environment variables:
 
-* `ENVIRONMENT`: The environment id where your cluster is located (example: `env-xxxxx`) 
+* `ENVIRONMENT`: The environment id where your cluster is located (example: `txxxxx`) 
 * `CLUSTER_NAME`: The cluster name
 * `CLUSTER_CLOUD`: The Cloud provider (possible values: `aws`, `gcp` and `azure`)
 * `CLUSTER_REGION`: The Cloud region (example `us-east-2`)
-* `CLUSTER_CREDS`: The Kafka api key and secret to use, it should be separated with semi-colon (example: `<API_KEY>:<API_KEY_SECRET>`)
-* `SCHEMA_REGISTRY_CREDS` (optional, if not set, new one will be created): The Schema Registry api key and secret to use, it should be separated with semi-colon (example: `<SR_API_KEY>:<SR_API_KEY_SECRET>`)
+* `CLUSTER_CREDS`: The Kafka api key and secret to use, it should be separated with colon (example: `<API_KEY>:<API_KEY_SECRET>`)
+* `SCHEMA_REGISTRY_CREDS` (optional, if not set, new one will be created): The Schema Registry api key and secret to use, it should be separated with colon (example: `<SR_API_KEY>:<SR_API_KEY_SECRET>`)
 
-
-## Note on `redo.log.row.fetch.size`
-
-The connector is configured with `"redo.log.row.fetch.size":1` for demo purpose only. If you're planning to inject more data, it is recommended to increase the value.
-
-Example with included script [`07_generate_customers.sh`](https://github.com/vdesabou/kafka-docker-playground/blob/master/connect/connect-cdc-oracle19-source/sample-sql-scripts/07_generate_customers.sh.zip) (packaged as `.zip`in order to not be run automatically), which inserts around 7000 customer rows, in that case you would need to set `"redo.log.row.fetch.size":1000`:
-
-```
-cd sample-sql-scripts
-unzip 07_generate_customers.sh.zip 
-cd -
-# insert new customer every 500ms
-./sample-sql-scripts/07_generate_customers.sh 0.5
-# insert new customer every second (default)
-./sample-sql-scripts/07_generate_customers.sh 
-```
-
-See screencast below:
-
-
-https://user-images.githubusercontent.com/4061923/139914676-e34fae34-0f5c-4240-9690-d1d486236457.mp4
 
 
 ## How to run
 
 ```
-$ playground run -f fully-managed-cdc-oracle11-source<tab> <NGROK_AUTH_TOKEN>
+$ playground run -f fully-managed-cdc-oracle11-source<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path> <NGROK_AUTH_TOKEN>
 ```
 
 Note:

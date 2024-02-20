@@ -8,7 +8,7 @@ cd ../../connect/connect-jdbc-mysql-source
 if [ ! -f ${PWD}/mysql-connector-java-5.1.45.jar ]
 then
      log "Downloading mysql-connector-java-5.1.45.jar"
-     wget https://repo1.maven.org/maven2/mysql/mysql-connector-java/5.1.45/mysql-connector-java-5.1.45.jar
+     wget -q https://repo1.maven.org/maven2/mysql/mysql-connector-java/5.1.45/mysql-connector-java-5.1.45.jar
 fi
 cd -
 
@@ -32,7 +32,8 @@ else
      log "🛑 SQL_DATAGEN is not set"
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.repro-000005-insertfield-smt:-adding-topic-offset-and-partition-not-working.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.repro-000005-insertfield-smt:-adding-topic-offset-and-partition-not-working.yml"
 
 log "Create table"
 docker exec -i mysql mysql --user=root --password=password --database=mydb << EOF
@@ -79,36 +80,35 @@ EOF
 log "Show content of team table:"
 docker exec mysql bash -c "mysql --user=root --password=password --database=mydb -e 'select * from team'"
 
-
 playground debug log-level set --package "org.apache.kafka.connect.runtime.TransformationChain" --level TRACE
 
 log "Creating MySQL source connector"
-playground connector create-or-update --connector mysql-source << EOF
+playground connector create-or-update --connector mysql-source  << EOF
 {
-               "connector.class":"io.confluent.connect.jdbc.JdbcSourceConnector",
-               "tasks.max":"1",
-               "connection.url":"jdbc:mysql://mysql:3306/mydb?user=user&password=password&useSSL=false",
-               "table.whitelist":"team",
-               "mode":"timestamp+incrementing",
-               "timestamp.column.name":"last_modified",
-               "incrementing.column.name":"id",
-               "topic.prefix":"mysql-",
-               "errors.log.enable": "true",
-               "errors.log.include.messages": "true",
-               "transforms": "InsertTopic,InsertOffset,InsertPartition,InsertTimestamp,TimestampConverter",
-               "transforms.InsertOffset.offset.field": "__kafka_offset",
-               "transforms.InsertOffset.type": "org.apache.kafka.connect.transforms.InsertField\$Value",
-               "transforms.InsertPartition.partition.field": "__kafka_partition",
-               "transforms.InsertPartition.type": "org.apache.kafka.connect.transforms.InsertField\$Value",
-               "transforms.InsertTimestamp.timestamp.field": "__kafka_ts",
-               "transforms.InsertTimestamp.type": "org.apache.kafka.connect.transforms.InsertField\$Value",
-               "transforms.InsertTopic.topic.field": "__kafka_topic",
-               "transforms.InsertTopic.type": "org.apache.kafka.connect.transforms.InsertField\$Value",
-               "transforms.TimestampConverter.type": "org.apache.kafka.connect.transforms.TimestampConverter\$Value",
-               "transforms.TimestampConverter.format": "yyyy-MM-dd HH:mm:ss.SSS",
-               "transforms.TimestampConverter.target.type": "string",
-               "transforms.TimestampConverter.field": "__kafka_ts"
-          }
+  "connector.class":"io.confluent.connect.jdbc.JdbcSourceConnector",
+  "tasks.max":"1",
+  "connection.url":"jdbc:mysql://mysql:3306/mydb?user=user&password=password&useSSL=false",
+  "table.whitelist":"team",
+  "mode":"timestamp+incrementing",
+  "timestamp.column.name":"last_modified",
+  "incrementing.column.name":"id",
+  "topic.prefix":"mysql-",
+  "errors.log.enable": "true",
+  "errors.log.include.messages": "true",
+  "transforms": "InsertTopic,InsertOffset,InsertPartition,InsertTimestamp,TimestampConverter",
+  "transforms.InsertOffset.offset.field": "__kafka_offset",
+  "transforms.InsertOffset.type": "org.apache.kafka.connect.transforms.InsertField\$Value",
+  "transforms.InsertPartition.partition.field": "__kafka_partition",
+  "transforms.InsertPartition.type": "org.apache.kafka.connect.transforms.InsertField\$Value",
+  "transforms.InsertTimestamp.timestamp.field": "__kafka_ts",
+  "transforms.InsertTimestamp.type": "org.apache.kafka.connect.transforms.InsertField\$Value",
+  "transforms.InsertTopic.topic.field": "__kafka_topic",
+  "transforms.InsertTopic.type": "org.apache.kafka.connect.transforms.InsertField\$Value",
+  "transforms.TimestampConverter.type": "org.apache.kafka.connect.transforms.TimestampConverter\$Value",
+  "transforms.TimestampConverter.format": "yyyy-MM-dd HH:mm:ss.SSS",
+  "transforms.TimestampConverter.target.type": "string",
+  "transforms.TimestampConverter.field": "__kafka_ts"
+}
 EOF
 
 sleep 5

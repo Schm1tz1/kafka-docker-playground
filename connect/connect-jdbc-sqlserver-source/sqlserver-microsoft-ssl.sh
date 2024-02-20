@@ -63,7 +63,8 @@ fi
 
 cd -
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.microsoft-ssl.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.microsoft-ssl.yml"
 
 log "Create table"
 docker exec -i sqlserver /opt/mssql-tools/bin/sqlcmd -U sa -P Password! << EOF
@@ -93,21 +94,21 @@ EOF
 
 # https://docs.microsoft.com/en-us/sql/connect/jdbc/connecting-with-ssl-encryption?view=sql-server-ver16
 log "Creating JDBC SQL Server (with Microsoft driver) source connector"
-playground connector create-or-update --connector sqlserver-source-ssl << EOF
+playground connector create-or-update --connector sqlserver-source-ssl  << EOF
 {
-                "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
-                "tasks.max": "1",
-                "connection.url": "jdbc:sqlserver://sqlserver:1433;databaseName=testDB;encrypt=true;trustServerCertificate=false;trustStore=/tmp/truststore.jks;trustStorePassword=confluent;",
-                "connection.user": "sa",
-                "connection.password": "Password!",
-                "table.whitelist": "customers",
-                "mode": "incrementing",
-                "incrementing.column.name": "id",
-                "topic.prefix": "sqlserver-",
-                "validate.non.null":"false",
-                "errors.log.enable": "true",
-                "errors.log.include.messages": "true"
-          }
+  "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
+  "tasks.max": "1",
+  "connection.url": "jdbc:sqlserver://sqlserver:1433;databaseName=testDB;encrypt=true;trustServerCertificate=false;trustStore=/tmp/truststore.jks;trustStorePassword=confluent;",
+  "connection.user": "sa",
+  "connection.password": "Password!",
+  "table.whitelist": "customers",
+  "mode": "incrementing",
+  "incrementing.column.name": "id",
+  "topic.prefix": "sqlserver-",
+  "validate.non.null":"false",
+  "errors.log.enable": "true",
+  "errors.log.include.messages": "true"
+}
 EOF
 
 sleep 5

@@ -4,7 +4,7 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
-if [ ! -z "$CI" ]
+if [ ! -z "$GITHUB_RUN_NUMBER" ]
 then
      # running with github actions
      sudo chown -R $USER ${DIR}
@@ -17,4 +17,5 @@ rm -f ${DIR}/schema-registry/logs/*
 rm -f ${DIR}/control-center/logs/*
 rm -f ${DIR}/ksql-server/logs/*
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.template-log4j.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.template-log4j.yml"

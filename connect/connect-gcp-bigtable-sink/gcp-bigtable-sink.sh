@@ -28,7 +28,8 @@ else
 fi
 cd -
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Doing gsutil authentication"
 set +e
@@ -43,7 +44,7 @@ Y
 EOF
 set -e
 log "Create a BigTable Instance and Database"
-docker run -i --volumes-from gcloud-config google/cloud-sdk:latest gcloud bigtable instances create $INSTANCE --project $GCP_PROJECT --cluster $INSTANCE --cluster-zone=us-east1-c --display-name="playground-bigtable-instance" --instance-type=DEVELOPMENT
+docker run -i --volumes-from gcloud-config google/cloud-sdk:latest gcloud bigtable instances create $INSTANCE --project $GCP_PROJECT --cluster-config=id=$INSTANCE,zone=us-east1-c --display-name="playground-bigtable-instance"
 
 log "Sending messages to topic stats"
 playground topic produce -t stats --nb-messages 1 --forced-value '{"users": {"name":"Bob","friends": "1000"}}' --key "simple-key-1" << 'EOF'
@@ -79,7 +80,7 @@ playground topic produce -t stats --nb-messages 1 --forced-value '{"users": {"na
 EOF
 
 log "Creating GCP BigTable Sink connector"
-playground connector create-or-update --connector gcp-bigtable-sink << EOF
+playground connector create-or-update --connector gcp-bigtable-sink  << EOF
 {
     "connector.class": "io.confluent.connect.gcp.bigtable.BigtableSinkConnector",
     "tasks.max" : "1",

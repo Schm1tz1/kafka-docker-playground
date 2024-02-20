@@ -5,7 +5,8 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 
 # Verify SPLUNK has started within MAX_WAIT seconds
@@ -37,7 +38,7 @@ docker exec broker kafka-topics --create --topic splunk-qs --partitions 10 --rep
 
 
 log "Creating Splunk sink connector"
-playground connector create-or-update --connector splunk-sink << EOF
+playground connector create-or-update --connector splunk-sink  << EOF
 {
      "connector.class": "com.splunk.kafka.connect.SplunkSinkConnector",
      "tasks.max": "1",
@@ -50,12 +51,9 @@ playground connector create-or-update --connector splunk-sink << EOF
 }
 EOF
 
-
 log "Sending messages to topic splunk-qs"
-docker exec -i broker kafka-console-producer --broker-list broker:9092 --topic splunk-qs << EOF
-This is a test with Splunk 1
-This is a test with Splunk 2
-This is a test with Splunk 3
+playground topic produce -t splunk-qs --nb-messages 3 << 'EOF'
+This is a test with Splunk %g
 EOF
 
 log "Sleeping 60 seconds"

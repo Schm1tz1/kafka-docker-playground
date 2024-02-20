@@ -12,7 +12,7 @@ Quickly test [Sap Hana Sink](https://github.com/SAP/kafka-connect-sap) connector
 Simply run:
 
 ```
-$ playground run -f sap-hana-sink<tab>
+$ playground run -f sap-hana-sink<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path>
 ```
 
 ## Details of what the script is doing
@@ -30,7 +30,7 @@ EOF
 Creating SAP HANA Sink connector:
 
 ```bash
-playground connector create-or-update --connector sap-hana-sink << EOF
+playground connector create-or-update --connector sap-hana-sink  << EOF
 {
                "tasks.max": "1",
                "connector.class": "com.sap.kafka.connect.sink.hana.HANASinkConnector",

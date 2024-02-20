@@ -67,7 +67,8 @@ fi
 
 cd -
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.ssl.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.ssl.yml"
 
 log "Initialize MongoDB replica set"
 docker exec -i mongodb mongosh --tls --tlsCertificateKeyFile /tmp/mongo.pem --tlsCertificateKeyFilePassword --tlsAllowInvalidCertificates confluent --eval 'rs.initiate({_id: "myuser", members:[{_id: 0, host: "mongodb:27017"}]})'
@@ -140,7 +141,7 @@ playground topic produce -t orders --nb-messages 1 --forced-value '{"id":2,"prod
 EOF
 
 log "Creating MongoDB sink connector"
-playground connector create-or-update --connector mongodb-sink << EOF
+playground connector create-or-update --connector mongodb-sink  << EOF
 {
     "connector.class" : "com.mongodb.kafka.connect.MongoSinkConnector",
     "tasks.max" : "1",

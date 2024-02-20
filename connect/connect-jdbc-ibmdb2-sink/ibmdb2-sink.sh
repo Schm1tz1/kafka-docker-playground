@@ -26,9 +26,9 @@ else
   profile_ksqldb_command="--profile ksqldb"
 fi
 
-docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} down -v --remove-orphans
+docker compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} down -v --remove-orphans
 log "Starting up ibmdb2 container to get db2jcc4.jar"
-docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d ibmdb2
+docker compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d ibmdb2
 
 rm -f ${DIR}/db2jcc4.jar
 log "Getting db2jcc4.jar"
@@ -50,15 +50,17 @@ fi
 done
 log "ibmdb2 DB has started!"
 
-docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d
-
-command="source ${DIR}/../../scripts/utils.sh && docker-compose -f ${DIR}/../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d"
-echo "$command" > /tmp/playground-command
+docker compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d
+set_profiles
+command="source ${DIR}/../../scripts/utils.sh && docker compose -f ${DIR}/../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d"
+playground state set run.docker_command "$command"
+playground state set run.environment "plaintext"
 
 ../../scripts/wait-for-connect-and-controlcenter.sh
 
 # Keep it for utils.sh
-# ${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+# PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+#playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Sending messages to topic ORDERS"
 playground topic produce -t ORDERS --nb-messages 1 << 'EOF'
@@ -112,7 +114,7 @@ playground topic produce -t ORDERS --nb-messages 1 --forced-value '{"ID":2,"PROD
 EOF
 
 log "Creating JDBC IBM DB2 sink connector"
-playground connector create-or-update --connector ibmdb2-sink << EOF
+playground connector create-or-update --connector ibmdb2-sink  << EOF
 {
   "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
   "tasks.max": "1",

@@ -26,7 +26,8 @@ else
      log "🛑 SQL_DATAGEN is not set"
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 # Verify Oracle DB has started within MAX_WAIT seconds
 MAX_WAIT=900
@@ -90,7 +91,7 @@ insert into CUSTOMERS (id, first_name, last_name, email, gender, club_status, co
 EOF
 
 log "Creating Oracle source connector"
-playground connector create-or-update --connector cdc-oracle11-source << EOF
+playground connector create-or-update --connector cdc-oracle11-source --package "io.confluent.connect.oracle.cdc.util.metrics.MetricsReporter" --level DEBUG  << EOF
 {
      "connector.class": "io.confluent.connect.oracle.cdc.OracleCdcSourceConnector",
      "tasks.max": 2,
@@ -129,11 +130,42 @@ EOF
 log "Waiting 10s for connector to read existing data"
 sleep 10
 
-log "Running SQL scripts"
-for script in ../../connect/connect-cdc-oracle11-source/sample-sql-scripts/*.sh
-do
-     $script
-done
+log "Insert 2 customers in CUSTOMERS table"
+docker exec -i oracle bash -c "export ORACLE_HOME=/u01/app/oracle/product/11.2.0/xe && /u01/app/oracle/product/11.2.0/xe/bin/sqlplus MYUSER/password@//localhost:1521/XE" << EOF
+     insert into CUSTOMERS (first_name, last_name, email, gender, club_status, comments) values ('Frantz', 'Kafka', 'fkafka@confluent.io', 'Male', 'bronze', 'Evil is whatever distracts');
+     insert into CUSTOMERS (first_name, last_name, email, gender, club_status, comments) values ('Gregor', 'Samsa', 'gsamsa@confluent.io', 'Male', 'platinium', 'How about if I sleep a little bit longer and forget all this nonsense');
+     exit;
+EOF
+
+log "Update CUSTOMERS with email=fkafka@confluent.io"
+docker exec -i oracle bash -c "export ORACLE_HOME=/u01/app/oracle/product/11.2.0/xe && /u01/app/oracle/product/11.2.0/xe/bin/sqlplus MYUSER/password@//localhost:1521/XE" << EOF
+     update CUSTOMERS set club_status = 'gold' where email = 'fkafka@confluent.io';
+     exit;
+EOF
+
+log "Deleting CUSTOMERS with email=fkafka@confluent.io"
+docker exec -i oracle bash -c "export ORACLE_HOME=/u01/app/oracle/product/11.2.0/xe && /u01/app/oracle/product/11.2.0/xe/bin/sqlplus MYUSER/password@//localhost:1521/XE" << EOF
+     delete from CUSTOMERS where email = 'fkafka@confluent.io';
+     exit;
+EOF
+
+log "Altering CUSTOMERS table with an optional column"
+docker exec -i oracle bash -c "export ORACLE_HOME=/u01/app/oracle/product/11.2.0/xe && /u01/app/oracle/product/11.2.0/xe/bin/sqlplus MYUSER/password@//localhost:1521/XE" << EOF
+     alter table CUSTOMERS add (
+          country VARCHAR(50)
+     );
+     exit;
+EOF
+
+log "Populating CUSTOMERS table after altering the structure"
+docker exec -i oracle bash -c "export ORACLE_HOME=/u01/app/oracle/product/11.2.0/xe && /u01/app/oracle/product/11.2.0/xe/bin/sqlplus MYUSER/password@//localhost:1521/XE" << EOF
+     insert into CUSTOMERS (first_name, last_name, email, gender, club_status, comments, country) values ('Josef', 'K', 'jk@confluent.io', 'Male', 'bronze', 'How is it even possible for someone to be guilty', 'Poland');
+     update CUSTOMERS set club_status = 'silver' where email = 'gsamsa@confluent.io';
+     update CUSTOMERS set club_status = 'gold' where email = 'gsamsa@confluent.io';
+     update CUSTOMERS set club_status = 'gold' where email = 'jk@confluent.io';
+     commit;
+     exit;
+EOF
 
 log "Waiting 20s for connector to read new data"
 sleep 20
@@ -141,8 +173,8 @@ sleep 20
 log "Verifying topic XE.MYUSER.CUSTOMERS: there should be 13 records"
 playground topic consume --topic XE.MYUSER.CUSTOMERS --min-expected-messages 13 --timeout 60
 
-log "Verifying topic redo-log-topic: there should be 15 records"
-playground topic consume --topic redo-log-topic --min-expected-messages 15 --timeout 60
+log "Verifying topic redo-log-topic: there should be 14 records"
+playground topic consume --topic redo-log-topic --min-expected-messages 14 --timeout 60
 
 if [ ! -z "$SQL_DATAGEN" ]
 then

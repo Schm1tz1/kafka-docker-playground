@@ -44,7 +44,8 @@ then
      exit 1
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.proxy.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.proxy.yml"
 
 DOMAIN=$(echo $SALESFORCE_INSTANCE | cut -d "/" -f 3)
 IP=$(nslookup $DOMAIN | grep Address | grep -v "#" | cut -d " " -f 2 | tail -1)
@@ -52,7 +53,7 @@ log "Blocking $DOMAIN IP $IP to make sure proxy is used"
 docker exec --privileged --user root connect bash -c "iptables -A INPUT -p tcp -s $IP -j DROP"
 
 log "Creating Salesforce Platform Events Source connector"
-playground connector create-or-update --connector salesforce-platform-events-source << EOF
+playground connector create-or-update --connector salesforce-platform-events-source  << EOF
 {
      "connector.class": "io.confluent.salesforce.SalesforcePlatformEventSourceConnector",
      "kafka.topic": "sfdc-platform-events",

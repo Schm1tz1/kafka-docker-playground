@@ -29,18 +29,43 @@ else
 fi
 
 PASSWORD=$(date +%s | cksum | base64 | head -c 32 ; echo)
+PASSWORD="${PASSWORD}1"
 # generate data file for externalizing secrets
 sed -e "s|:PASSWORD:|$PASSWORD|g" \
     ../../connect/connect-aws-redshift-sink/data.template > ../../connect/connect-aws-redshift-sink/data
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.with-assuming-iam-role.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.with-assuming-iam-role.yml"
 
 CLUSTER_NAME=pg${USER}redshift${TAG}
 CLUSTER_NAME=${CLUSTER_NAME//[-._]/}
 
-set +e
 log "Delete AWS Redshift cluster, if required"
-aws redshift delete-cluster --cluster-identifier $CLUSTER_NAME --skip-final-cluster-snapshot
+set +e
+RETRIES=3
+# Set the retry interval in seconds
+RETRY_INTERVAL=60
+# Attempt to delete the cluster
+for i in $(seq 1 $RETRIES); do
+    log "Attempt $i to delete cluster $CLUSTER_NAME"
+    if aws redshift delete-cluster --cluster-identifier $CLUSTER_NAME --skip-final-cluster-snapshot
+    then
+        log "Cluster $CLUSTER_NAME deleted successfully"
+        sleep 120
+        log "Delete security group sg$CLUSTER_NAME, if required"
+        aws ec2 delete-security-group --group-name sg$CLUSTER_NAME
+        break
+    else
+        error=$(aws redshift delete-cluster --cluster-identifier $CLUSTER_NAME --skip-final-cluster-snapshot 2>&1)
+        if [[ $error == *"InvalidClusterState"* ]]
+        then
+            logwarn "InvalidClusterState error encountered. Retrying in $RETRY_INTERVAL seconds..."
+            sleep $RETRY_INTERVAL
+        else
+            logwarn "Error deleting cluster $CLUSTER_NAME: $error"
+        fi
+    fi
+done
 log "Delete security group sg$CLUSTER_NAME, if required"
 aws ec2 delete-security-group --group-name sg$CLUSTER_NAME
 set -e
@@ -129,7 +154,7 @@ playground topic produce -t orders --nb-messages 1 --forced-value '{"id":2,"prod
 EOF
 
 log "Creating AWS Redshift Sink connector with cluster url $CLUSTER"
-playground connector create-or-update --connector redshift-sink << EOF
+playground connector create-or-update --connector redshift-sink  << EOF
 {
      "connector.class": "io.confluent.connect.aws.redshift.RedshiftSinkConnector",
      "tasks.max": "1",

@@ -5,15 +5,9 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
 #############
-${DIR}/../../ccloud/environment/start.sh "${PWD}/docker-compose-connect-onprem-to-cloud.yml"
+playground start-environment --environment ccloud --docker-compose-override-file "${PWD}/docker-compose-connect-onprem-to-cloud.yml"
 
-if [ -f /tmp/delta_configs/env.delta ]
-then
-     source /tmp/delta_configs/env.delta
-else
-     logerror "ERROR: /tmp/delta_configs/env.delta has not been generated"
-     exit 1
-fi
+
 #############
 
 set +e
@@ -28,9 +22,11 @@ playground topic create --topic products
 set -e
 
 log "Sending messages to topic products on source OnPREM cluster"
-seq 10 | docker exec -i broker kafka-console-producer --broker-list broker:9092 --topic products
+playground topic produce -t products --nb-messages 10 << 'EOF'
+%g
+EOF
 
-playground connector create-or-update --connector replicate-onprem-to-cloud << EOF
+playground connector create-or-update --connector replicate-onprem-to-cloud  << EOF
 {
      "connector.class":"io.confluent.connect.replicator.ReplicatorSourceConnector",
      "key.converter": "io.confluent.connect.replicator.util.ByteArrayConverter",

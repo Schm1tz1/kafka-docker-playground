@@ -1,0 +1,18 @@
+---
+version: '3.5'
+services:
+
+  connect:
+    volumes:
+      - ../../connect/connect-http-sink/jcl-over-slf4j-2.0.7.jar:/usr/share/confluent-hub-components/confluentinc-kafka-connect-http/lib/jcl-over-slf4j-2.0.7.jar
+    environment:
+      CONNECT_PLUGIN_PATH: /usr/share/confluent-hub-components/confluentinc-kafka-connect-http
+
+  http-service-basic-auth:
+    image: vdesabou/http-sink-demo
+    hostname: http-service-basic-auth
+    container_name: http-service-basic-auth
+    ports:
+      - "9083:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: 'basic-auth'

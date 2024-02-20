@@ -14,7 +14,7 @@ Quickly test [Debezium SQL Server](https://docs.confluent.io/current/connect/deb
 Simply run:
 
 ```
-$ playground run -f debezium-sqlserver-source<tab>
+$ playground run -f debezium-sqlserver-source<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path>
 ```
 
 ## Details of what the script is doing
@@ -87,7 +87,7 @@ Results:
 Connector is created with:
 
 ```yml
-playground connector create-or-update --connector debezium-sqlserver-source-ssl << EOF
+playground connector create-or-update --connector debezium-sqlserver-source-ssl  << EOF
 {
                "connector.class": "io.debezium.connector.sqlserver.SqlServerConnector",
                "tasks.max": "1",

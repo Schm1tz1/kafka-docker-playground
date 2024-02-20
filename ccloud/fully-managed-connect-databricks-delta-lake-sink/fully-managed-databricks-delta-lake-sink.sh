@@ -58,13 +58,7 @@ fi
 
 bootstrap_ccloud_environment
 
-if [ -f /tmp/delta_configs/env.delta ]
-then
-     source /tmp/delta_configs/env.delta
-else
-     logerror "ERROR: /tmp/delta_configs/env.delta has not been generated"
-     exit 1
-fi
+
 
 log "Empty bucket <$DATABRICKS_AWS_BUCKET_NAME>, if required"
 set +e
@@ -74,11 +68,11 @@ set -e
 connector_name="DatagenSource"
 set +e
 log "Deleting fully managed connector $connector_name, it might fail..."
-playground ccloud-connector delete --connector $connector_name
+playground connector delete --connector $connector_name
 set -e
 
 log "Creating fully managed connector"
-playground ccloud-connector create-or-update --connector $connector_name << EOF
+playground connector create-or-update --connector $connector_name << EOF
 {
      "connector.class": "DatagenSource",
      "name": "DatagenSource",
@@ -97,11 +91,11 @@ wait_for_ccloud_connector_up $connector_name 300
 connector_name="DatabricksDeltaLakeSink"
 set +e
 log "Deleting fully managed connector $connector_name, it might fail..."
-playground ccloud-connector delete --connector $connector_name
+playground connector delete --connector $connector_name
 set -e
 
 log "Creating fully managed connector"
-playground ccloud-connector create-or-update --connector $connector_name << EOF
+playground connector create-or-update --connector $connector_name << EOF
 {
      "topics": "pageviews",
      "input.data.format": "AVRO",
@@ -135,4 +129,4 @@ aws s3api list-objects --bucket "$DATABRICKS_AWS_BUCKET_NAME"
 log "Do you want to delete the fully managed connector $connector_name ?"
 check_if_continue
 
-playground ccloud-connector delete --connector $connector_name
+playground connector delete --connector $connector_name

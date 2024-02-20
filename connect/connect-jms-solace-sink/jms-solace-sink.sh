@@ -26,45 +26,48 @@ function wait_for_solace () {
 if [ ! -f ${DIR}/sol-jms-10.6.4.jar ]
 then
      log "Downloading sol-jms-10.6.4.jar"
-     wget https://repo1.maven.org/maven2/com/solacesystems/sol-jms/10.6.4/sol-jms-10.6.4.jar
+     wget -q https://repo1.maven.org/maven2/com/solacesystems/sol-jms/10.6.4/sol-jms-10.6.4.jar
 fi
 
 if [ ! -f ${DIR}/commons-lang-2.6.jar ]
 then
      log "Downloading commons-lang-2.6.jar"
-     wget https://repo1.maven.org/maven2/commons-lang/commons-lang/2.6/commons-lang-2.6.jar
+     wget -q https://repo1.maven.org/maven2/commons-lang/commons-lang/2.6/commons-lang-2.6.jar
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 wait_for_solace
 log "Solace UI is accessible at http://127.0.0.1:8080 (admin/admin)"
 
 log "Sending messages to topic sink-messages"
-seq 10 | docker exec -i broker kafka-console-producer --broker-list broker:9092 --topic sink-messages
+playground topic produce -t sink-messages --nb-messages 10 << 'EOF'
+%g
+EOF
 
 log "Create connector-quickstart queue in the default Message VPN using CLI"
 docker exec solace bash -c "/usr/sw/loads/currentload/bin/cli -A -s cliscripts/create_queue_cmd"
 
 log "Creating Solace sink connector"
-playground connector create-or-update --connector jms-solace-sink << EOF
+playground connector create-or-update --connector jms-solace-sink  << EOF
 {
-               "connector.class": "io.confluent.connect.jms.JmsSinkConnector",
-                    "tasks.max": "1",
-                    "topics": "sink-messages",
-                    "java.naming.factory.initial": "com.solacesystems.jndi.SolJNDIInitialContextFactory",
-                    "java.naming.provider.url": "smf://solace:55555",
-                    "java.naming.security.principal": "admin",
-                    "java.naming.security.credentials": "admin",
-                    "connection.factory.name": "/jms/cf/default",
-                    "Solace_JMS_VPN": "default",
-                    "jms.destination.type": "queue",
-                    "jms.destination.name": "connector-quickstart",
-                    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
-                    "value.converter": "org.apache.kafka.connect.storage.StringConverter",
-                    "confluent.topic.bootstrap.servers": "broker:9092",
-                    "confluent.topic.replication.factor": "1"
-          }
+     "connector.class": "io.confluent.connect.jms.JmsSinkConnector",
+     "tasks.max": "1",
+     "topics": "sink-messages",
+     "java.naming.factory.initial": "com.solacesystems.jndi.SolJNDIInitialContextFactory",
+     "java.naming.provider.url": "smf://solace:55555",
+     "java.naming.security.principal": "admin",
+     "java.naming.security.credentials": "admin",
+     "connection.factory.name": "/jms/cf/default",
+     "Solace_JMS_VPN": "default",
+     "jms.destination.type": "queue",
+     "jms.destination.name": "connector-quickstart",
+     "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+     "value.converter": "org.apache.kafka.connect.storage.StringConverter",
+     "confluent.topic.bootstrap.servers": "broker:9092",
+     "confluent.topic.replication.factor": "1"
+}
 EOF
 
 sleep 10

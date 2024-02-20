@@ -24,8 +24,8 @@ else
         if [ -f $HOME/.aws/credentials ]
         then
             logwarn "💭 AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are set based on $HOME/.aws/credentials"
-            export AWS_ACCESS_KEY_ID=$( grep "^aws_access_key_id" $HOME/.aws/credentials| awk -F'=' '{print $2;}' )
-            export AWS_SECRET_ACCESS_KEY=$( grep "^aws_secret_access_key" $HOME/.aws/credentials| awk -F'=' '{print $2;}' ) 
+            export AWS_ACCESS_KEY_ID=$( grep "^aws_access_key_id" $HOME/.aws/credentials | head -1 | awk -F'=' '{print $2;}' )
+            export AWS_SECRET_ACCESS_KEY=$( grep "^aws_secret_access_key" $HOME/.aws/credentials | head -1 | awk -F'=' '{print $2;}' ) 
         fi
     fi
     if [ -z "$AWS_REGION" ]
@@ -46,32 +46,33 @@ else
      export CONNECT_CONTAINER_HOME_DIR="/root"
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.nginx-proxy.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.nginx-proxy.yml"
 
 KINESIS_STREAM_NAME=kafka_docker_playground$TAG
 KINESIS_STREAM_NAME=${KINESIS_STREAM_NAME//[-.]/}
 
 set +e
 log "Delete the stream"
-aws kinesis delete-stream --stream-name $KINESIS_STREAM_NAME
+aws kinesis delete-stream --stream-name $KINESIS_STREAM_NAME --region $AWS_REGION
 set -e
 
 sleep 5
 
 log "Create a Kinesis stream $KINESIS_STREAM_NAME"
-aws kinesis create-stream --stream-name $KINESIS_STREAM_NAME --shard-count 1
+aws kinesis create-stream --stream-name $KINESIS_STREAM_NAME --shard-count 1 --region $AWS_REGION
 
 log "Sleep 60 seconds to let the Kinesis stream being fully started"
 sleep 60
 
 log "Insert records in Kinesis stream"
 # The example shows that a record containing partition key 123 and data "test-message-1" is inserted into kafka_docker_playground.
-aws kinesis put-record --stream-name $KINESIS_STREAM_NAME --partition-key 123 --data test-message-1
+aws kinesis put-record --stream-name $KINESIS_STREAM_NAME --partition-key 123 --data test-message-1 --region $AWS_REGION
 
 
 
 log "Creating Kinesis Source connector"
-playground connector create-or-update --connector kinesis-source << EOF
+playground connector create-or-update --connector kinesis-source  << EOF
 {
     "connector.class":"io.confluent.connect.kinesis.KinesisSourceConnector",
     "tasks.max": "1",
@@ -91,4 +92,4 @@ log "Verify we have received the data in kinesis_topic topic"
 playground topic consume --topic kinesis_topic --min-expected-messages 1 --timeout 60
 
 log "Delete the stream"
-aws kinesis delete-stream --stream-name $KINESIS_STREAM_NAME
+aws kinesis delete-stream --stream-name $KINESIS_STREAM_NAME --region $AWS_REGION

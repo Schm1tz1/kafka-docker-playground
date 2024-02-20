@@ -83,7 +83,8 @@ sed -e "s|:AZURE_COSMOSDB_DB_ENDPOINT_URI:|$AZURE_COSMOSDB_DB_ENDPOINT_URI|g" \
     -e "s|:TOPIC_MAP:|$TOPIC_MAP|g" \
     ../../connect/connect-azure-cosmosdb-source/data.template > ../../connect/connect-azure-cosmosdb-source/data
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Create kafka topic apparels"
 docker exec broker kafka-topics --bootstrap-server 127.0.0.1:9092 --create --topic apparels --partitions 1 --replication-factor 1
@@ -93,7 +94,7 @@ docker exec -e AZURE_COSMOSDB_DB_ENDPOINT_URI="$AZURE_COSMOSDB_DB_ENDPOINT_URI" 
 
 # https://github.com/microsoft/kafka-connect-cosmosdb/blob/dev/doc/README_Source.md#source-configuration-properties
 log "Creating Azure Cosmos DB Source connector"
-playground connector create-or-update --connector azure-cosmosdb-source << EOF
+playground connector create-or-update --connector azure-cosmosdb-source  << EOF
 {
     "connector.class": "com.azure.cosmos.kafka.connect.source.CosmosDBSourceConnector",
     "tasks.max": "1",
@@ -122,6 +123,7 @@ log "Verifying topic apparels"
 playground topic consume --topic apparels --min-expected-messages 2 --timeout 60
 
 log "Delete Cosmos DB instance"
+check_if_continue
 az cosmosdb delete -g $AZURE_RESOURCE_GROUP -n $AZURE_COSMOSDB_SERVER_NAME --yes
 
 log "Deleting resource group"

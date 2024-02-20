@@ -23,7 +23,8 @@ do
     set -e
 done
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.proxy.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.proxy.yml"
 
 IP=$(docker inspect -f '{{.Name}} - {{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker ps -aq) | grep schema-registry | cut -d " " -f 3)
 log "Blocking schema-registry $IP from connect to make sure proxy is used"
@@ -43,18 +44,18 @@ timeout 60 docker exec connect kafka-avro-console-consumer -bootstrap-server bro
 
 
 log "Creating FileStream Sink connector"
-playground connector create-or-update --connector filestream-sink << EOF
+playground connector create-or-update --connector filestream-sink  << EOF
 {
-               "tasks.max": "1",
-               "connector.class": "org.apache.kafka.connect.file.FileStreamSinkConnector",
-               "topics": "a-topic",
-               "file": "/tmp/output.json",
-               "key.converter": "org.apache.kafka.connect.storage.StringConverter",
-               "value.converter": "io.confluent.connect.avro.AvroConverter",
-               "value.converter.schema.registry.url": "http://schema-registry:8081",
-               "value.converter.proxy.host": "nginx-proxy",
-               "value.converter.proxy.port": "8888"
-          }
+    "tasks.max": "1",
+    "connector.class": "org.apache.kafka.connect.file.FileStreamSinkConnector",
+    "topics": "a-topic",
+    "file": "/tmp/output.json",
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "io.confluent.connect.avro.AvroConverter",
+    "value.converter.schema.registry.url": "http://schema-registry:8081",
+    "value.converter.proxy.host": "nginx-proxy",
+    "value.converter.proxy.port": "8888"
+}
 EOF
 
 

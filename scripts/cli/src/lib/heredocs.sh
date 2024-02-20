@@ -115,7 +115,14 @@ EOF
 }
 
 function get_remote_debugging_command_heredoc () {
-tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
+docker_command=$(playground state get run.docker_command)
+if [ "$docker_command" == "" ]
+then
+  logerror "docker_command retrieved from $root_folder/playground.ini is empty !"
+  exit 1
+fi
+echo "$docker_command" > /tmp/tmp
+tmp_dir=$(mktemp -d -t pg-XXXXXXXXXX)
 trap 'rm -rf $tmp_dir' EXIT
 cat << EOF > $tmp_dir/docker-compose-remote-debugging.yml
 version: '3.5'
@@ -129,7 +136,7 @@ services:
 EOF
 
 sed -e "s|up -d|-f $tmp_dir/docker-compose-remote-debugging.yml up -d|g" \
-    /tmp/playground-command > /tmp/playground-command-debugging
+    /tmp/tmp > /tmp/playground-command-debugging
 }
 
 function get_custom_smt_build_heredoc () {

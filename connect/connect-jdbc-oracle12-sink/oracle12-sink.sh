@@ -20,10 +20,12 @@ if ! version_gt $JDBC_CONNECTOR_VERSION "9.9.9"; then
           logerror "ERROR: ${DIR}/ojdbc8.jar is missing. It must be downloaded manually in order to acknowledge user agreement"
           exit 1
      fi
-     ${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+     PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 else
      log "ojdbc jar is shipped with connector (starting with 10.0.0)"
-     ${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.no-ojdbc.yml"
+     PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.no-ojdbc.yml"
 fi
 
 # Verify Oracle DB has started within MAX_WAIT seconds
@@ -56,7 +58,7 @@ EOF
 
 log "Creating Oracle sink connector"
 
-playground connector create-or-update --connector oracle-sink << EOF
+playground connector create-or-update --connector oracle-sink  << EOF
 {
   "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
   "tasks.max": "1",

@@ -1,13 +1,22 @@
-# mac
+docker pull dannyben/bashly
+
+alias bashly='docker run --rm -it --user $(id -u):$(id -g) --volume "$PWD:/app" dannyben/bashly'
+
 cd /Users/vsaboulin/Documents/github/kafka-docker-playground/scripts/cli
 bashly generate
 rm /Users/vsaboulin/Documents/github/kafka-docker-playground/scripts/cli/completions.bash
 bashly add completions_script
 source /Users/vsaboulin/Documents/github/kafka-docker-playground/scripts/cli/completions.bash
-cd -
+bashly render templates/markdown docs
 
-# update
-brew gem install bashly
+cat /Users/vsaboulin/Documents/github/kafka-docker-playground-docs/docs/cli-template.md > /Users/vsaboulin/Documents/github/kafka-docker-playground-docs/docs/cli.md
+cat /Users/vsaboulin/Documents/github/kafka-docker-playground/scripts/cli/docs/index.md >> /Users/vsaboulin/Documents/github/kafka-docker-playground-docs/docs/cli.md
+mv /Users/vsaboulin/Documents/github/kafka-docker-playground/scripts/cli/docs/*.md /Users/vsaboulin/Documents/github/kafka-docker-playground-docs/docs/
+
+bashly render templates/shell-script-command-completion .
+yq -o=json playground.yaml > playground.json
+
+cd -
 
 #asciinema rec -c /bin/zsh /tmp/asciinema.cast --overwrite
 #asciicast2gif -w 80 -h 30 /tmp/asciinema.cast ~/Downloads/asciinema.gif

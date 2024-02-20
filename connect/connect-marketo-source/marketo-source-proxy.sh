@@ -35,7 +35,8 @@ then
      exit 1
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.proxy.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.proxy.yml"
 
 log "Creating an access token"
 ACCESS_TOKEN=$(docker exec connect \
@@ -68,7 +69,7 @@ log "Blocking $DOMAIN IP $IP to make sure proxy is used"
 docker exec --privileged --user root connect bash -c "iptables -A INPUT -p tcp -s $IP -j DROP"
 
 log "Creating Marketo Source connector"
-playground connector create-or-update --connector marketo-source << EOF
+playground connector create-or-update --connector marketo-source  << EOF
 {
                     "connector.class": "io.confluent.connect.marketo.MarketoSourceConnector",
                     "tasks.max": "1",

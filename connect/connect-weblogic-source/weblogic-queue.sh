@@ -6,7 +6,7 @@ source ${DIR}/../../scripts/utils.sh
 
 if test -z "$(docker images -q container-registry.oracle.com/middleware/weblogic:12.2.1.3)"
 then
-     if [ ! -z "$CI" ]
+     if [ ! -z "$GITHUB_RUN_NUMBER" ]
      then
           # running with github actions
 
@@ -53,10 +53,11 @@ do
      set -e
 done
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Creating JMS weblogic source connector"
-playground connector create-or-update --connector weblogic-queue-source << EOF
+playground connector create-or-update --connector weblogic-queue-source  << EOF
 {
                "connector.class": "io.confluent.connect.weblogic.WeblogicSourceConnector",
                "kafka.topic": "from-weblogic-messages",

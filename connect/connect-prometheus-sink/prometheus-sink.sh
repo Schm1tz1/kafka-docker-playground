@@ -4,26 +4,27 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Creating Prometheus sink connector"
-playground connector create-or-update --connector prometheus-sink << EOF
+playground connector create-or-update --connector prometheus-sink  << EOF
 {
-               "connector.class": "io.confluent.connect.prometheus.PrometheusMetricsSinkConnector",
-               "tasks.max": "1",
-               "confluent.topic.bootstrap.servers":"broker:9092",
-               "confluent.topic.replication.factor": "1",
-               "prometheus.listener.url": "http://connect:8889/metrics",
-               "key.converter": "io.confluent.connect.avro.AvroConverter",
-               "key.converter.schema.registry.url":"http://schema-registry:8081",
-               "value.converter": "io.confluent.connect.avro.AvroConverter",
-               "value.converter.schema.registry.url":"http://schema-registry:8081",
-               "reporter.bootstrap.servers": "broker:9092",
-               "reporter.error.topic.replication.factor": 1,
-               "reporter.result.topic.replication.factor": 1,
-               "behavior.on.error": "LOG",
-               "topics": "test-topic"
-          }
+  "connector.class": "io.confluent.connect.prometheus.PrometheusMetricsSinkConnector",
+  "tasks.max": "1",
+  "confluent.topic.bootstrap.servers":"broker:9092",
+  "confluent.topic.replication.factor": "1",
+  "prometheus.listener.url": "http://connect:8889/metrics",
+  "key.converter": "io.confluent.connect.avro.AvroConverter",
+  "key.converter.schema.registry.url":"http://schema-registry:8081",
+  "value.converter": "io.confluent.connect.avro.AvroConverter",
+  "value.converter.schema.registry.url":"http://schema-registry:8081",
+  "reporter.bootstrap.servers": "broker:9092",
+  "reporter.error.topic.replication.factor": 1,
+  "reporter.result.topic.replication.factor": 1,
+  "behavior.on.error": "LOG",
+  "topics": "test-topic"
+}
 EOF
 
 NOW=$(date +%s)

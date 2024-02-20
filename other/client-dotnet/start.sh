@@ -22,7 +22,8 @@ fi
 # make sure control-center is not disabled
 export ENABLE_CONTROL_CENTER=true
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml" -a -b
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml" "-a -b"
 
 log "Starting producer"
 docker exec -i client-dotnet bash -c "dotnet DotNet.dll produce test1"

@@ -10,12 +10,28 @@ then
     exit 111
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.kerberos.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.kerberos.yml"
 
-sleep 10
+sleep 20
 
 # Note in this simple example, if you get into an issue with permissions at the local HDFS level, it may be easiest to unlock the permissions unless you want to debug that more.
+set +e
 docker exec hadoop bash -c "echo password | kinit && /usr/local/hadoop/bin/hdfs dfs -chmod 777  /"
+if [ $? -ne 0 ]
+then
+  playground container restart --container hadoop
+
+  sleep 20
+
+  docker exec hadoop bash -c "echo password | kinit && /usr/local/hadoop/bin/hdfs dfs -chmod 777  /"
+  if [ $? -ne 0 ]
+  then
+    logerror "failed to start hadoop !"
+    exit 1
+  fi
+fi
+set -e
 
 log "Add connect kerberos principal"
 docker exec -i kdc kadmin.local << EOF
@@ -36,31 +52,31 @@ then
 fi
 
 log "Creating HDFS Sink connector"
-playground connector create-or-update --connector hdfs3-sink << EOF
+playground connector create-or-update --connector hdfs3-sink  << EOF
 {
-               "connector.class":"io.confluent.connect.hdfs3.Hdfs3SinkConnector",
-               "tasks.max":"1",
-               "topics":"test_hdfs",
-               "store.url":"hdfs://hadoop.kerberos-demo.local:9000",
-               "flush.size":"3",
-               "hadoop.conf.dir":"/etc/hadoop/",
-               "partitioner.class":"io.confluent.connect.storage.partitioner.FieldPartitioner",
-               "partition.field.name":"f1",
-               "rotate.interval.ms":"120000",
-               "hadoop.home":"/usr/local/hadoop",
-               "logs.dir":"/logs",
-               "hdfs.authentication.kerberos": "true",
-               "connect.hdfs.principal": "connect/connect.kerberos-demo.local@EXAMPLE.COM",
-               "connect.hdfs.keytab": "/tmp/connect.keytab",
-               "hdfs.namenode.principal": "nn/hadoop.kerberos-demo.local@EXAMPLE.COM",
-               "confluent.license": "",
-               "confluent.topic.bootstrap.servers": "broker:9092",
-               "confluent.topic.replication.factor": "1",
-               "key.converter":"org.apache.kafka.connect.storage.StringConverter",
-               "value.converter":"io.confluent.connect.avro.AvroConverter",
-               "value.converter.schema.registry.url":"http://schema-registry:8081",
-               "schema.compatibility":"BACKWARD"
-          }
+  "connector.class":"io.confluent.connect.hdfs3.Hdfs3SinkConnector",
+  "tasks.max":"1",
+  "topics":"test_hdfs",
+  "store.url":"hdfs://hadoop.kerberos-demo.local:9000",
+  "flush.size":"3",
+  "hadoop.conf.dir":"/etc/hadoop/",
+  "partitioner.class":"io.confluent.connect.storage.partitioner.FieldPartitioner",
+  "partition.field.name":"f1",
+  "rotate.interval.ms":"120000",
+  "hadoop.home":"/usr/local/hadoop",
+  "logs.dir":"/logs",
+  "hdfs.authentication.kerberos": "true",
+  "connect.hdfs.principal": "connect/connect.kerberos-demo.local@EXAMPLE.COM",
+  "connect.hdfs.keytab": "/tmp/connect.keytab",
+  "hdfs.namenode.principal": "nn/hadoop.kerberos-demo.local@EXAMPLE.COM",
+  "confluent.license": "",
+  "confluent.topic.bootstrap.servers": "broker:9092",
+  "confluent.topic.replication.factor": "1",
+  "key.converter":"org.apache.kafka.connect.storage.StringConverter",
+  "value.converter":"io.confluent.connect.avro.AvroConverter",
+  "value.converter.schema.registry.url":"http://schema-registry:8081",
+  "schema.compatibility":"BACKWARD"
+}
 EOF
 
 log "Sending messages to topic test_hdfs"
@@ -89,7 +105,7 @@ docker cp hadoop:/tmp/test_hdfs+0+0000000000+0000000000.avro /tmp/
 docker run --rm -v /tmp:/tmp vdesabou/avro-tools tojson /tmp/test_hdfs+0+0000000000+0000000000.avro
 
 log "Creating HDFS Source connector"
-playground connector create-or-update --connector hdfs3-source-kerberos << EOF
+playground connector create-or-update --connector hdfs3-source-kerberos  << EOF
 {
           "connector.class":"io.confluent.connect.hdfs3.Hdfs3SourceConnector",
           "tasks.max":"1",

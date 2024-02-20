@@ -14,7 +14,7 @@ keytool -genkey -keyalg RSA -alias endeca -keystore truststore.jks -noprompt -st
 keytool -delete -alias endeca -keystore truststore.jks -noprompt -storepass confluent -keypass confluent
 keytool -import -v -trustcacerts -alias endeca-ca -file cert.cer -keystore truststore.jks -noprompt -storepass confluent -keypass confluent
 
-#${DIR}/../../environment/rbac-sasl-plain/start.sh "${PWD}/docker-compose.rbac-with-azure-ad.yml"
+#playground start-environment --environment rbac-sasl-plain --docker-compose-override-file "${PWD}/docker-compose.rbac-with-azure-ad.yml"
 
 #############
 
@@ -51,7 +51,7 @@ cd -
 
 
 # Bring up base cluster and Confluent CLI
-docker-compose -f ../../environment/plaintext/docker-compose.yml -f ../../environment/rbac-sasl-plain/docker-compose.yml -f "${PWD}/docker-compose.rbac-with-azure-ad.yml" up -d zookeeper broker tools openldap
+docker compose -f ../../environment/plaintext/docker-compose.yml -f ../../environment/rbac-sasl-plain/docker-compose.yml -f "${PWD}/docker-compose.rbac-with-azure-ad.yml" up -d zookeeper broker tools openldap
 
 sleep 5
 
@@ -73,10 +73,11 @@ log "Creating role bindings for principals"
 docker exec -i tools bash -c "/tmp/helper/create-role-bindings.sh"
 
 
-docker-compose -f ../../environment/plaintext/docker-compose.yml -f ../../environment/rbac-sasl-plain/docker-compose.yml -f "${PWD}/docker-compose.rbac-with-azure-ad.yml" ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d
-log "📝 To see the actual properties file, use cli command playground get-properties -c <container>"
-command="source ${DIR}/../../scripts/utils.sh && docker-compose -f ${DIR}/../../environment/plaintext/docker-compose.yml -f ${DIR}/../../environment/rbac-sasl-plain/docker-compose.yml -f ${PWD}/docker-compose.rbac-with-azure-ad.yml ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d"
-echo "$command" > /tmp/playground-command
+docker compose -f ../../environment/plaintext/docker-compose.yml -f ../../environment/rbac-sasl-plain/docker-compose.yml -f "${PWD}/docker-compose.rbac-with-azure-ad.yml" ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d
+log "📝 To see the actual properties file, use cli command playground container get-properties -c <container>"
+command="source ${DIR}/../../scripts/utils.sh && docker compose -f ${DIR}/../../environment/plaintext/docker-compose.yml -f ${DIR}/../../environment/rbac-sasl-plain/docker-compose.yml -f ${PWD}/docker-compose.rbac-with-azure-ad.yml ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d"
+playground state set run.docker_command "$command"
+playground state set run.environment "rbac-sasl-plain"
 log "✨ If you modify a docker-compose file and want to re-create the container(s), run cli command playground container recreate"
 
 

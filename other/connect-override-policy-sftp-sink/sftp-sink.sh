@@ -4,7 +4,7 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
-${DIR}/../../environment/sasl-plain/start.sh "${PWD}/docker-compose.sasl-plain.yml"
+playground start-environment --environment sasl-plain --docker-compose-override-file "${PWD}/docker-compose.sasl-plain.yml"
 
 # INFO Principal = User:sftp is Denied Operation = Describe from host = 192.168.224.6 on resource = Topic:LITERAL:test_sftp_sink (kafka.authorizer.logger)
 # INFO Principal = User:sftp is Denied Operation = Describe from host = 192.168.224.6 on resource = Group:LITERAL:connect-sftp-sink (kafka.authorizer.logger)
@@ -23,7 +23,7 @@ docker exec broker kafka-acls --bootstrap-server broker:9092 --add --allow-princ
 docker exec broker kafka-acls --bootstrap-server broker:9092 --add --allow-principal User:sftp --operation CREATE --topic test_sftp_sink --command-config /tmp/client.properties
 
 log "Creating SFTP Sink connector"
-playground connector create-or-update --connector sftp-sink << EOF
+playground connector create-or-update --connector sftp-sink  << EOF
 {
   "topics": "test_sftp_sink",
   "tasks.max": "1",

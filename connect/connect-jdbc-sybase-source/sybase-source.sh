@@ -4,7 +4,8 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 
 log "Create the table and insert data."
@@ -23,7 +24,7 @@ GO
 EOF
 
 log "Creating JDBC Sybase source connector"
-playground connector create-or-update --connector jdbc-sybase-source << EOF
+playground connector create-or-update --connector jdbc-sybase-source  << EOF
 {
       "connector.class" : "io.confluent.connect.jdbc.JdbcSourceConnector",
       "tasks.max" : "1",

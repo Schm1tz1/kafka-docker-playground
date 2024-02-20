@@ -5,15 +5,9 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
 #############
-${DIR}/../../ccloud/environment/start.sh "${PWD}/docker-compose.yml"
+playground start-environment --environment ccloud --docker-compose-override-file "${PWD}/docker-compose.yml"
 
-if [ -f /tmp/delta_configs/env.delta ]
-then
-     source /tmp/delta_configs/env.delta
-else
-     logerror "ERROR: /tmp/delta_configs/env.delta has not been generated"
-     exit 1
-fi
+
 #############
 
 if ! version_gt $TAG_BASE "5.9.9"; then
@@ -59,22 +53,22 @@ db.customers.find().pretty();
 EOF
 
 log "Creating Debezium MongoDB source connector"
-playground connector create-or-update --connector debezium-mongodb-source << EOF
+playground connector create-or-update --connector debezium-mongodb-source  << EOF
 {
-               "connector.class" : "io.debezium.connector.mongodb.MongoDbConnector",
-               "tasks.max" : "1",
-               "mongodb.hosts" : "debezium/mongodb:27017",
-               "mongodb.user" : "debezium",
-               "mongodb.password" : "dbz",
+     "connector.class" : "io.debezium.connector.mongodb.MongoDbConnector",
+     "tasks.max" : "1",
+     "mongodb.hosts" : "debezium/mongodb:27017",
+     "mongodb.user" : "debezium",
+     "mongodb.password" : "dbz",
 
-               "_comment": "old version before 2.x",
-               "mongodb.name": "dbserver1",
-               "_comment": "new version since 2.x",
-               "topic.prefix": "dbserver1",
+     "_comment": "old version before 2.x",
+     "mongodb.name": "dbserver1",
+     "_comment": "new version since 2.x",
+     "topic.prefix": "dbserver1",
 
-               "topic.creation.default.replication.factor": "-1",
-               "topic.creation.default.partitions": "-1"
-          }
+     "topic.creation.default.replication.factor": "-1",
+     "topic.creation.default.partitions": "-1"
+}
 EOF
 
 

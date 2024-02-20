@@ -12,7 +12,7 @@ Quickly test [Azure Synapse Analytics Sink](https://docs.confluent.io/kafka-conn
 Simply run:
 
 ```
-$ playground run -f azure-synapse-analytics-sink<tab>
+$ playground run -f azure-synapse-analytics-sink<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path>
 ```
 
 ## Details of what the script is doing
@@ -35,6 +35,7 @@ AZURE_DATA_WAREHOUSE_NAME=$AZURE_NAME
 AZURE_REGION=westeurope
 AZURE_SQL_URL="jdbc:sqlserver://$AZURE_SQL_NAME.database.windows.net:1433"
 PASSWORD=$(date +%s | cksum | base64 | head -c 32 ; echo)
+PASSWORD="${PASSWORD}1"
 
 # Creating Azure Resource Group $AZURE_RESOURCE_GROUP
 az group create \

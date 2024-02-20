@@ -4,30 +4,48 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
-if ! version_gt $TAG_BASE "5.9.0"; then
-    if [[ "$TAG" != *ubi8 ]]
-    then
-          logwarn "WARN: This can only be run with UBI image or version greater than 6.0.0"
-          exit 111
-    fi
+if ! version_gt $TAG_BASE "6.9.9"; then
+    logwarn "WARN: This can only be run with image or version greater than 7.0.0"
+    exit 111
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+HPE_MAPR_EMAIL=${HPE_MAPR_EMAIL:-$1}
+HPE_MAPR_TOKEN=${HPE_MAPR_TOKEN:-$2}
+
+if [ -z "$HPE_MAPR_EMAIL" ]
+then
+     logerror "HPE_MAPR_EMAIL is not set. Export it as environment variable or pass it as argument"
+     exit 1
+fi
+
+if [ -z "$HPE_MAPR_TOKEN" ]
+then
+     logerror "HPE_MAPR_TOKEN is not set. Export it as environment variable or pass it as argument"
+     exit 1
+fi
+
+# generate data file for externalizing secrets
+sed -e "s|:HPE_MAPR_EMAIL:|$HPE_MAPR_EMAIL|g" \
+    -e "s|:HPE_MAPR_TOKEN:|$HPE_MAPR_TOKEN|g" \
+    ../../connect/connect-mapr-sink/maprtech.repo.template > ../../connect/connect-mapr-sink/maprtech.repo
+
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 # useful script
-# https://raw.githubusercontent.com/mapr-demos/mapr-db-60-getting-started/master/mapr_devsandbox_container_setup.sh
+# https://docs.ezmeral.hpe.com/datafabric-customer-managed/74/MapRContainerDevelopers/MapRContainerDevelopersOverview.html
 
 log "Installing Mapr Client"
 
 # RHEL
 # required deps for mapr-client
-docker exec -i --privileged --user root connect  bash -c "chmod a+rw /etc/yum.repos.d/mapr_core.repo"
+docker exec -i --privileged --user root connect  bash -c "chmod a+rw /etc/yum.repos.d/maprtech.repo"
 docker exec -i --privileged --user root connect  bash -c "rpm -i http://mirror.centos.org/centos/7/os/x86_64/Packages/mtools-4.0.18-5.el7.x86_64.rpm"
 docker exec -i --privileged --user root connect  bash -c "rpm -i http://mirror.centos.org/centos/7/os/x86_64/Packages/syslinux-4.05-15.el7.x86_64.rpm"
 
-docker exec -i --privileged --user root connect  bash -c "yum -y install --disablerepo='Confluent*' jre-1.8.0-openjdk hostname findutils net-tools"
+docker exec -i --privileged --user root connect  bash -c "yum -y install --disablerepo='Confluent*' --disablerepo='mapr*' jre-1.8.0-openjdk hostname findutils net-tools"
 
-docker exec -i --privileged --user root connect  bash -c "rpm --import https://package.mapr.com/releases/pub/maprgpg.key && yum -y update --disablerepo='Confluent*' && yum -y install mapr-client.x86_64"
+docker exec -i --privileged --user root connect  bash -c "wget --user=$HPE_MAPR_EMAIL --password=$HPE_MAPR_TOKEN -O mapr-pubkey.gpg https://package.ezmeral.hpe.com/releases/pub/maprgpg.key && rpm --import mapr-pubkey.gpg && yum -y update --disablerepo='Confluent*' && yum -y install mapr-client"
 
 CONNECT_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' connect)
 MAPR_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mapr)
@@ -70,25 +88,25 @@ mapr
 EOF
 
 log "Sending messages to topic maprtopic"
-docker exec -i broker kafka-console-producer --broker-list broker:9092 --topic maprtopic --property parse.key=true --property key.separator=, << EOF
-1,{"schema":{"type":"struct","fields":[{"type":"string","optional":false,"field":"record"}]},"payload":{"record":"record1"}}
-2,{"schema":{"type":"struct","fields":[{"type":"string","optional":false,"field":"record"}]},"payload":{"record":"record2"}}
-3,{"schema":{"type":"struct","fields":[{"type":"string","optional":false,"field":"record"}]},"payload":{"record":"record3"}}
+playground topic produce -t maprtopic --nb-messages 3 --key "1" << 'EOF'
+{"schema":{"type":"struct","fields":[{"type":"string","optional":false,"field":"record"}]},"payload":{"record":"record%g"}}
 EOF
 
 log "Creating Mapr sink connector"
-playground connector create-or-update --connector mapr-sink << EOF
+playground connector create-or-update --connector mapr-sink  << EOF
 {
-               "connector.class": "io.confluent.connect.mapr.db.MapRDbSinkConnector",
-               "tasks.max": "1",
-               "mapr.table.map.maprtopic" : "/mapr/maprdemo.mapr.io/maprtopic",
-               "key.converter": "org.apache.kafka.connect.storage.StringConverter",
-               "value.converter": "org.apache.kafka.connect.json.JsonConverter",
-               "topics": "maprtopic"
-          }
+    "connector.class": "io.confluent.connect.mapr.db.MapRDbSinkConnector",
+    "tasks.max": "1",
+    "mapr.table.map.maprtopic" : "/mapr/maprdemo.mapr.io/maprtopic",
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "topics": "maprtopic"
+}
 EOF
 
 sleep 70
+
+log "Mapper UI MCS is running at https://127.0.0.1:8443 (mapr/map)"
 
 log "Verify data is in Mapr"
 docker exec -i mapr bash -c "mapr dbshell" > /tmp/result.log  2>&1 <<-EOF

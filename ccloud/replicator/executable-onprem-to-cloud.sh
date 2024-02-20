@@ -13,15 +13,16 @@ fi
 # make sure control-center is not disabled
 export ENABLE_CONTROL_CENTER=true
 
-${DIR}/../../ccloud/environment/start.sh "${PWD}/docker-compose-executable-onprem-to-cloud.yml" -a -b
+playground start-environment --environment ccloud --docker-compose-override-file "${PWD}/docker-compose-executable-onprem-to-cloud.yml" "-a -b"
 
-if [ -f /tmp/delta_configs/env.delta ]
+if [ -f ${DIR}/../../.ccloud/env.delta ]
 then
-     source /tmp/delta_configs/env.delta
+     source ${DIR}/../../.ccloud/env.delta
 else
-     logerror "ERROR: /tmp/delta_configs/env.delta has not been generated"
+     logerror "ERROR: ${DIR}/../../.ccloud/env.delta has not been generated"
      exit 1
 fi
+
 
 # generate executable-onprem-to-cloud-producer.properties config
 sed -e "s|:BOOTSTRAP_SERVERS:|$BOOTSTRAP_SERVERS|g" \
@@ -41,14 +42,16 @@ playground topic delete --topic connect-onprem-to-cloud.config
 set -e
 
 log "Sending messages to topic executable-products on source OnPREM cluster"
-seq 10 | docker exec -i broker kafka-console-producer --broker-list broker:9092 --topic executable-products
+playground topic produce -t executable-products --nb-messages 10 << 'EOF'
+%g
+EOF
 
 log "Starting replicator executable"
-docker-compose -f ../../ccloud/environment/docker-compose.yml -f ${PWD}/docker-compose-executable-onprem-to-cloud.yml -f docker-compose-executable-onprem-to-cloud-replicator.yml up -d
+docker compose -f ../../ccloud/environment/docker-compose.yml -f ${PWD}/docker-compose-executable-onprem-to-cloud.yml -f docker-compose-executable-onprem-to-cloud-replicator.yml up -d
 ../../scripts/wait-for-connect-and-controlcenter.sh replicator $@
 
 
 sleep 50
 
 log "Verify we have received the data in executable-products topic"
-timeout 60 docker container exec -e BOOTSTRAP_SERVERS="$BOOTSTRAP_SERVERS" -e SASL_JAAS_CONFIG="$SASL_JAAS_CONFIG" -e SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO="$SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO" -e SCHEMA_REGISTRY_URL="$SCHEMA_REGISTRY_URL" connect bash -c 'kafka-console-consumer --topic executable-products --bootstrap-server $BOOTSTRAP_SERVERS --consumer-property ssl.endpoint.identification.algorithm=https --consumer-property sasl.mechanism=PLAIN --consumer-property security.protocol=SASL_SSL --consumer-property sasl.jaas.config="$SASL_JAAS_CONFIG" --property basic.auth.credentials.source=$BASIC_AUTH_CREDENTIALS_SOURCE --from-beginning --max-messages 10'
+playground topic consume --topic executable-products --min-expected-messages 10 --timeout 60

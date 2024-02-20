@@ -10,7 +10,7 @@ Quickly test [Singlestore](https://github.com/memsql/singlestore-kafka-connector
 Simply run:
 
 ```
-$ playground run -f singlestore-sink<tab>
+$ playground run -f singlestore-sink<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path>
 ```
 
 ## Details of what the script is doing
@@ -31,7 +31,7 @@ seq -f "{\"f1\": \"value%g\"}" 10 | docker exec -i connect kafka-avro-console-pr
 Creating Singlestore sink connector
 
 ```bash
-playground connector create-or-update --connector singlestore-sink << EOF
+playground connector create-or-update --connector singlestore-sink  << EOF
 {
                "connector.class":"com.singlestore.kafka.SingleStoreSinkConnector",
                "tasks.max":"1",

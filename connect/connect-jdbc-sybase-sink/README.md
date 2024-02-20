@@ -10,7 +10,7 @@ Quickly test [JDBC Sybase](https://docs.confluent.io/current/connect/kafka-conne
 Simply run:
 
 ```
-$ playground run -f sybase-sink<tab>
+$ playground run -f sybase-sink<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path>
 ```
 
 ## Details of what the script is doing
@@ -18,7 +18,7 @@ $ playground run -f sybase-sink<tab>
 Create JDBC Sybase sink connector
 
 ```bash
-playground connector create-or-update --connector sybase-sink << EOF
+playground connector create-or-update --connector sybase-sink  << EOF
 {
                "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
                "tasks.max": "1",

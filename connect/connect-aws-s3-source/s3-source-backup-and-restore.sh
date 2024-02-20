@@ -24,8 +24,8 @@ else
         if [ -f $HOME/.aws/credentials ]
         then
             logwarn "💭 AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are set based on $HOME/.aws/credentials"
-            export AWS_ACCESS_KEY_ID=$( grep "^aws_access_key_id" $HOME/.aws/credentials| awk -F'=' '{print $2;}' )
-            export AWS_SECRET_ACCESS_KEY=$( grep "^aws_secret_access_key" $HOME/.aws/credentials| awk -F'=' '{print $2;}' ) 
+            export AWS_ACCESS_KEY_ID=$( grep "^aws_access_key_id" $HOME/.aws/credentials | head -1 | awk -F'=' '{print $2;}' )
+            export AWS_SECRET_ACCESS_KEY=$( grep "^aws_secret_access_key" $HOME/.aws/credentials | head -1 | awk -F'=' '{print $2;}' ) 
         fi
     fi
     if [ -z "$AWS_REGION" ]
@@ -46,7 +46,8 @@ else
      export CONNECT_CONTAINER_HOME_DIR="/root"
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.backup-and-restore.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.backup-and-restore.yml"
 
 AWS_BUCKET_NAME=pg-bucket-${USER}
 AWS_BUCKET_NAME=${AWS_BUCKET_NAME//[-.]/}
@@ -68,7 +69,7 @@ aws s3 rm s3://$AWS_BUCKET_NAME/$TAG --recursive --region $AWS_REGION
 set -e
 
 log "Creating S3 Sink connector with bucket name <$AWS_BUCKET_NAME>"
-playground connector create-or-update --connector s3-sink << EOF
+playground connector create-or-update --connector s3-sink  << EOF
 {
     "connector.class": "io.confluent.connect.s3.S3SinkConnector",
     "tasks.max": "1",
@@ -107,8 +108,8 @@ EOF
 
 sleep 10
 
-log "Listing objects of in S3"
-aws s3api list-objects --bucket "$AWS_BUCKET_NAME"
+# log "Listing objects of in S3"
+# aws s3api list-objects --bucket "$AWS_BUCKET_NAME"
 
 log "Getting one of the avro files locally and displaying content with avro-tools"
 aws s3 cp --only-show-errors s3://$AWS_BUCKET_NAME/$TAG/s3_topic/partition=0/s3_topic+0+0000000000.avro s3_topic+0+0000000000.avro
@@ -117,24 +118,24 @@ docker run --rm -v ${DIR}:/tmp vdesabou/avro-tools tojson /tmp/s3_topic+0+000000
 rm -f s3_topic+0+0000000000.avro
 
 log "Creating Backup and Restore S3 Source connector with bucket name <$AWS_BUCKET_NAME>"
-playground connector create-or-update --connector s3-source << EOF
+playground connector create-or-update --connector s3-source  << EOF
 {
-               "tasks.max": "1",
-               "connector.class": "io.confluent.connect.s3.source.S3SourceConnector",
-               "s3.region": "$AWS_REGION",
-               "s3.bucket.name": "$AWS_BUCKET_NAME",
-               "topics.dir": "$TAG",
-               "aws.access.key.id" : "$AWS_ACCESS_KEY_ID",
-               "aws.secret.access.key": "$AWS_SECRET_ACCESS_KEY",
-               "format.class": "io.confluent.connect.s3.format.avro.AvroFormat",
-               "confluent.license": "",
-               "confluent.topic.bootstrap.servers": "broker:9092",
-               "confluent.topic.replication.factor": "1",
-               "transforms": "AddPrefix",
-               "transforms.AddPrefix.type": "org.apache.kafka.connect.transforms.RegexRouter",
-               "transforms.AddPrefix.regex": ".*",
-               "transforms.AddPrefix.replacement": "copy_of_\$0"
-          }
+    "tasks.max": "1",
+    "connector.class": "io.confluent.connect.s3.source.S3SourceConnector",
+    "s3.region": "$AWS_REGION",
+    "s3.bucket.name": "$AWS_BUCKET_NAME",
+    "topics.dir": "$TAG",
+    "aws.access.key.id" : "$AWS_ACCESS_KEY_ID",
+    "aws.secret.access.key": "$AWS_SECRET_ACCESS_KEY",
+    "format.class": "io.confluent.connect.s3.format.avro.AvroFormat",
+    "confluent.license": "",
+    "confluent.topic.bootstrap.servers": "broker:9092",
+    "confluent.topic.replication.factor": "1",
+    "transforms": "AddPrefix",
+    "transforms.AddPrefix.type": "org.apache.kafka.connect.transforms.RegexRouter",
+    "transforms.AddPrefix.regex": ".*",
+    "transforms.AddPrefix.replacement": "copy_of_\$0"
+}
 EOF
 
 sleep 10

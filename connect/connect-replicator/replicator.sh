@@ -4,26 +4,29 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Sending messages to topic test-topic"
-seq 10 | docker exec -i broker kafka-console-producer --broker-list broker:9092 --topic test-topic
+playground topic produce -t test-topic --nb-messages 10 << 'EOF'
+%g
+EOF
 
 log "Creating Replicator connector"
-playground connector create-or-update --connector duplicate-topic << EOF
+playground connector create-or-update --connector duplicate-topic  << EOF
 {
-         "connector.class":"io.confluent.connect.replicator.ReplicatorSourceConnector",
-               "key.converter": "io.confluent.connect.replicator.util.ByteArrayConverter",
-               "value.converter": "io.confluent.connect.replicator.util.ByteArrayConverter",
-               "header.converter": "io.confluent.connect.replicator.util.ByteArrayConverter",
-               "src.consumer.group.id": "duplicate-topic",
-               "confluent.topic.replication.factor": 1,
-               "provenance.header.enable": true,
-               "topic.whitelist": "test-topic",
-               "topic.rename.format": "test-topic-duplicate",
-               "dest.kafka.bootstrap.servers": "broker:9092",
-               "src.kafka.bootstrap.servers": "broker:9092"
-           }
+    "connector.class":"io.confluent.connect.replicator.ReplicatorSourceConnector",
+    "key.converter": "io.confluent.connect.replicator.util.ByteArrayConverter",
+    "value.converter": "io.confluent.connect.replicator.util.ByteArrayConverter",
+    "header.converter": "io.confluent.connect.replicator.util.ByteArrayConverter",
+    "src.consumer.group.id": "duplicate-topic",
+    "confluent.topic.replication.factor": 1,
+    "provenance.header.enable": true,
+    "topic.whitelist": "test-topic",
+    "topic.rename.format": "test-topic-duplicate",
+    "dest.kafka.bootstrap.servers": "broker:9092",
+    "src.kafka.bootstrap.servers": "broker:9092"
+}
 EOF
 
 sleep 10

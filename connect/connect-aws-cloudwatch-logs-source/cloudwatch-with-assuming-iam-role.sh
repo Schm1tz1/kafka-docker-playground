@@ -28,7 +28,8 @@ else
      export CONNECT_CONTAINER_HOME_DIR="/root"
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.with-assuming-iam-role.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.with-assuming-iam-role.yml"
 
 LOG_GROUP=my-log-group$TAG
 LOG_GROUP=${LOG_GROUP//[-.]/}
@@ -62,7 +63,7 @@ done
 CLOUDWATCH_LOGS_URL="https://logs.$AWS_REGION.amazonaws.com"
 
 log "Creating AWS CloudWatch Logs Source connector"
-playground connector create-or-update --connector aws-cloudwatch-logs-source << EOF
+playground connector create-or-update --connector aws-cloudwatch-logs-source  << EOF
 {
      "connector.class": "io.confluent.connect.aws.cloudwatch.AwsCloudWatchSourceConnector",
      "tasks.max": "1",

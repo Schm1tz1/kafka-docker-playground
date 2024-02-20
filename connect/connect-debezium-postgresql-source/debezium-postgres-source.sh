@@ -30,7 +30,8 @@ else
      log "🛑 SQL_DATAGEN is not set"
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Create CUSTOMERS table:"
 docker exec -i postgres psql -U myuser -d postgres << EOF
@@ -98,7 +99,7 @@ SELECT * FROM CUSTOMERS;
 EOF
 
 log "Creating Debezium PostgreSQL source connector"
-playground connector create-or-update --connector debezium-postgres-source << EOF
+playground connector create-or-update --connector debezium-postgres-source  << EOF
 {
      "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
      "tasks.max": "1",

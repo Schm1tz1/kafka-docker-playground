@@ -10,7 +10,7 @@ Verify that a task rebalance is happening when a new Kafka Connect worker is add
 Simply run:
 
 ```bash
-$ playground run -f start<tab>
+$ playground run -f start<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path>
 ```
 
 ## Details of what the script is doing
@@ -18,7 +18,7 @@ $ playground run -f start<tab>
 Creating SFTP Sink connector with 4 tasks
 
 ```
-playground connector create-or-update --connector sftp-sink << EOF
+playground connector create-or-update --connector sftp-sink  << EOF
 {
         "topics": "test_sftp_sink",
                "tasks.max": "4",
@@ -85,7 +85,7 @@ $ curl --request GET \
 Adding a second connect worker
 
 ```bash
-$ docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" -f "${PWD}/docker-compose.add-connect-worker.yml" up -d
+$ docker compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" -f "${PWD}/docker-compose.add-connect-worker.yml" up -d
 ```
 
 Getting tasks placement

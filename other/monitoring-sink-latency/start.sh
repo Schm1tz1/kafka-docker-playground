@@ -4,10 +4,11 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Creating datagen-source-users connector"
-playground connector create-or-update --connector datagen-source-users << EOF
+playground connector create-or-update --connector datagen-source-users  << EOF
 {
                "topics": "users",
                "tasks.max": "1",
@@ -25,7 +26,7 @@ playground connector create-or-update --connector datagen-source-users << EOF
 EOF
 
 log "Creating http-sink connector"
-playground connector create-or-update --connector http-sink << EOF
+playground connector create-or-update --connector http-sink  << EOF
 {
                "topics": "users",
                "tasks.max": "1",
@@ -49,7 +50,7 @@ playground connector create-or-update --connector http-sink << EOF
 EOF
 
 log "Creating http-sink-with-batching connector"
-playground connector create-or-update --connector http-sink-with-batching << EOF
+playground connector create-or-update --connector http-sink-with-batching  << EOF
 {
                "topics": "users",
                "tasks.max": "1",
@@ -74,7 +75,7 @@ playground connector create-or-update --connector http-sink-with-batching << EOF
 EOF
 
 log "Creating http-sink-with-consumer-quota connector"
-playground connector create-or-update --connector http-sink-with-consumer-quota << EOF
+playground connector create-or-update --connector http-sink-with-consumer-quota  << EOF
 {
                "topics": "users",
                "tasks.max": "1",
@@ -105,7 +106,7 @@ log "Creating s3-sink bucket"
 docker exec s3 awslocal s3 mb s3://s3-sink-bucket
 
 log "Creating s3-sink connector"
-playground connector create-or-update --connector s3-sink << EOF
+playground connector create-or-update --connector s3-sink  << EOF
 {
                "topics": "users",
                "tasks.max": "1",
@@ -125,7 +126,7 @@ playground connector create-or-update --connector s3-sink << EOF
                "store.url": "http://s3:4566",
                "s3.region": "us-west-2",
                "s3.bucket.name": "s3-sink-bucket",
-               "s3.part.size": 52428801,
+               "s3.part.size": "52428801",
                "flush.size": "1000",
                "storage.class": "io.confluent.connect.s3.storage.S3Storage",
                "format.class": "io.confluent.connect.s3.format.avro.AvroFormat",
@@ -135,7 +136,7 @@ playground connector create-or-update --connector s3-sink << EOF
 EOF
 
 log "Creating http-sink-with-fetch-latency connector"
-playground connector create-or-update --connector http-sink-with-fetch-latency << EOF
+playground connector create-or-update --connector http-sink-with-fetch-latency  << EOF
 {
                "topics": "users",
                "tasks.max": "1",
@@ -160,7 +161,7 @@ playground connector create-or-update --connector http-sink-with-fetch-latency <
 EOF
 
 log "Creating http-sink-with-put-latency connector"
-playground connector create-or-update --connector http-sink-with-put-latency << EOF
+playground connector create-or-update --connector http-sink-with-put-latency  << EOF
 {
                "topics": "users",
                "tasks.max": "1",
@@ -184,7 +185,7 @@ playground connector create-or-update --connector http-sink-with-put-latency << 
 EOF
 
 log "Creating http-sink-with-put-latency-and-batching connector"
-playground connector create-or-update --connector http-sink-with-put-latency-and-batching << EOF
+playground connector create-or-update --connector http-sink-with-put-latency-and-batching  << EOF
 {
                "topics": "users",
                "tasks.max": "1",
@@ -212,7 +213,7 @@ log "Creating s3-sink-with-put-latency bucket"
 docker exec s3 awslocal s3 mb s3://s3-sink-with-put-latency-bucket
 
 log "Creating s3-sink-with-put-latency connector"
-playground connector create-or-update --connector s3-sink-with-put-latency << EOF
+playground connector create-or-update --connector s3-sink-with-put-latency  << EOF
 {
                "topics": "users",
                "tasks.max": "1",
@@ -232,7 +233,7 @@ playground connector create-or-update --connector s3-sink-with-put-latency << EO
                "store.url": "http://s3:4566",
                "s3.region": "us-west-2",
                "s3.bucket.name": "s3-sink-with-put-latency-bucket",
-               "s3.part.size": 52428801,
+               "s3.part.size": "52428801",
                "flush.size": "1000",
                "storage.class": "io.confluent.connect.s3.storage.S3Storage",
                "format.class": "io.confluent.connect.s3.format.avro.AvroFormat",
@@ -261,7 +262,7 @@ add_latency connect-with-put-latency http-service-basic-auth 100ms
 latency_put=$(get_latency connect-with-put-latency http-service-basic-auth)
 log "Latency from connect-with-put-latency to http-service-basic-auth AFTER traffic control: $latency_put ms"
 
-if [ ! -z "$CI" ]
+if [ ! -z "$GITHUB_RUN_NUMBER" ]
 then
      # running with github actions
      log "##################################################"

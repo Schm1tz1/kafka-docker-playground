@@ -63,10 +63,11 @@ sed -e "s|:AZURE_ACCOUNT_NAME:|$AZURE_ACCOUNT_NAME|g" \
     -e "s|:AZURE_CONTAINER_NAME:|$AZURE_CONTAINER_NAME|g" \
     ../../connect/connect-azure-blob-storage-source/data.template > ../../connect/connect-azure-blob-storage-source/data
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.backup-and-restore.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.backup-and-restore.yml"
 
 log "Creating Azure Blob Storage Sink connector"
-playground connector create-or-update --connector azure-blob-sink << EOF
+playground connector create-or-update --connector azure-blob-sink  << EOF
 {
     "connector.class": "io.confluent.connect.azure.blob.AzureBlobStorageSinkConnector",
     "tasks.max": "1",
@@ -130,7 +131,7 @@ docker run --rm -v /tmp:/tmp vdesabou/avro-tools tojson /tmp/blob_topic+0+000000
 
 
 log "Creating Azure Blob Storage Source connector"
-playground connector create-or-update --connector azure-blob-source << EOF
+playground connector create-or-update --connector azure-blob-source  << EOF
 {
                 "connector.class": "io.confluent.connect.azure.blob.storage.AzureBlobStorageSourceConnector",
                 "tasks.max": "1",
@@ -154,4 +155,5 @@ log "Verifying topic copy_of_blob_topic"
 playground topic consume --topic copy_of_blob_topic --min-expected-messages 3 --timeout 60
 
 log "Deleting resource group"
+check_if_continue
 az group delete --name $AZURE_RESOURCE_GROUP --yes --no-wait

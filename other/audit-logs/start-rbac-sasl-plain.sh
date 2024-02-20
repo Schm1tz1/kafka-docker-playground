@@ -9,9 +9,9 @@ if ! version_gt $TAG_BASE "5.3.99"; then
     exit 111
 fi
 
-${DIR}/../../environment/rbac-sasl-plain/start.sh "${PWD}/docker-compose.rbac-sasl-plain.yml"
+playground start-environment --environment rbac-sasl-plain --docker-compose-override-file "${PWD}/docker-compose.rbac-sasl-plain.yml"
 
 sleep 10
 
 log "Checking messages from topic confluent-audit-log-events"
-playground topic consume --topic confluent-audit-log-events --min-expected-messages 5 --timeout 60
+docker exec -i connect kafka-console-consumer --bootstrap-server broker:9092 --topic confluent-audit-log-events --consumer.config /etc/kafka/secrets/client_without_interceptors.config --from-beginning --max-messages 5

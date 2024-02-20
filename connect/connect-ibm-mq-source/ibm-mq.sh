@@ -31,11 +31,12 @@ then
 fi
 cd -
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 
 log "Creating IBM MQ source connector"
-playground connector create-or-update --connector ibm-mq-source << EOF
+playground connector create-or-update --connector ibm-mq-source  << EOF
 {
      "connector.class": "io.confluent.connect.ibm.mq.IbmMQSourceConnector",
      "kafka.topic": "MyKafkaTopicName",

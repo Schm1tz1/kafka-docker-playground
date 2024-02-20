@@ -9,6 +9,8 @@ services:
     container_name: sql-datagen
     profiles:
     - sql_datagen
+    volumes:
+      - ../../connect/connect-jdbc-sqlserver-source/sqlserver-datagen/target/sql-datagen-1.0-SNAPSHOT-jar-with-dependencies.jar:/sql-datagen-1.0-SNAPSHOT-jar-with-dependencies.jar
     
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2019-latest
@@ -24,9 +26,6 @@ services:
 
   connect:
     depends_on:
-      - zookeeper
-      - broker
-      - schema-registry
       - sqlserver
     environment:
       CONNECT_PLUGIN_PATH: /usr/share/confluent-hub-components/confluentinc-kafka-connect-jdbc

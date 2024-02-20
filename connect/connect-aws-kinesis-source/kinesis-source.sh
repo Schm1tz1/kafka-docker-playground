@@ -24,8 +24,8 @@ else
         if [ -f $HOME/.aws/credentials ]
         then
             logwarn "💭 AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are set based on $HOME/.aws/credentials"
-            export AWS_ACCESS_KEY_ID=$( grep "^aws_access_key_id" $HOME/.aws/credentials| awk -F'=' '{print $2;}' )
-            export AWS_SECRET_ACCESS_KEY=$( grep "^aws_secret_access_key" $HOME/.aws/credentials| awk -F'=' '{print $2;}' ) 
+            export AWS_ACCESS_KEY_ID=$( grep "^aws_access_key_id" $HOME/.aws/credentials | head -1 | awk -F'=' '{print $2;}' )
+            export AWS_SECRET_ACCESS_KEY=$( grep "^aws_secret_access_key" $HOME/.aws/credentials | head -1 | awk -F'=' '{print $2;}' ) 
         fi
     fi
     if [ -z "$AWS_REGION" ]
@@ -46,29 +46,30 @@ else
      export CONNECT_CONTAINER_HOME_DIR="/root"
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 KINESIS_STREAM_NAME=kafka_docker_playground$TAG
 KINESIS_STREAM_NAME=${KINESIS_STREAM_NAME//[-.]/}
 
 set +e
 log "Delete the stream"
-aws kinesis delete-stream --stream-name $KINESIS_STREAM_NAME
+aws kinesis delete-stream --stream-name $KINESIS_STREAM_NAME --region $AWS_REGION
 set -e
 
 sleep 5
 
 log "Create a Kinesis stream $KINESIS_STREAM_NAME"
-aws kinesis create-stream --stream-name $KINESIS_STREAM_NAME --shard-count 1
+aws kinesis create-stream --stream-name $KINESIS_STREAM_NAME --shard-count 1 --region $AWS_REGION
 
 log "Sleep 60 seconds to let the Kinesis stream being fully started"
 sleep 60
 
 log "Insert records in Kinesis stream".
-aws kinesis put-record --stream-name $KINESIS_STREAM_NAME --partition-key 123 --data test-message-1
+aws kinesis put-record --stream-name $KINESIS_STREAM_NAME --partition-key 123 --data test-message-1 --region $AWS_REGION
 
 log "Creating Kinesis Source connector"
-playground connector create-or-update --connector kinesis-source << EOF
+playground connector create-or-update --connector kinesis-source  << EOF
 {
     "connector.class":"io.confluent.connect.kinesis.KinesisSourceConnector",
     "tasks.max": "1",
@@ -83,18 +84,10 @@ playground connector create-or-update --connector kinesis-source << EOF
 }
 EOF
 
-docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic a-topic --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"u_name","type":"string"},
-{"name":"u_price", "type": "float"}, {"name":"u_quantity", "type": "int"}]}' << EOF
-{"u_name": "scissors", "u_price": 2.75, "u_quantity": 3}
-{"u_name": "tape", "u_price": 0.99, "u_quantity": 10}
-{"u_name": "notebooks", "u_price": 1.99, "u_quantity": 5}
-EOF
-
-
 log "Verify we have received the data in kinesis_topic topic"
 playground topic consume --topic kinesis_topic --min-expected-messages 1 --timeout 60
 # 123     "µë-ë,j\u0007µ"
 # Processed a total of 1 messages
 
 log "Delete the stream"
-aws kinesis delete-stream --stream-name $KINESIS_STREAM_NAME
+aws kinesis delete-stream --stream-name $KINESIS_STREAM_NAME --region $AWS_REGION

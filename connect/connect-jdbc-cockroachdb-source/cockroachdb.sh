@@ -4,7 +4,8 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Create table drivers"
 docker exec -i cockroachdb /cockroach/cockroach sql --insecure << EOF
@@ -34,7 +35,7 @@ SELECT * FROM drivers;
 EOF
 
 log "Creating JDBC CockroachDB source connector"
-playground connector create-or-update --connector cockroachdb-source << EOF
+playground connector create-or-update --connector cockroachdb-source  << EOF
 {
     "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
     "tasks.max": "1",

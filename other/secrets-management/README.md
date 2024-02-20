@@ -9,7 +9,7 @@ Quickly test [Secrets Management](https://docs.confluent.io/platform/current/sec
 Simply run:
 
 ```
-$ playground run -f start<tab>
+$ playground run -f start<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path>
 ```
 
 ## Details of what the script is doing
@@ -37,7 +37,7 @@ EOF
 Creating FileStream Sink connector with topics set with secrets variable:
 
 ```bash
-playground connector create-or-update --connector filestream-sink << EOF
+playground connector create-or-update --connector filestream-sink  << EOF
 {
                "tasks.max": "1",
                "connector.class": "org.apache.kafka.connect.file.FileStreamSinkConnector",

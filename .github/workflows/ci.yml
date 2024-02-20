@@ -49,6 +49,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID}}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
           AWS_REGION: ${{ secrets.AWS_REGION}}
+          
 
   build:
     if: ${{ github.event.inputs.test_name == '' }}
@@ -58,7 +59,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tag: ["6.1.12","6.2.11","7.0.10","7.1.8","7.2.6","7.3.4","7.4.1"]
+        tag: ["7.1.11","7.2.9","7.3.7","7.4.4","7.5.3","7.6.0"]
         test_list : [
                       "🚀 connect/connect-servicenow-sink connect/connect-servicenow-source connect/connect-datagen-source",
                       "🚀 connect/connect-salesforce-bulkapi-sink connect/connect-salesforce-bulkapi-source connect/connect-salesforce-pushtopics-source connect/connect-salesforce-sobject-sink connect/connect-salesforce-cdc-source connect/connect-salesforce-platform-events-sink connect/connect-salesforce-platform-events-source",
@@ -75,14 +76,14 @@ jobs:
                       "🚀 connect/connect-aws-cloudwatch-logs-source connect/connect-aws-cloudwatch-metrics-sink connect/connect-aws-dynamodb-sink connect/connect-aws-kinesis-source connect/connect-aws-lambda-sink connect/connect-aws-redshift-sink connect/connect-jdbc-aws-redshift-source connect/connect-jdbc-aws-redshift-sink connect/connect-sftp-sink",
                       "🚀 connect/connect-gcp-bigquery-sink connect-jdbc-gcp-bigquery-source connect/connect-gcp-cloud-functions-sink connect/connect-vertica-sink connect/connect-prometheus-sink connect/connect-aws-sqs-source connect/connect-aws-s3-sink connect/connect-aws-s3-source connect/connect-databricks-delta-lake-sink",
                       "🚀 connect/connect-gcp-pubsub-source connect/connect-gcp-google-pubsub-source connect/connect-gcp-google-pubsub-sink connect/connect-gcp-gcs-sink connect/connect-gcp-gcs-source connect/connect-gcp-bigtable-sink connect/connect-kudu-source connect/connect-kudu-sink",
-                      "🚀 connect/connect-azure-data-lake-storage-gen1-sink connect/connect-azure-data-lake-storage-gen2-sink connect/connect-azure-event-hubs-source connect/connect-azure-cognitive-search-sink connect/connect-azure-functions-sink connect/connect-azure-service-bus-source connect/connect-azure-blob-storage-source",
-                      "🚀 connect/connect-ftps-source connect/connect-ftps-sink connect/connect-rabbitmq-sink connect/connect-amps-source connect/connect-jira-source connect/connect-github-source connect/connect-pivotal-gemfire-sink connect/connect-azure-blob-storage-sink connect/connect-azure-synapse-analytics-sink",
+                      "🚀 connect/connect-azure-data-lake-storage-gen2-sink connect/connect-azure-event-hubs-source connect/connect-azure-cognitive-search-sink connect/connect-azure-functions-sink connect/connect-azure-service-bus-source connect/connect-azure-blob-storage-source",
+                      "🚀 connect/connect-ftps-source connect/connect-ftps-sink connect/connect-rabbitmq-sink connect/connect-amps-source connect/connect-jira-source connect/connect-github-source connect/connect-pivotal-gemfire-sink connect/connect-azure-blob-storage-sink connect/connect-azure-synapse-analytics-sink connect/connect-jdbc-azure-synapse-analytics-source",
                       "🚀 connect/connect-http-sink",
                       "🚀 multi-data-center/replicator-connect",
                       "🚀 multi-data-center/replicator-executable",
                       "🚀 multi-data-center/mirrormaker2 ksqldb/materialized-view connect/connect-pagerduty-sink connect/connect-zendesk-source connect/connect-datadog-metrics-sink connect/connect-gcp-spanner-sink connect/connect-gcp-firebase-source connect/connect-gcp-firebase-sink",
-                      "🚀 other/filebeat-to-kafka other/rest-proxy-security-plugin other/tiered-storage-with-aws other/write-logs-to-files other/audit-logs other/multiple-event-types-in-topic other/broker-schema-validation other/schema-registry-security-plugin multi-data-center/cluster-linking other/secrets-management other/connect-secret-registry other/ldap-authorizer-with-ldap-failover other/schema-format-protobuf other/schema-format-json-schema other/schema-format-avro other/http-proxy-schema-registry",
-                      "🚀 ccloud/replicator ccloud/connect-debezium-mongodb-source ccloud/connect-debezium-mysql-source ccloud/connect-aws-kinesis-source ccloud/connect-servicenow-sink ccloud/connect-servicenow-source ccloud/connect-mqtt-source ccloud/connect-gcp-firebase-sink ccloud/rest-proxy-security-plugin ccloud/schema-registry-security-plugin ccloud/audit-log-connector",
+                      "🚀 other/filebeat-to-kafka other/rest-proxy-security-plugin other/tiered-storage-with-aws other/write-logs-to-files other/audit-logs schema-registry/multiple-event-types-in-topic other/broker-schema-validation other/schema-registry-security-plugin multi-data-center/cluster-linking other/secrets-management other/connect-secret-registry other/ldap-authorizer-with-ldap-failover other/schema-format-protobuf other/schema-format-json-schema other/schema-format-avro",
+                      "🚀 ccloud/replicator ccloud/rest-proxy-security-plugin ccloud/schema-registry-security-plugin ccloud/audit-log-connector",
                       "🚀 connect/connect-cdc-oracle12-source",
                       "🚀 connect/connect-cdc-oracle19-source",
                       "🚀 connect/connect-cdc-oracle18-source",
@@ -90,12 +91,23 @@ jobs:
                       "🚀 other/cp-ansible-playground",
                       "🚀 connect/connect-weblogic-source connect/connect-jms-weblogic-sink connect/connect-jms-weblogic-source",
                       "🚀 connect/connect-azure-cosmosdb-source connect/connect-azure-cosmosdb-sink connect/connect-jdbc-cockroachdb-source connect/connect-jdbc-ibmdb2-source connect/connect-jdbc-ibmdb2-sink connect/connect-jdbc-sybase-source connect/connect-jdbc-sybase-sink",
-                      "🚀 environment/plaintext environment/2way-ssl environment/kerberos environment/ldap-authorizer-sasl-plain environment/ldap-sasl-plain environment/mdc-kerberos environment/mdc-plaintext environment/mdc-sasl-plain environment/rbac-sasl-plain environment/sasl-plain environment/sasl-scram environment/sasl-ssl environment/ssl_kerberos environment/kraft-plaintext connect/connect-snowflake-sink connect/connect-jdbc-snowflake-source connect/connect-jdbc-snowflake-sink connect/connect-filestream-source connect/connect-filestream-sink connect/connect-filepulse-source",
+                      "🚀 environment/plaintext environment/2way-ssl environment/kerberos environment/ldap-authorizer-sasl-plain environment/ldap-sasl-plain environment/mdc-kerberos environment/mdc-plaintext environment/mdc-sasl-plain environment/rbac-sasl-plain environment/sasl-plain environment/sasl-scram environment/sasl-ssl environment/ssl_kerberos environment/kraft-plaintext connect/connect-snowflake-sink connect/connect-jdbc-snowflake-source connect/connect-jdbc-snowflake-sink connect/connect-filestream-source connect/connect-filestream-sink connect/connect-filepulse-source connect/connect-jdbc-mariadb-source connect/connect-jdbc-mariadb-sink",
                       "🚀 connect/connect-mapr-sink",
-                      "🚀 other/syslog-logstash-ksqldb",
+                      "🚀 other/syslog-logstash-ksqldb other/mqtt-proxy",
                       "🚀 connect/connect-jdbc-sap-hana-sink connect/connect-jdbc-sap-hana-source connect/connect-sap-hana-sink"
                     ]
     steps:
+
+      # - name: Maximize build space
+      #   uses: easimon/maximize-build-space@master
+      #   with:
+      #     root-reserve-mb: 512
+      #     swap-size-mb: 1024
+      #     remove-dotnet: 'true'
+      #     remove-android: 'true'
+      #     remove-haskell: 'true'
+      #     remove-codeql: 'true'
+
       - name: Checkout code
         uses: actions/checkout@v3
         with:
@@ -109,10 +121,38 @@ jobs:
           sudo apt-get clean
           sudo apt-get install expect fzf coreutils -y
           docker system prune -af
-          rm -rf /usr/share/dotnet
-          rm -rf /opt/ghc
-          rm -rf "/usr/local/share/boost"
-          rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+
+          sudo docker rmi $(docker image ls -aq) >/dev/null 2>&1 || true
+          sudo rm -rf \
+            /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /usr/local/share/powershell /usr/share/swift /usr/local/.ghcup \
+            /usr/lib/jvm || true
+          echo "some directories deleted"
+          sudo apt install aptitude -y >/dev/null 2>&1
+          sudo aptitude purge aria2 ansible azure-cli shellcheck rpm xorriso zsync \
+            esl-erlang firefox gfortran-8 gfortran-9 google-chrome-stable \
+            google-cloud-sdk imagemagick \
+            libmagickcore-dev libmagickwand-dev libmagic-dev ant ant-optional kubectl \
+            mercurial apt-transport-https mono-complete libmysqlclient \
+            unixodbc-dev yarn chrpath libssl-dev libxft-dev \
+            libfreetype6 libfreetype6-dev libfontconfig1 libfontconfig1-dev \
+            snmp pollinate libpq-dev postgresql-client powershell ruby-full \
+            sphinxsearch subversion mongodb-org azure-cli microsoft-edge-stable \
+            -y -f >/dev/null 2>&1
+          sudo aptitude purge google-cloud-sdk -f -y >/dev/null 2>&1
+          sudo aptitude purge microsoft-edge-stable -f -y >/dev/null 2>&1 || true
+          sudo apt purge microsoft-edge-stable -f -y >/dev/null 2>&1 || true
+          sudo aptitude purge '~n ^mysql' -f -y >/dev/null 2>&1
+          sudo aptitude purge '~n ^php' -f -y >/dev/null 2>&1
+          sudo aptitude purge '~n ^dotnet' -f -y >/dev/null 2>&1
+          sudo apt-get autoremove -y >/dev/null 2>&1
+          sudo apt-get autoclean -y >/dev/null 2>&1
+          echo "some packages purged"
+
           df -h
 
       - name: Decrypt secrets.tar
@@ -169,7 +209,6 @@ jobs:
           DD_APP_KEY: ${{ secrets.DD_APP_KEY}}
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME}}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD}}
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN}}
           JIRA_URL: ${{ secrets.JIRA_URL}}
           JIRA_USERNAME: ${{ secrets.JIRA_USERNAME}}
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN}}
@@ -208,6 +247,8 @@ jobs:
           ORACLE_CONTAINER_REGISTRY_PASSWORD: ${{ secrets.ORACLE_CONTAINER_REGISTRY_PASSWORD}}
           GCP_KEYFILE_CONTENT: ${{ secrets.GCP_KEYFILE_CONTENT}}
           GCP_PROJECT: ${{ secrets.GCP_PROJECT}}
+          HPE_MAPR_EMAIL: ${{ secrets.HPE_MAPR_EMAIL}}
+          HPE_MAPR_TOKEN: ${{ secrets.HPE_MAPR_TOKEN}}
 
   execute_one_test:
     if: ${{ github.event.inputs.test_name != '' }}
@@ -216,11 +257,22 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tag: ["6.1.12","6.2.11","7.0.10","7.1.8","7.2.6","7.3.4","7.4.1"]
+        tag: ["7.1.11","7.2.9","7.3.7","7.4.4","7.5.3","7.6.0"]
         test_list : [
                       "🚀 ${{ github.event.inputs.test_name }}"
                     ]
     steps:
+
+      # - name: Maximize build space
+      #   uses: easimon/maximize-build-space@master
+      #   with:
+      #     root-reserve-mb: 512
+      #     swap-size-mb: 1024
+      #     remove-dotnet: 'true'
+      #     remove-android: 'true'
+      #     remove-haskell: 'true'
+      #     remove-codeql: 'true'
+          
       - name: Checkout code
         uses: actions/checkout@v3
         with:
@@ -234,10 +286,38 @@ jobs:
           sudo apt-get clean
           sudo apt-get install expect fzf coreutils -y
           docker system prune -af
-          rm -rf /usr/share/dotnet
-          rm -rf /opt/ghc
-          rm -rf "/usr/local/share/boost"
-          rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+
+          sudo docker rmi $(docker image ls -aq) >/dev/null 2>&1 || true
+          sudo rm -rf \
+            /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /usr/local/share/powershell /usr/share/swift /usr/local/.ghcup \
+            /usr/lib/jvm || true
+          echo "some directories deleted"
+          sudo apt install aptitude -y >/dev/null 2>&1
+          sudo aptitude purge aria2 ansible azure-cli shellcheck rpm xorriso zsync \
+            esl-erlang firefox gfortran-8 gfortran-9 google-chrome-stable \
+            google-cloud-sdk imagemagick \
+            libmagickcore-dev libmagickwand-dev libmagic-dev ant ant-optional kubectl \
+            mercurial apt-transport-https mono-complete libmysqlclient \
+            unixodbc-dev yarn chrpath libssl-dev libxft-dev \
+            libfreetype6 libfreetype6-dev libfontconfig1 libfontconfig1-dev \
+            snmp pollinate libpq-dev postgresql-client powershell ruby-full \
+            sphinxsearch subversion mongodb-org azure-cli microsoft-edge-stable \
+            -y -f >/dev/null 2>&1
+          sudo aptitude purge google-cloud-sdk -f -y >/dev/null 2>&1
+          sudo aptitude purge microsoft-edge-stable -f -y >/dev/null 2>&1 || true
+          sudo apt purge microsoft-edge-stable -f -y >/dev/null 2>&1 || true
+          sudo aptitude purge '~n ^mysql' -f -y >/dev/null 2>&1
+          sudo aptitude purge '~n ^php' -f -y >/dev/null 2>&1
+          sudo aptitude purge '~n ^dotnet' -f -y >/dev/null 2>&1
+          sudo apt-get autoremove -y >/dev/null 2>&1
+          sudo apt-get autoclean -y >/dev/null 2>&1
+          echo "some packages purged"
+
           df -h
 
       - name: Decrypt secrets.tar
@@ -294,7 +374,6 @@ jobs:
           DD_APP_KEY: ${{ secrets.DD_APP_KEY}}
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME}}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD}}
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN}}
           JIRA_URL: ${{ secrets.JIRA_URL}}
           JIRA_USERNAME: ${{ secrets.JIRA_USERNAME}}
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN}}
@@ -333,6 +412,8 @@ jobs:
           ORACLE_CONTAINER_REGISTRY_PASSWORD: ${{ secrets.ORACLE_CONTAINER_REGISTRY_PASSWORD}}
           GCP_KEYFILE_CONTENT: ${{ secrets.GCP_KEYFILE_CONTENT}}
           GCP_PROJECT: ${{ secrets.GCP_PROJECT}}
+          HPE_MAPR_EMAIL: ${{ secrets.HPE_MAPR_EMAIL}}
+          HPE_MAPR_TOKEN: ${{ secrets.HPE_MAPR_TOKEN}}
 
   post-build:
     name: Cleanup resources and Update README
@@ -345,7 +426,7 @@ jobs:
         with:
           repository: vdesabou/kafka-docker-playground
           fetch-depth: 0
-          submodules: recursive
+          # submodules: recursive
           ssh-key: ${{ secrets.GH_SSH_KEY_FILE }}
           ssh-strict: 'false'
 
@@ -385,10 +466,11 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID}}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
           AWS_REGION: ${{ secrets.AWS_REGION}}
+          
 
       - name: Update README
         run: |
-          ./scripts/update-readme.sh "6.1.12 6.2.11 7.0.10 7.1.8 7.2.6 7.3.4 7.4.1"
+          ./scripts/update-readme.sh "7.1.11 7.2.9 7.3.7 7.4.4 7.5.3 7.6.0"
         env:
           GH_TOKEN: ${{ secrets.CI_GITHUB_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID}}

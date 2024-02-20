@@ -4,7 +4,8 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.kerberos.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.kerberos.yml"
 
 # following https://www.confluent.io/blog/containerized-testing-with-kerberos-and-ssh/
 log "Add kerberos principals"
@@ -53,7 +54,7 @@ docker cp csv-sftp-source.csv ssh-server:/home/sshuser/upload/input/
 rm -f csv-sftp-source.csv
 
 log "Creating CSV SFTP Source connector"
-playground connector create-or-update --connector sftp-source-kerberos-csv << EOF
+playground connector create-or-update --connector sftp-source-kerberos-csv  << EOF
 {
      "tasks.max": "1",
      "connector.class": "io.confluent.connect.sftp.SftpCsvSourceConnector",

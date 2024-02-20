@@ -7,8 +7,8 @@ export TAG=5.5.6
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
-docker-compose down -v --remove-orphans
-docker-compose up -d
+docker compose down -v --remove-orphans
+docker compose up -d
 ${DIR}/../../scripts/wait-for-connect-and-controlcenter.sh "connect1"
 ${DIR}/../../scripts/wait-for-connect-and-controlcenter.sh "connect2"
 ${DIR}/../../scripts/wait-for-connect-and-controlcenter.sh "connect3"
@@ -19,7 +19,7 @@ log "Sending messages to topic test-topic"
 seq 10 | docker exec -i broker1 kafka-console-producer --broker-list broker1:9092 --topic test-topic
 
 log "Creating Replicator connector"
-playground connector create-or-update --connector replicator << EOF
+playground connector create-or-update --connector replicator  << EOF
 {
               "tasks.max": "10",
               "connector.class":"io.confluent.connect.replicator.ReplicatorSourceConnector",

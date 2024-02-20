@@ -5,7 +5,8 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
 # required to make utils.sh script being able to work, do not remove:
-# ${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+# PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+#playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 function wait_for_um () {
      MAX_WAIT=240
@@ -27,9 +28,9 @@ function wait_for_um () {
 }
 
 
-docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" down -v --remove-orphans
+docker compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" down -v --remove-orphans
 log "Starting up SAG Universal Messaging container to get Client libraries"
-docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" up -d umserver
+docker compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" up -d umserver
 
 wait_for_um
 log "Universal Messaging Realm Server is up"
@@ -44,7 +45,10 @@ then
 
 fi
 
-docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" up -d
+docker compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" up -d
+command="source ${DIR}/../../scripts/utils.sh && docker compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" up -d ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d"
+playground state set run.docker_command "$command"
+playground state set run.environment "plaintext"
 
 ../../scripts/wait-for-connect-and-controlcenter.sh
 
@@ -61,23 +65,23 @@ do
 done
 
 log "Creating Solace source connector"
-playground connector create-or-update --connector jms-sag-um-source << EOF
+playground connector create-or-update --connector jms-sag-um-source  << EOF
 {
-               "connector.class": "io.confluent.connect.jms.JmsSourceConnector",
-                    "tasks.max": "1",
-                    "kafka.topic": "source-messages",
-                    "java.naming.provider.url": "nsp://umserver:9000",
-                    "java.naming.factory.initial": "com.pcbsys.nirvana.nSpace.NirvanaContextFactory",
-                    "connection.factory.name": "QueueConnectionFactory",
-                    "__java.naming.security.principal": "admin",
-                    "__java.naming.security.credentials": "admin",
-                    "jms.destination.type": "queue",
-                    "jms.destination.name": "test.queue",
-                    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
-                    "value.converter": "org.apache.kafka.connect.storage.StringConverter",
-                    "confluent.topic.bootstrap.servers": "broker:9092",
-                    "confluent.topic.replication.factor": "1"
-          }
+     "connector.class": "io.confluent.connect.jms.JmsSourceConnector",
+     "tasks.max": "1",
+     "kafka.topic": "source-messages",
+     "java.naming.provider.url": "nsp://umserver:9000",
+     "java.naming.factory.initial": "com.pcbsys.nirvana.nSpace.NirvanaContextFactory",
+     "connection.factory.name": "QueueConnectionFactory",
+     "__java.naming.security.principal": "admin",
+     "__java.naming.security.credentials": "admin",
+     "jms.destination.type": "queue",
+     "jms.destination.name": "test.queue",
+     "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+     "value.converter": "org.apache.kafka.connect.storage.StringConverter",
+     "confluent.topic.bootstrap.servers": "broker:9092",
+     "confluent.topic.replication.factor": "1"
+}
 EOF
 
 sleep 10

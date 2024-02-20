@@ -50,7 +50,8 @@ rm server.csr
 
 cd -
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.ssl.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.ssl.yml"
 
 
 log "Create CUSTOMERS table:"
@@ -119,7 +120,7 @@ SELECT * FROM CUSTOMERS;
 EOF
 
 log "Creating Debezium PostgreSQL source connector"
-playground connector create-or-update --connector debezium-postgres-source << EOF
+playground connector create-or-update --connector debezium-postgres-source  << EOF
 {
     "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
     "tasks.max": "1",

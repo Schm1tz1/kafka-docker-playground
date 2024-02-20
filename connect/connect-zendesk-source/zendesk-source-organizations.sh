@@ -28,33 +28,34 @@ then
      exit 1
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 SINCE="2020-09-05"
 
 log "Creating Zendesk Source connector"
-playground connector create-or-update --connector zendesk-source << EOF
+playground connector create-or-update --connector zendesk-source  << EOF
 {
-                    "connector.class": "io.confluent.connect.zendesk.ZendeskSourceConnector",
-                    "topic.name.pattern":"zendesk-topic-\${entityName}",
-                    "tasks.max": "1",
-                    "poll.interval.ms": 1000,
-                    "zendesk.auth.type": "basic",
-                    "zendesk.url": "$ZENDESK_URL",
-                    "zendesk.user": "$ZENDESK_USERNAME",
-                    "zendesk.password": "$ZENDESK_PASSWORD",
-                    "zendesk.tables": "organizations",
-                    "zendesk.since": "$SINCE",
-                    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
-                    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
-                    "value.converter.schemas.enable": "false",
-                    "confluent.license": "",
-                    "confluent.topic.bootstrap.servers": "broker:9092",
-                    "confluent.topic.replication.factor": "1",
-                    "errors.tolerance": "all",
-                    "errors.log.enable": true,
-                    "errors.log.include.messages": true
-          }
+     "connector.class": "io.confluent.connect.zendesk.ZendeskSourceConnector",
+     "topic.name.pattern":"zendesk-topic-\${entityName}",
+     "tasks.max": "1",
+     "poll.interval.ms": 1000,
+     "zendesk.auth.type": "basic",
+     "zendesk.url": "$ZENDESK_URL",
+     "zendesk.user": "$ZENDESK_USERNAME",
+     "zendesk.password": "$ZENDESK_PASSWORD",
+     "zendesk.tables": "organizations",
+     "zendesk.since": "$SINCE",
+     "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+     "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+     "value.converter.schemas.enable": "false",
+     "confluent.license": "",
+     "confluent.topic.bootstrap.servers": "broker:9092",
+     "confluent.topic.replication.factor": "1",
+     "errors.tolerance": "all",
+     "errors.log.enable": true,
+     "errors.log.include.messages": true
+}
 EOF
 
 

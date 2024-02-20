@@ -39,7 +39,8 @@ else
 fi
 cd -
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.generalized.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.generalized.yml"
 
 GCS_BUCKET_NAME=kafka-docker-playground-bucket-${USER}${TAG}
 GCS_BUCKET_NAME=${GCS_BUCKET_NAME//[-.]/}
@@ -64,7 +65,7 @@ log "Copy generalized.quickstart.json to bucket $GCS_BUCKET_NAME/quickstart"
 docker run -i -v ${PWD}:/tmp/ --volumes-from gcloud-config google/cloud-sdk:latest gsutil cp /tmp/generalized.quickstart.json gs://$GCS_BUCKET_NAME/quickstart/generalized.quickstart.json
 
 log "Creating Generalized GCS Source connector"
-playground connector create-or-update --connector gcs-source << EOF
+playground connector create-or-update --connector gcs-source  << EOF
 {
                "connector.class": "io.confluent.connect.gcs.GcsSourceConnector",
                "gcs.bucket.name" : "$GCS_BUCKET_NAME",

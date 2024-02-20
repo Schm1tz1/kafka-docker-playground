@@ -57,10 +57,11 @@ sed -e "s|:AZURE_ACCOUNT_NAME:|$AZURE_ACCOUNT_NAME|g" \
     -e "s|:AZURE_CONTAINER_NAME:|$AZURE_CONTAINER_NAME|g" \
     ../../connect/connect-azure-blob-storage-sink/data.template > ../../connect/connect-azure-blob-storage-sink/data
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Creating Azure Blob Storage Sink connector"
-playground connector create-or-update --connector azure-blob-sink << EOF
+playground connector create-or-update --connector azure-blob-sink  << EOF
 {
     "connector.class": "io.confluent.connect.azure.blob.AzureBlobStorageSinkConnector",
     "tasks.max": "1",
@@ -120,4 +121,5 @@ az storage blob download --account-name "${AZURE_ACCOUNT_NAME}" --account-key "$
 docker run --rm -v /tmp:/tmp vdesabou/avro-tools tojson /tmp/blob_topic+0+0000000000.avro
 
 log "Deleting resource group"
+check_if_continue
 az group delete --name $AZURE_RESOURCE_GROUP --yes --no-wait

@@ -4,10 +4,11 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Creating DataDiode Source connector"
-playground connector create-or-update --connector datadiode-source << EOF
+playground connector create-or-update --connector datadiode-source  << EOF
 {
      "tasks.max": "1",
      "connector.class": "io.confluent.connect.diode.source.DataDiodeSourceConnector",
@@ -28,7 +29,7 @@ playground connector create-or-update --connector datadiode-source << EOF
 EOF
 
 log "Creating DataDiode Sink connector"
-playground connector create-or-update --connector datadiode-sink << EOF
+playground connector create-or-update --connector datadiode-sink  << EOF
 {
      "connector.class": "io.confluent.connect.diode.sink.DataDiodeSinkConnector",
      "tasks.max": "1",

@@ -1,0 +1,50 @@
+{
+  "fields": [
+    {
+      "name": "count",
+      "type": "long"
+    },
+    {
+      "name": "first_name",
+      "type": "string"
+    },
+    {
+      "name": "last_name",
+      "type": "string"
+    },
+    {
+      "default": null,
+      "name": "address",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "last_sale_date",
+      "type": {
+        "logicalType": "timestamp-millis",
+        "type": "long"
+      }
+    },
+    {
+      "name": "last_sale_price",
+      "type": {
+        "logicalType": "decimal",
+        "precision": 15,
+        "scale": 2,
+        "type": "bytes"
+      }
+    },
+    {
+      "name": "last_connection",
+      "type": {
+        "logicalType": "date",
+        "type": "int"
+      }
+    }
+  ],
+  "name": "Customer",
+  "namespace": "com.github.vdesabou",
+  "type": "record"
+}

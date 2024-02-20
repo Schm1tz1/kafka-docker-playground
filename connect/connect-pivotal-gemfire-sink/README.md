@@ -17,7 +17,7 @@ N.B: if you're a Confluent employee, please check this [link](https://confluent.
 Simply run:
 
 ```
-$ playground run -f pivotal-gemfire-sink<tab>
+$ playground run -f pivotal-gemfire-sink<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path>
 ```
 
 ## Details of what the script is doing
@@ -57,7 +57,7 @@ EOF
 Creating Pivotal Gemfire sink connector
 
 ```bash
-playground connector create-or-update --connector pivotal-gemfire-sink << EOF
+playground connector create-or-update --connector pivotal-gemfire-sink  << EOF
 {
                "connector.class": "io.confluent.connect.pivotal.gemfire.PivotalGemfireSinkConnector",
                "tasks.max": "1",

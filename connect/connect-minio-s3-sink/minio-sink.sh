@@ -11,7 +11,8 @@ else
      export CONNECT_CONTAINER_HOME_DIR="/root"
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Minio UI is accessible at http://127.0.0.1:9000 (AKIAIOSFODNN7EXAMPLE/wJalrXUtnFEMI7K7MDENG8bPxRfiCYEXAMPLEKEY)"
 
@@ -19,7 +20,7 @@ log "Creating bucket in Minio"
 docker container restart create-buckets
 
 log "Creating S3 Sink connector with Minio"
-playground connector create-or-update --connector minio-sink << EOF
+playground connector create-or-update --connector minio-sink  << EOF
 {
      "connector.class": "io.confluent.connect.s3.S3SinkConnector",
      "tasks.max": "1",

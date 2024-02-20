@@ -7,7 +7,7 @@ source ${DIR}/../../scripts/utils.sh
 if [ ! -f ${DIR}/mysql-connector-java-5.1.45.jar ]
 then
      log "Downloading mysql-connector-java-5.1.45.jar"
-     wget https://repo1.maven.org/maven2/mysql/mysql-connector-java/5.1.45/mysql-connector-java-5.1.45.jar
+     wget -q https://repo1.maven.org/maven2/mysql/mysql-connector-java/5.1.45/mysql-connector-java-5.1.45.jar
 fi
 
 
@@ -43,7 +43,7 @@ log "-------------------------------------"
 
 
 log "Creating MySQL source connector"
-playground connector create-or-update --connector mysql-source << EOF
+playground connector create-or-update --connector mysql-source  << EOF
 {
                "connector.class":"io.confluent.connect.jdbc.JdbcSourceConnector",
                "tasks.max":"1",
@@ -84,7 +84,7 @@ fi
 
 
 log "Creating http-sink connector"
-playground connector create-or-update --connector http-sink << EOF
+playground connector create-or-update --connector http-sink  << EOF
 {
                "topics": "mysql-application",
                "tasks.max": "1",
@@ -114,7 +114,7 @@ then
 fi
 
 log "Creating Elasticsearch Sink connector"
-playground connector create-or-update --connector elasticsearch-sink << EOF
+playground connector create-or-update --connector elasticsearch-sink  << EOF
 {
         "connector.class": "io.confluent.connect.elasticsearch.ElasticsearchSinkConnector",
           "tasks.max": "1",
@@ -152,7 +152,7 @@ seq -f "us_sale_%g ${RANDOM}" 10 | docker container exec -i connect-us bash -c "
 log "Consolidating all sales in the US"
 
 docker container exec connect-us \
-playground connector create-or-update --connector replicate-europe-to-us << EOF
+playground connector create-or-update --connector replicate-europe-to-us  << EOF
 {
           "connector.class":"io.confluent.connect.replicator.ReplicatorSourceConnector",
           "key.converter": "io.confluent.connect.replicator.util.ByteArrayConverter",
@@ -173,7 +173,7 @@ EOF
 log "Consolidating all sales in Europe"
 
 docker container exec connect-europe \
-playground connector create-or-update --connector replicate-us-to-europe << EOF
+playground connector create-or-update --connector replicate-us-to-europe  << EOF
 {
           "connector.class":"io.confluent.connect.replicator.ReplicatorSourceConnector",
           "key.converter": "io.confluent.connect.replicator.util.ByteArrayConverter",
@@ -198,7 +198,7 @@ docker container exec -i connect-europe bash -c "KAFKA_OPTS="";export CLASSPATH=
 log "Verify we have received the data in all the sales_ topics in the US"
 docker container exec -i connect-us bash -c "KAFKA_OPTS="";export CLASSPATH=/usr/share/java/monitoring-interceptors/monitoring-interceptors-${TAG_BASE}.jar;  kafka-console-consumer --bootstrap-server broker-us:9092 --whitelist 'sales_.*' --from-beginning --max-messages 20 --property metadata.max.age.ms 30000 --consumer-property interceptor.classes=io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor --consumer-property confluent.monitoring.interceptor.bootstrap.servers=broker-metrics:9092"
 
-if [ ! -z "$CI" ]
+if [ ! -z "$GITHUB_RUN_NUMBER" ]
 then
      # running with github actions
      log "##################################################"

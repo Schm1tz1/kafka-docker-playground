@@ -13,15 +13,9 @@ fi
 
 create_or_get_oracle_image "LINUX.X64_193000_db_home.zip" "../../connect/connect-cdc-oracle19-source/ora-setup-scripts-cdb-table"
 
-${DIR}/../../ccloud/environment/start.sh "${PWD}/docker-compose.plaintext.pdb-table.yml"
+playground start-environment --environment ccloud --docker-compose-override-file "${PWD}/docker-compose.plaintext.pdb-table.yml"
 
-if [ -f /tmp/delta_configs/env.delta ]
-then
-     source /tmp/delta_configs/env.delta
-else
-     logerror "ERROR: /tmp/delta_configs/env.delta has not been generated"
-     exit 1
-fi
+
 #############
 
 set +e
@@ -136,11 +130,11 @@ docker exec -i oracle sqlplus C\#\#MYUSER/mypassword@//localhost:1521/ORCLPDB1 <
      END;
      /
 
-     insert into CUSTOMERS (id, first_name, last_name, email, gender, club_status, comments) values (1, 'Rica', 'Blaisdell', 'rblaisdell0@rambler.ru', 'Female', 'bronze', 'Universal optimal hierarchy');
-     insert into CUSTOMERS (id, first_name, last_name, email, gender, club_status, comments) values (2, 'Ruthie', 'Brockherst', 'rbrockherst1@ow.ly', 'Female', 'platinum', 'Reverse-engineered tangible interface');
-     insert into CUSTOMERS (id, first_name, last_name, email, gender, club_status, comments) values (3, 'Mariejeanne', 'Cocci', 'mcocci2@techcrunch.com', 'Female', 'bronze', 'Multi-tiered bandwidth-monitored capability');
-     insert into CUSTOMERS (id, first_name, last_name, email, gender, club_status, comments) values (4, 'Hashim', 'Rumke', 'hrumke3@sohu.com', 'Male', 'platinum', 'Self-enabling 24/7 firmware');
-     insert into CUSTOMERS (id, first_name, last_name, email, gender, club_status, comments) values (5, 'Hansiain', 'Coda', 'hcoda4@senate.gov', 'Male', 'platinum', 'Centralized full-range approach');
+     insert into CUSTOMERS (first_name, last_name, email, gender, club_status, comments) values ('Rica', 'Blaisdell', 'rblaisdell0@rambler.ru', 'Female', 'bronze', 'Universal optimal hierarchy');
+     insert into CUSTOMERS (first_name, last_name, email, gender, club_status, comments) values ('Ruthie', 'Brockherst', 'rbrockherst1@ow.ly', 'Female', 'platinum', 'Reverse-engineered tangible interface');
+     insert into CUSTOMERS (first_name, last_name, email, gender, club_status, comments) values ('Mariejeanne', 'Cocci', 'mcocci2@techcrunch.com', 'Female', 'bronze', 'Multi-tiered bandwidth-monitored capability');
+     insert into CUSTOMERS (first_name, last_name, email, gender, club_status, comments) values ('Hashim', 'Rumke', 'hrumke3@sohu.com', 'Male', 'platinum', 'Self-enabling 24/7 firmware');
+     insert into CUSTOMERS (first_name, last_name, email, gender, club_status, comments) values ('Hansiain', 'Coda', 'hcoda4@senate.gov', 'Male', 'platinum', 'Centralized full-range approach');
      exit;
 EOF
 
@@ -156,67 +150,103 @@ docker exec -i oracle sqlplus C\#\#MYUSER/mypassword@//localhost:1521/ORCLPDB1 <
 EOF
 
 log "Creating Oracle source connector"
-playground connector create-or-update --connector cdc-oracle-source-pdb-cloud << EOF
+playground connector create-or-update --connector cdc-oracle-source-pdb-cloud --package "io.confluent.connect.oracle.cdc.util.metrics.MetricsReporter" --level DEBUG  << EOF
 {
-               "connector.class": "io.confluent.connect.oracle.cdc.OracleCdcSourceConnector",
-               "tasks.max":2,
-               "key.converter" : "io.confluent.connect.avro.AvroConverter",
-               "key.converter.schema.registry.url": "$SCHEMA_REGISTRY_URL",
-               "key.converter.basic.auth.user.info": "\${file:/data:schema.registry.basic.auth.user.info}",
-               "key.converter.basic.auth.credentials.source": "USER_INFO",
-               "value.converter" : "io.confluent.connect.avro.AvroConverter",
-               "value.converter.schema.registry.url": "$SCHEMA_REGISTRY_URL",
-               "value.converter.basic.auth.user.info": "\${file:/data:schema.registry.basic.auth.user.info}",
-               "value.converter.basic.auth.credentials.source": "USER_INFO",
+     "connector.class": "io.confluent.connect.oracle.cdc.OracleCdcSourceConnector",
+     "tasks.max":2,
+     "key.converter" : "io.confluent.connect.avro.AvroConverter",
+     "key.converter.schema.registry.url": "$SCHEMA_REGISTRY_URL",
+     "key.converter.basic.auth.user.info": "\${file:/data:schema.registry.basic.auth.user.info}",
+     "key.converter.basic.auth.credentials.source": "USER_INFO",
+     "value.converter" : "io.confluent.connect.avro.AvroConverter",
+     "value.converter.schema.registry.url": "$SCHEMA_REGISTRY_URL",
+     "value.converter.basic.auth.user.info": "\${file:/data:schema.registry.basic.auth.user.info}",
+     "value.converter.basic.auth.credentials.source": "USER_INFO",
 
-               "confluent.topic.ssl.endpoint.identification.algorithm" : "https",
-               "confluent.topic.sasl.mechanism" : "PLAIN",
-               "confluent.topic.bootstrap.servers": "\${file:/data:bootstrap.servers}",
-               "confluent.topic.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"\${file:/data:sasl.username}\" password=\"\${file:/data:sasl.password}\";",
-               "confluent.topic.security.protocol" : "SASL_SSL",
-               "confluent.topic.replication.factor": "3",
+     "confluent.topic.ssl.endpoint.identification.algorithm" : "https",
+     "confluent.topic.sasl.mechanism" : "PLAIN",
+     "confluent.topic.bootstrap.servers": "\${file:/data:bootstrap.servers}",
+     "confluent.topic.sasl.jaas.config" : "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"\${file:/data:sasl.username}\" password=\"\${file:/data:sasl.password}\";",
+     "confluent.topic.security.protocol" : "SASL_SSL",
+     "confluent.topic.replication.factor": "3",
 
-               "topic.creation.groups":"redo",
-               "topic.creation.redo.include":"redo-log-topic",
-               "topic.creation.redo.replication.factor":3,
-               "topic.creation.redo.partitions":1,
-               "topic.creation.redo.cleanup.policy":"delete",
-               "topic.creation.redo.retention.ms":1209600000,
-               "topic.creation.default.replication.factor":3,
-               "topic.creation.default.partitions":3,
-               "topic.creation.default.cleanup.policy":"compact",
+     "topic.creation.groups":"redo",
+     "topic.creation.redo.include":"redo-log-topic",
+     "topic.creation.redo.replication.factor":3,
+     "topic.creation.redo.partitions":1,
+     "topic.creation.redo.cleanup.policy":"delete",
+     "topic.creation.redo.retention.ms":1209600000,
+     "topic.creation.default.replication.factor":3,
+     "topic.creation.default.partitions":3,
+     "topic.creation.default.cleanup.policy":"compact",
 
-               "oracle.server": "oracle",
-               "oracle.port": 1521,
-               "oracle.sid": "ORCLCDB",
-               "oracle.pdb.name": "ORCLPDB1",
-               "oracle.username": "C##MYUSER",
-               "oracle.password": "mypassword",
-               "start.from":"snapshot",
+     "oracle.server": "oracle",
+     "oracle.port": 1521,
+     "oracle.sid": "ORCLCDB",
+     "oracle.pdb.name": "ORCLPDB1",
+     "oracle.username": "C##MYUSER",
+     "oracle.password": "mypassword",
+     "start.from":"snapshot",
+     "enable.metrics.collection": "true",
+     "redo.log.topic.name": "redo-log-topic",
+     "redo.log.consumer.bootstrap.servers": "\${file:/data:bootstrap.servers}",
+     "redo.log.consumer.sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"\${file:/data:sasl.username}\" password=\"\${file:/data:sasl.password}\";",
+     "redo.log.consumer.security.protocol":"SASL_SSL",
+     "redo.log.consumer.sasl.mechanism":"PLAIN",
 
-               "redo.log.topic.name": "redo-log-topic",
-               "redo.log.consumer.bootstrap.servers": "\${file:/data:bootstrap.servers}",
-               "redo.log.consumer.sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"\${file:/data:sasl.username}\" password=\"\${file:/data:sasl.password}\";",
-               "redo.log.consumer.security.protocol":"SASL_SSL",
-               "redo.log.consumer.sasl.mechanism":"PLAIN",
-
-               "table.inclusion.regex": "ORCLPDB1[.].*[.]CUSTOMERS",
-               "table.topic.name.template": "\${databaseName}.\${schemaName}.\${tableName}",
-               "numeric.mapping": "best_fit",
-               "connection.pool.max.size": 20,
-               "redo.log.row.fetch.size":1,
-               "oracle.dictionary.mode": "auto"
-          }
+     "table.inclusion.regex": "ORCLPDB1[.].*[.]CUSTOMERS",
+     "table.topic.name.template": "\${databaseName}.\${schemaName}.\${tableName}",
+     "numeric.mapping": "best_fit",
+     "connection.pool.max.size": 20,
+     "redo.log.row.fetch.size":1,
+     "oracle.dictionary.mode": "auto"
+}
 EOF
 
 log "Waiting 20s for connector to read existing data"
 sleep 20
 
-log "Running SQL scripts"
-for script in ../../ccloud/connect-cdc-oracle19-source/sample-sql-scripts/*.sh
-do
-     $script "ORCLPDB1"
-done
+log "Insert 2 customers in CUSTOMERS table"
+docker exec -i oracle sqlplus C\#\#MYUSER/mypassword@//localhost:1521/ORCLPDB1 << EOF
+     insert into CUSTOMERS (first_name, last_name, email, gender, club_status, comments) values ('Frantz', 'Kafka', 'fkafka@confluent.io', 'Male', 'bronze', 'Evil is whatever distracts');
+     insert into CUSTOMERS (first_name, last_name, email, gender, club_status, comments) values ('Gregor', 'Samsa', 'gsamsa@confluent.io', 'Male', 'platinium', 'How about if I sleep a little bit longer and forget all this nonsense');
+     exit;
+EOF
+
+log "Update CUSTOMERS with email=fkafka@confluent.io"
+docker exec -i oracle sqlplus C\#\#MYUSER/mypassword@//localhost:1521/ORCLPDB1 << EOF
+     update CUSTOMERS set club_status = 'gold' where email = 'fkafka@confluent.io';
+     exit;
+EOF
+
+log "Deleting CUSTOMERS with email=fkafka@confluent.io"
+docker exec -i oracle sqlplus C\#\#MYUSER/mypassword@//localhost:1521/ORCLPDB1 << EOF
+     delete from CUSTOMERS where email = 'fkafka@confluent.io';
+     exit;
+EOF
+
+log "Altering CUSTOMERS table with an optional column"
+docker exec -i oracle sqlplus C\#\#MYUSER/mypassword@//localhost:1521/ORCLPDB1 << EOF
+     ALTER SESSION SET CONTAINER=CDB\$ROOT;
+     EXECUTE DBMS_LOGMNR_D.BUILD(OPTIONS=>DBMS_LOGMNR_D.STORE_IN_REDO_LOGS);
+     ALTER SESSION SET CONTAINER=ORCLPDB1;
+     alter table CUSTOMERS add (
+     country VARCHAR(50)
+     );
+     ALTER SESSION SET CONTAINER=CDB\$ROOT;
+     EXECUTE DBMS_LOGMNR_D.BUILD(OPTIONS=>DBMS_LOGMNR_D.STORE_IN_REDO_LOGS);
+     exit;
+EOF
+
+log "Populating CUSTOMERS table after altering the structure"
+docker exec -i oracle sqlplus C\#\#MYUSER/mypassword@//localhost:1521/ORCLPDB1 << EOF
+     insert into CUSTOMERS (first_name, last_name, email, gender, club_status, comments, country) values ('Josef', 'K', 'jk@confluent.io', 'Male', 'bronze', 'How is it even possible for someone to be guilty', 'Poland');
+     update CUSTOMERS set club_status = 'silver' where email = 'gsamsa@confluent.io';
+     update CUSTOMERS set club_status = 'gold' where email = 'gsamsa@confluent.io';
+     update CUSTOMERS set club_status = 'gold' where email = 'jk@confluent.io';
+     commit;
+     exit;
+EOF
 
 log "Waiting 20s for connector to read new data"
 sleep 20
@@ -224,8 +254,8 @@ sleep 20
 log "Verifying topic ORCLPDB1.C__MYUSER.CUSTOMERS: there should be 13 records"
 playground topic consume --topic ORCLPDB1.C__MYUSER.CUSTOMERS --min-expected-messages 13 --timeout 60
 
-log "Verifying topic redo-log-topic: there should be 15 records"
-playground topic consume --topic redo-log-topic --min-expected-messages 15 --timeout 60
+log "Verifying topic redo-log-topic: there should be 14 records"
+playground topic consume --topic redo-log-topic --min-expected-messages 14 --timeout 60
 
-log "🚚 If you're planning to inject more data, have a look at https://github.com/vdesabou/kafka-docker-playground/blob/master/connect/connect-cdc-oracle19-source/README.md#note-on-redologrowfetchsize"
+
 

@@ -20,25 +20,25 @@ You can either export environment variables `AWS_REGION`, `AWS_ACCESS_KEY_ID` an
 Simply run:
 
 ```bash
-$ playground run -f sqs<tab>
+$ playground run -f sqs<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path>
 ```
 
 Or using SASL_SSL authentication:
 
 ```bash
-$ playground run -f sqs-sasl-ssl<tab>
+$ playground run -f sqs-sasl-ssl<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path>
 ```
 
 Or using 2 way SSL authentication:
 
 ```bash
-$ playground run -f sqs-2way-ssl<tab>
+$ playground run -f sqs-2way-ssl<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path>
 ```
 
 If you want to [assume](https://docs.confluent.io/kafka-connect-s3-sink/current/index.html#using-trusted-account-credentials) IAM roles:
 
 ```
-$ playground run -f sqs-source-with-assuming-iam-role<tab> (in that case `~/.aws/credentials-with-assuming-iam-role` file must be set)
+$ playground run -f sqs-source-with-assuming-iam-role<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path> (in that case `~/.aws/credentials-with-assuming-iam-role` file must be set)
 ```
 
 ## Details of what the script is doing
@@ -120,7 +120,7 @@ $ aws sqs send-message-batch --queue-url $QUEUE_URL --entries file://send-messag
 The connector is created with:
 
 ```bash
-playground connector create-or-update --connector sqs-source << EOF
+playground connector create-or-update --connector sqs-source  << EOF
 {
         "connector.class": "io.confluent.connect.sqs.source.SqsSourceConnector",
                "tasks.max": "1",
@@ -179,7 +179,7 @@ $ aws sqs send-message-batch --queue-url $QUEUE_URL --entries file://send-messag
 The connector is created with:
 
 ```bash
-playground connector create-or-update --connector sqs-source-ssl << EOF
+playground connector create-or-update --connector sqs-source-ssl  << EOF
 {
                     "connector.class": "io.confluent.connect.sqs.source.SqsSourceConnector",
                     "tasks.max": "1",
@@ -224,7 +224,7 @@ $ aws sqs send-message-batch --queue-url $QUEUE_URL --entries file://send-messag
 The connector is created with:
 
 ```bash
-playground connector create-or-update --connector sqs-source-sasl-ssl << EOF
+playground connector create-or-update --connector sqs-source-sasl-ssl  << EOF
 {
                     "connector.class": "io.confluent.connect.sqs.source.SqsSourceConnector",
                     "tasks.max": "1",

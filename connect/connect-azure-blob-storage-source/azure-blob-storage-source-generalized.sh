@@ -67,7 +67,8 @@ sed -e "s|:AZURE_ACCOUNT_NAME:|$AZURE_ACCOUNT_NAME|g" \
     -e "s|:AZURE_CONTAINER_NAME:|$AZURE_CONTAINER_NAME|g" \
     ../../connect/connect-azure-blob-storage-source/data.template > ../../connect/connect-azure-blob-storage-source/data
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.generalized.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.generalized.yml"
 
 log "Copy generalized.quickstart.json to container $AZURE_CONTAINER_NAME quickstart/generalized.quickstart.json"
 rm -f /tmp/generalized.quickstart.json
@@ -75,7 +76,7 @@ cp generalized.quickstart.json /tmp/
 az storage blob upload --account-name "${AZURE_ACCOUNT_NAME}" --account-key "${AZURE_ACCOUNT_KEY}" --container-name "${AZURE_CONTAINER_NAME}" --name quickstart/generalized.quickstart.json --file /tmp/generalized.quickstart.json
 
 log "Creating Generalized Azure Blob Storage Source connector"
-playground connector create-or-update --connector azure-blob-source << EOF
+playground connector create-or-update --connector azure-blob-source  << EOF
 {
     "connector.class": "io.confluent.connect.azure.blob.storage.AzureBlobStorageSourceConnector",
     "tasks.max": "1",
@@ -101,4 +102,5 @@ log "Verifying topic quick-start-topic"
 playground topic consume --topic quick-start-topic --min-expected-messages 9 --timeout 60
 
 log "Deleting resource group"
+check_if_continue
 az group delete --name $AZURE_RESOURCE_GROUP --yes --no-wait

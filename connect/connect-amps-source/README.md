@@ -19,7 +19,7 @@ N.B: if you're a Confluent employee, please check this [link](https://confluent.
 Simply run:
 
 ```
-$ playground run -f amps-source<tab>
+$ playground run -f amps-source<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path>
 ```
 
 ## Details of what the script is doing
@@ -36,7 +36,7 @@ EOF
 Creating AMPS source connector:
 
 ```bash
-playground connector create-or-update --connector amps-source << EOF
+playground connector create-or-update --connector amps-source  << EOF
 {
                "connector.class": "io.confluent.connect.amps.AmpsSourceConnector",
                "tasks.max": "1",

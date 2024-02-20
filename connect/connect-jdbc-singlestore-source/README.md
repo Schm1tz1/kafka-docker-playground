@@ -10,7 +10,7 @@ Quickly test [JDBC Singlestore](https://docs.confluent.io/current/connect/kafka-
 Simply run:
 
 ```
-$ playground run -f jdbc-singlestore-sink<tab>
+$ playground run -f jdbc-singlestore-sink<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path>
 ```
 
 ## Details of what the script is doing
@@ -79,7 +79,7 @@ docker exec singlestore memsql -u root -proot -e "USE db;select * from applicati
 Creating JDBC Singlestore source connector:
 
 ```bash
-playground connector create-or-update --connector jdbc-singlestore-source << EOF
+playground connector create-or-update --connector jdbc-singlestore-source  << EOF
 {
                "connector.class":"io.confluent.connect.jdbc.JdbcSourceConnector",
                "tasks.max":"1",

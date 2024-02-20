@@ -21,13 +21,7 @@ done
 
 bootstrap_ccloud_environment
 
-if [ -f /tmp/delta_configs/env.delta ]
-then
-     source /tmp/delta_configs/env.delta
-else
-     logerror "ERROR: /tmp/delta_configs/env.delta has not been generated"
-     exit 1
-fi
+
 
 
 if [ ! -z "$AZ_USER" ] && [ ! -z "$AZ_PASS" ]
@@ -74,19 +68,19 @@ AZURE_SAS_KEY=$(az servicebus namespace authorization-rule keys list \
     --namespace-name $AZURE_SERVICE_BUS_NAMESPACE \
     --name "RootManageSharedAccessKey" | jq -r '.primaryKey')
 
-docker-compose build
-docker-compose down -v --remove-orphans
-docker-compose up -d
+docker compose build
+docker compose down -v --remove-orphans
+docker compose up -d
 
 
 connector_name="AzureServiceBusSource"
 set +e
 log "Deleting fully managed connector $connector_name, it might fail..."
-playground ccloud-connector delete --connector $connector_name
+playground connector delete --connector $connector_name
 set -e
 
 log "Creating fully managed connector"
-playground ccloud-connector create-or-update --connector $connector_name << EOF
+playground connector create-or-update --connector $connector_name << EOF
 {
     "connector.class": "AzureServiceBusSource",
     "name": "AzureServiceBusSource",

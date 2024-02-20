@@ -8,6 +8,14 @@ then
     export TAG=$tag
 fi
 
+environment="$3"
+flag_environment=""
+if [ "$environment" != "" ]
+then
+    flag_environment="--environment $environment"
+    export PLAYGROUND_ENVIRONMENT=$environment
+fi
+
 IGNORE_CHECK_FOR_DOCKER_COMPOSE=true
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../scripts/utils.sh
@@ -71,7 +79,8 @@ do
         THE_CONNECTOR_TAG=""
         if [[ "$dir" == "connect"* ]]
         then
-            docker_compose_file=$(grep "environment" "$script" | grep DIR | grep start.sh | cut -d "/" -f 7 | cut -d '"' -f 1 | head -n1)
+            docker_compose_file=$(grep "start-environment" "$script" |  awk '{print $6}' | cut -d "/" -f 2 | cut -d '"' -f 1 | tail -n1 | xargs)
+
             if [ "${docker_compose_file}" != "" ] && [ -f "${docker_compose_file}" ]
             then
                 connector_path=$(grep "CONNECT_PLUGIN_PATH" "${docker_compose_file}" | cut -d "/" -f 5 | head -1)
@@ -118,58 +127,27 @@ do
                 elapsed_time=$((now-last_execution_time))
 
                 gh_run_id=$(grep "$connector_path" ${file} | tail -1 | cut -d "|" -f 4)
+
                 if [ ! -f /tmp/${gh_run_id}_1.json ]
                 then
-                    curl -s -u vdesabou:$CI_GITHUB_TOKEN -H "Accept: application/vnd.github.v3+json" -o "/tmp/${gh_run_id}_1.json" "https://api.github.com/repos/vdesabou/kafka-docker-playground/actions/runs/${gh_run_id}/jobs?per_page=100&page=1"
-                    curl -s -u vdesabou:$CI_GITHUB_TOKEN -H "Accept: application/vnd.github.v3+json" -o "/tmp/${gh_run_id}_2.json" "https://api.github.com/repos/vdesabou/kafka-docker-playground/actions/runs/${gh_run_id}/jobs?per_page=100&page=2"
-                    curl -s -u vdesabou:$CI_GITHUB_TOKEN -H "Accept: application/vnd.github.v3+json" -o "/tmp/${gh_run_id}_3.json" "https://api.github.com/repos/vdesabou/kafka-docker-playground/actions/runs/${gh_run_id}/jobs?per_page=100&page=3"
-                    curl -s -u vdesabou:$CI_GITHUB_TOKEN -H "Accept: application/vnd.github.v3+json" -o "/tmp/${gh_run_id}_4.json" "https://api.github.com/repos/vdesabou/kafka-docker-playground/actions/runs/${gh_run_id}/jobs?per_page=100&page=4"
-                    curl -s -u vdesabou:$CI_GITHUB_TOKEN -H "Accept: application/vnd.github.v3+json" -o "/tmp/${gh_run_id}_5.json" "https://api.github.com/repos/vdesabou/kafka-docker-playground/actions/runs/${gh_run_id}/jobs?per_page=100&page=5"
-                    curl -s -u vdesabou:$CI_GITHUB_TOKEN -H "Accept: application/vnd.github.v3+json" -o "/tmp/${gh_run_id}_6.json" "https://api.github.com/repos/vdesabou/kafka-docker-playground/actions/runs/${gh_run_id}/jobs?per_page=100&page=6"
-                    curl -s -u vdesabou:$CI_GITHUB_TOKEN -H "Accept: application/vnd.github.v3+json" -o "/tmp/${gh_run_id}_7.json" "https://api.github.com/repos/vdesabou/kafka-docker-playground/actions/runs/${gh_run_id}/jobs?per_page=100&page=7"
-                    curl -s -u vdesabou:$CI_GITHUB_TOKEN -H "Accept: application/vnd.github.v3+json" -o "/tmp/${gh_run_id}_8.json" "https://api.github.com/repos/vdesabou/kafka-docker-playground/actions/runs/${gh_run_id}/jobs?per_page=100&page=8"
+                for i in {1..20}; do
+                    curl -s -u vdesabou:$CI_GITHUB_TOKEN -H "Accept: application/vnd.github.v3+json" \
+                    -o "/tmp/${gh_run_id}_${i}.json" \
+                    "https://api.github.com/repos/vdesabou/kafka-docker-playground/actions/runs/${gh_run_id}/jobs?per_page=100&page=${i}"
+                done
                 fi
+                
                 v=$(echo $tag | sed -e 's/\./[.]/g')
-                html_url=$(cat "/tmp/${gh_run_id}_1.json" | jq ".jobs |= map(select(.name | test(\"${v}.*${dir}\")))" | jq '[.jobs | .[] | {name: .name, html_url: .html_url }]' | jq '.[0].html_url')
-                html_url=$(echo "$html_url" | sed -e 's/^"//' -e 's/"$//')
+                for i in {1..20}; do
+                html_url=$(cat "/tmp/${gh_run_id}_${i}.json" | jq ".jobs |= map(select(.name | test(\"${v}.*${dir}\")))" | jq '[.jobs | .[] | {name: .name, html_url: .html_url }]' | jq '.[0].html_url' | sed -e 's/^"//' -e 's/"$//')
+                if [ "$html_url" != "" ] && [ "$html_url" != "null" ]; then 
+                    break
+                fi
+                done
+
                 if [ "$html_url" = "" ] || [ "$html_url" = "null" ]
                 then
-                    html_url=$(cat "/tmp/${gh_run_id}_2.json" | jq ".jobs |= map(select(.name | test(\"${v}.*${dir}\")))" | jq '[.jobs | .[] | {name: .name, html_url: .html_url }]' | jq '.[0].html_url')
-                    html_url=$(echo "$html_url" | sed -e 's/^"//' -e 's/"$//')
-                    if [ "$html_url" = "" ] || [ "$html_url" = "null" ]
-                    then
-                        html_url=$(cat "/tmp/${gh_run_id}_3.json" | jq ".jobs |= map(select(.name | test(\"${v}.*${dir}\")))" | jq '[.jobs | .[] | {name: .name, html_url: .html_url }]' | jq '.[0].html_url')
-                        html_url=$(echo "$html_url" | sed -e 's/^"//' -e 's/"$//')
-                        if [ "$html_url" = "" ] || [ "$html_url" = "null" ]
-                        then
-                            html_url=$(cat "/tmp/${gh_run_id}_4.json" | jq ".jobs |= map(select(.name | test(\"${v}.*${dir}\")))" | jq '[.jobs | .[] | {name: .name, html_url: .html_url }]' | jq '.[0].html_url')
-                            html_url=$(echo "$html_url" | sed -e 's/^"//' -e 's/"$//')
-                            if [ "$html_url" = "" ] || [ "$html_url" = "null" ]
-                            then
-                                html_url=$(cat "/tmp/${gh_run_id}_5.json" | jq ".jobs |= map(select(.name | test(\"${v}.*${dir}\")))" | jq '[.jobs | .[] | {name: .name, html_url: .html_url }]' | jq '.[0].html_url')
-                                html_url=$(echo "$html_url" | sed -e 's/^"//' -e 's/"$//')
-                                if [ "$html_url" = "" ] || [ "$html_url" = "null" ]
-                                then
-                                    html_url=$(cat "/tmp/${gh_run_id}_6.json" | jq ".jobs |= map(select(.name | test(\"${v}.*${dir}\")))" | jq '[.jobs | .[] | {name: .name, html_url: .html_url }]' | jq '.[0].html_url')
-                                    html_url=$(echo "$html_url" | sed -e 's/^"//' -e 's/"$//')
-                                    if [ "$html_url" = "" ] || [ "$html_url" = "null" ]
-                                    then
-                                        html_url=$(cat "/tmp/${gh_run_id}_7.json" | jq ".jobs |= map(select(.name | test(\"${v}.*${dir}\")))" | jq '[.jobs | .[] | {name: .name, html_url: .html_url }]' | jq '.[0].html_url')
-                                        html_url=$(echo "$html_url" | sed -e 's/^"//' -e 's/"$//')
-                                        if [ "$html_url" = "" ] || [ "$html_url" = "null" ]
-                                        then
-                                            html_url=$(cat "/tmp/${gh_run_id}_8.json" | jq ".jobs |= map(select(.name | test(\"${v}.*${dir}\")))" | jq '[.jobs | .[] | {name: .name, html_url: .html_url }]' | jq '.[0].html_url')
-                                            html_url=$(echo "$html_url" | sed -e 's/^"//' -e 's/"$//')
-                                            if [ "$html_url" = "" ] || [ "$html_url" = "null" ]
-                                            then
-                                                logerror "ERROR: Could not retrieve job url!"
-                                            fi
-                                        fi
-                                    fi
-                                fi
-                            fi
-                        fi
-                    fi
+                    logerror "ERROR: Could not retrieve job url! Forcing re-run for next time..."
                 fi
             fi
 
@@ -187,6 +165,11 @@ do
                 log "⌛ Test with CP $TAG and connector $THE_CONNECTOR_TAG has already been executed successfully $(displaytime $elapsed_time) ago, more than 14 days ago...re-running. Test url: $html_url"
                 log "####################################################"
                 aws s3 rm $s3_file --region us-east-1
+            elif [ "$environment" != "plaintext" ]
+            then
+                log "####################################################"
+                log "🔐 Test with environment not plaintext ($environment)...re-running. Test url: $html_url"
+                log "####################################################"
             elif [ "$status" = "failure" ]
             then
                 log "####################################################"
@@ -219,7 +202,7 @@ do
         log "🚀 Executing $script in dir $dir"
         log "####################################################"
         SECONDS=0
-        retry playground run -f "$PWD/$script" $flag_tag
+        retry playground run -f "$PWD/$script" $flag_tag $flag_environment
         ret=$?
         ELAPSED="took: $((($SECONDS / 60) % 60))min $(($SECONDS % 60))sec"
         let ELAPSED_TOTAL+=$SECONDS

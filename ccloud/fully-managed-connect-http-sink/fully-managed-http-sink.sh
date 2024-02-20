@@ -6,13 +6,18 @@ source ${DIR}/../../scripts/utils.sh
 
 bootstrap_ccloud_environment
 
-if [ -f /tmp/delta_configs/env.delta ]
-then
-     source /tmp/delta_configs/env.delta
-else
-     logerror "ERROR: /tmp/delta_configs/env.delta has not been generated"
-     exit 1
-fi
+
+
+docker compose -f docker-compose.noauth.yml build
+docker compose -f docker-compose.noauth.yml down -v --remove-orphans
+docker compose -f docker-compose.noauth.yml up -d
+
+sleep 5
+
+log "Getting ngrok hostname and port"
+NGROK_URL=$(curl --silent http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[0].public_url')
+NGROK_HOSTNAME=$(echo $NGROK_URL | cut -d "/" -f3 | cut -d ":" -f 1)
+NGROK_PORT=$(echo $NGROK_URL | cut -d "/" -f3 | cut -d ":" -f 2)
 
 log "Creating http-topic topic in Confluent Cloud"
 set +e
@@ -36,11 +41,16 @@ EOF
 connector_name="HttpSink"
 set +e
 log "Deleting fully managed connector $connector_name, it might fail..."
-playground ccloud-connector delete --connector $connector_name
+playground connector delete --connector $connector_name
 set -e
 
+log "Set webserver to reply with 200"
+curl -X PUT -H "Content-Type: application/json" --data '{"errorCode": 200}' http://localhost:9006/set-response-error-code
+# curl -X PUT -H "Content-Type: application/json" --data '{"delay": 2000}' http://localhost:9006/set-response-time
+# curl -X PUT -H "Content-Type: application/json" --data '{"message":"Hello, World!"}' http://localhost:9006/set-response-body
+
 log "Creating fully managed connector"
-playground ccloud-connector create-or-update --connector $connector_name << EOF
+playground connector create-or-update --connector $connector_name << EOF
 {
      "connector.class": "HttpSink",
      "name": "HttpSink",
@@ -49,9 +59,10 @@ playground ccloud-connector create-or-update --connector $connector_name << EOF
      "kafka.api.secret": "$CLOUD_SECRET",
      "topics": "http-topic",
      "input.data.format": "AVRO",
-     "http.api.url": "http://httpstat.us/200/",
-     "behavior.on.error": "fail",
-     "tasks.max" : "1"
+     "http.api.url": "http://$NGROK_HOSTNAME:$NGROK_PORT",
+     "tasks.max" : "1",
+     "request.body.format" : "json",
+     "headers": "Content-Type: application/json"
 }
 EOF
 wait_for_ccloud_connector_up $connector_name 300
@@ -65,4 +76,4 @@ playground topic consume --topic success-$connectorId --min-expected-messages 10
 log "Do you want to delete the fully managed connector $connector_name ?"
 check_if_continue
 
-playground ccloud-connector delete --connector $connector_name
+playground connector delete --connector $connector_name

@@ -9,33 +9,26 @@ if ! version_gt $TAG_BASE "5.2.99"; then
     exit 111
 fi
 
-${DIR}/../../environment/rbac-sasl-plain/start.sh "${PWD}/docker-compose.rbac-sasl-plain.yml"
+playground start-environment --environment rbac-sasl-plain --docker-compose-override-file "${PWD}/docker-compose.rbac-sasl-plain.yml"
 
 log "Sending messages to topic rbac_topic"
-seq -f "{\"f1\": \"This is a message sent with RBAC SASL/PLAIN authentication %g\"}" 10 | docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic rbac_topic --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"f1","type":"string"}]}' --property schema.registry.url=http://schema-registry:8081 --property basic.auth.credentials.source=USER_INFO --property schema.registry.basic.auth.user.info=clientAvroCli:clientAvroCli --producer.config /etc/kafka/secrets/client_without_interceptors.config
+playground topic produce -t rbac_topic --nb-messages 10 --forced-value '{"f1":"value%g"}' << 'EOF'
+{
+  "type": "record",
+  "name": "myrecord",
+  "fields": [
+    {
+      "name": "f1",
+      "type": "string"
+    }
+  ]
+}
+EOF
 
 log "Checking messages from topic rbac_topic"
 playground topic consume --topic rbac_topic --min-expected-messages 1 --timeout 60
 
-log "Registering secret username with superUser"
-curl -X POST \
-     -u superUser:superUser \
-     -H "Content-Type: application/json" \
-     --data '{
-               "secret": "connectorSA"
-          }' \
-     http://localhost:8083/secret/paths/my-rbac-connector/keys/username/versions | jq .
-
-log "Registering secret password with superUser"
-curl -X POST \
-     -u superUser:superUser \
-     -H "Content-Type: application/json" \
-     --data '{
-               "secret": "connectorSA"
-          }' \
-     http://localhost:8083/secret/paths/my-rbac-connector/keys/password/versions | jq .
-
-log "Registering secret my-smt-password with superUser"
+log "Registering secret my-smt-password with this-is-my-secret-value"
 curl -X POST \
      -u superUser:superUser \
      -H "Content-Type: application/json" \
@@ -45,22 +38,19 @@ curl -X POST \
      http://localhost:8083/secret/paths/my-rbac-connector/keys/my-smt-password/versions | jq .
 
 log "Creating FileStream Sink connector"
-playground connector create-or-update --connector my-rbac-connector << EOF
+playground connector create-or-update --connector my-rbac-connector  << EOF
 {
-               "tasks.max": "1",
-               "connector.class": "org.apache.kafka.connect.file.FileStreamSinkConnector",
-               "topics": "rbac_topic",
-               "file": "/tmp/output.json",
-               "value.converter": "io.confluent.connect.avro.AvroConverter",
-               "value.converter.schema.registry.url": "http://schema-registry:8081",
-               "value.converter.basic.auth.credentials.source": "USER_INFO",
-               "value.converter.basic.auth.user.info": "\${secret:my-rbac-connector:username}:\${secret:my-rbac-connector:username}",
-               "consumer.override.sasl.jaas.config": "org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required username=\"\${secret:my-rbac-connector:username}\" password=\"\${secret:my-rbac-connector:password}\" metadataServerUrls=\"http://broker:8091\";",
-               "transforms": "InsertField",
-               "transforms.InsertField.type": "org.apache.kafka.connect.transforms.InsertField\$Value",
-               "transforms.InsertField.static.field": "AddedBySMT",
-               "transforms.InsertField.static.value": "\${secret:my-rbac-connector:my-smt-password}"
-          }
+     "tasks.max": "1",
+     "connector.class": "org.apache.kafka.connect.file.FileStreamSinkConnector",
+     "topics": "rbac_topic",
+     "file": "/tmp/output.json",
+     "value.converter": "io.confluent.connect.avro.AvroConverter",
+     "value.converter.schema.registry.url": "http://schema-registry:8081",
+     "transforms": "InsertField",
+     "transforms.InsertField.type": "org.apache.kafka.connect.transforms.InsertField\$Value",
+     "transforms.InsertField.static.field": "AddedBySMT",
+     "transforms.InsertField.static.value": "\${secret:my-rbac-connector:my-smt-password}"
+}
 EOF
 
 

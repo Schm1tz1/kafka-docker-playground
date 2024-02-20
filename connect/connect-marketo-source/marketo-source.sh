@@ -34,7 +34,8 @@ then
      exit 1
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Creating an access token"
 ACCESS_TOKEN=$(docker exec connect \
@@ -62,7 +63,7 @@ else
 fi
 
 log "Creating Marketo Source connector"
-playground connector create-or-update --connector marketo-source << EOF
+playground connector create-or-update --connector marketo-source  << EOF
 {
      "connector.class": "io.confluent.connect.marketo.MarketoSourceConnector",
      "tasks.max": "1",

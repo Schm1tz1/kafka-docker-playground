@@ -4,7 +4,8 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Sending messages to topic sink-messages"
 playground topic produce --topic sink-messages --nb-messages 1 << 'EOF'
@@ -12,7 +13,7 @@ This is my message
 EOF
 
 log "Creating MQTT Sink connector"
-playground connector create-or-update --connector sink-mqtt << EOF
+playground connector create-or-update --connector sink-mqtt  << EOF
 {
      "connector.class": "io.confluent.connect.mqtt.MqttSinkConnector",
      "tasks.max": "1",

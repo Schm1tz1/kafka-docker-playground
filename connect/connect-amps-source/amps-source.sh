@@ -19,7 +19,7 @@ fi
 if [ ! -f ${DIR}/amps_client.jar ]
 then
      log "${DIR}/amps_client.jar missing, will get it from amps-java-client-5.3.0.1.tar.gz"
-     wget https://devnull.crankuptheamps.com/releases/amps/clients/java/5.3.0.1/amps-java-client-5.3.0.1.tar.gz
+     wget -q https://devnull.crankuptheamps.com/releases/amps/clients/java/5.3.0.1/amps-java-client-5.3.0.1.tar.gz
      tar xvfz amps-java-client-5.3.0.1.tar.gz
      cp ${DIR}/amps-java-client-5.3.0.1/dist/lib/amps_client.jar ${DIR}/
      rm -rf ${DIR}/amps-java-client-5.3.0.1
@@ -36,7 +36,8 @@ then
      cd ${OLDDIR}
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Use the spark utility to quickly publish few records to the Orders topic"
 docker exec -i amps /AMPS/bin/spark publish -server localhost:9007 -topic Orders -type json << EOF
@@ -45,7 +46,7 @@ docker exec -i amps /AMPS/bin/spark publish -server localhost:9007 -topic Orders
 EOF
 
 log "Creating AMPS source connector"
-playground connector create-or-update --connector amps-source << EOF
+playground connector create-or-update --connector amps-source  << EOF
 {
      "connector.class": "io.confluent.connect.amps.AmpsSourceConnector",
      "tasks.max": "1",

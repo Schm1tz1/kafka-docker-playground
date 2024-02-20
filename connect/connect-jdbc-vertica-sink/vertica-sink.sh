@@ -8,14 +8,15 @@ if [ ! -f ${DIR}/vertica-jdbc.jar ]
 then
      # install deps
      log "Getting vertica-jdbc.jar from vertica-client-10.0.1-0.x86_64.tar.gz"
-     wget https://www.vertica.com/client_drivers/10.0.x/10.0.1-0/vertica-client-10.0.1-0.x86_64.tar.gz
+     wget -q https://www.vertica.com/client_drivers/10.0.x/10.0.1-0/vertica-client-10.0.1-0.x86_64.tar.gz
      tar xvfz ${DIR}/vertica-client-10.0.1-0.x86_64.tar.gz
      cp ${DIR}/opt/vertica/java/lib/vertica-jdbc.jar ${DIR}/
      rm -rf ${DIR}/opt
      rm -f ${DIR}/vertica-client-10.0.1-0.x86_64.tar.gz
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 
 # Verify VERTICA has started within MAX_WAIT seconds
@@ -56,7 +57,7 @@ playground topic produce -t mytable --nb-messages 10 --forced-value '{"f1":"valu
 EOF
 
 log "Creating JDBC Vertica sink connector"
-playground connector create-or-update --connector jdbc-vertica-sink << EOF
+playground connector create-or-update --connector jdbc-vertica-sink  << EOF
 {
   "connector.class" : "io.confluent.connect.jdbc.JdbcSinkConnector",
   "tasks.max" : "1",

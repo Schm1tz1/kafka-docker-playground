@@ -4,17 +4,19 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
-${DIR}/../../environment/sasl-ssl/start.sh "${PWD}/docker-compose.sasl-ssl.yml"
+playground start-environment --environment sasl-ssl --docker-compose-override-file "${PWD}/docker-compose.sasl-ssl.yml"
 
 log "########"
 log "##  SASL_SSL authentication"
 log "########"
 
 log "Sending messages to topic test-topic-sasl-ssl"
-seq 10 | docker exec -i broker kafka-console-producer --broker-list broker:9092 --topic test-topic-sasl-ssl --producer.config /etc/kafka/secrets/client_without_interceptors.config
+playground topic produce -t test-topic-sasl-ssl --nb-messages 10 << 'EOF'
+%g
+EOF
 
 log "Creating Confluent Replicator connector with SASL_SSL authentication"
-playground connector create-or-update --connector replicator-sasl-ssl << EOF
+playground connector create-or-update --connector replicator-sasl-ssl  << EOF
 {
                     "connector.class":"io.confluent.connect.replicator.ReplicatorSourceConnector",
                     "key.converter": "io.confluent.connect.replicator.util.ByteArrayConverter",

@@ -27,20 +27,23 @@ cd ../../connect/connect-solace-sink
 if [ ! -f ${DIR}/sol-jms-10.6.4.jar ]
 then
      log "Downloading sol-jms-10.6.4.jar"
-     wget https://repo1.maven.org/maven2/com/solacesystems/sol-jms/10.6.4/sol-jms-10.6.4.jar
+     wget -q https://repo1.maven.org/maven2/com/solacesystems/sol-jms/10.6.4/sol-jms-10.6.4.jar
 fi
 cd -
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 wait_for_solace
 log "Solace UI is accessible at http://127.0.0.1:8080 (admin/admin)"
 
 log "Sending messages to topic sink-messages"
-seq 10 | docker exec -i broker kafka-console-producer --broker-list broker:9092 --topic sink-messages
+playground topic produce -t sink-messages --nb-messages 10 << 'EOF'
+%g
+EOF
 
 log "Creating Solace sink connector"
-playground connector create-or-update --connector SolaceSinkConnector << EOF
+playground connector create-or-update --connector SolaceSinkConnector  << EOF
 {
      "connector.class": "io.confluent.connect.jms.SolaceSinkConnector",
      "tasks.max": "1",

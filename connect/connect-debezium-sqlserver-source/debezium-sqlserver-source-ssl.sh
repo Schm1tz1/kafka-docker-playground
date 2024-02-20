@@ -59,7 +59,8 @@ fi
 
 cd -
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.ssl.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.ssl.yml"
 
 
 log "Create table"
@@ -91,7 +92,7 @@ EOF
 
 
 log "Creating Debezium SQL Server source connector"
-playground connector create-or-update --connector debezium-sqlserver-source-ssl << EOF
+playground connector create-or-update --connector debezium-sqlserver-source-ssl  << EOF
 {
   "connector.class": "io.debezium.connector.sqlserver.SqlServerConnector",
   "tasks.max": "1",

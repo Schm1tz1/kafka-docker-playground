@@ -38,38 +38,38 @@ Rename it to `keyfile.json`and place it in `./keyfile.json` or use environment v
 Simply run:
 
 ```bash
-$ playground run -f gcs-sink<tab> <GCP_PROJECT>
+$ playground run -f gcs-sink<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path> <GCP_PROJECT>
 ```
 
 Or using SASL_SSL:
 
 ```bash
-$ playground run -f gcs-sink-sasl-ssl<tab> <GCP_PROJECT>
+$ playground run -f gcs-sink-sasl-ssl<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path> <GCP_PROJECT>
 ```
 
 Or using 2 way SSL authentication:
 
 ```bash
-$ playground run -f gcs-sink-2way-ssl<tab> <GCP_PROJECT>
+$ playground run -f gcs-sink-2way-ssl<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path> <GCP_PROJECT>
 ```
 
 
 Or using kerberos:
 
 ```bash
-$ playground run -f gcs-sink-kerberos<tab> <GCP_PROJECT>
+$ playground run -f gcs-sink-kerberos<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path> <GCP_PROJECT>
 ```
 
 Or using LDAP Authorizer with SASL/PLAIN:
 
 ```bash
-$ playground run -f gcs-sink-ldap-authorizer-sasl-plain<tab> <GCP_PROJECT>
+$ playground run -f gcs-sink-ldap-authorizer-sasl-plain<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path> <GCP_PROJECT>
 ```
 
 Or using RBAC environment with SASL/PLAIN:
 
 ```bash
-$ playground run -f gcs-sink-rbac-sasl-plain<tab> <GCP_PROJECT>
+$ playground run -f gcs-sink-rbac-sasl-plain<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path> <GCP_PROJECT>
 ```
 
 Note: you can also export these values as environment variable
@@ -98,7 +98,7 @@ EOF
 The connector is created with:
 
 ```bash
-playground connector create-or-update --connector gcs-sink << EOF
+playground connector create-or-update --connector gcs-sink  << EOF
 {
                "connector.class": "io.confluent.connect.gcs.GcsSinkConnector",
                     "tasks.max" : "1",
@@ -333,7 +333,7 @@ $ docker run --rm -v /tmp:/tmp vdesabou/avro-tools tojson /tmp/rbac_gcs_topic+0+
 
 ### With LDAP Authorizer with SASL/PLAIN:
 
-We need to add ACL for topic `gcs_topic-ldap-authorizer-sasl-plain` (user `alice` is part of group `KafkaDevelopers`):
+We need to add ACL for topic `gcs_topic-ldap-authorizer-sasl-plain` (user `client` is part of group `KafkaDevelopers`):
 
 ```bash
 $ docker exec broker kafka-acls --bootstrap-server broker:9092 --add --topic=gcs_topic-ldap-authorizer-sasl-plain --producer --allow-principal="Group:KafkaDevelopers" --command-config /service/kafka/users/kafka.properties
@@ -344,7 +344,7 @@ Messages are sent to `gcs_topic-ldap-authorizer-sasl-plain` topic using:
 ```bash
 $ docker exec -i client kinit -k -t /var/lib/secret/kafka-client.key kafka_producer
 
-$ seq -f "{\"f1\": \"This is a message sent with LDAP Authorizer SASL/PLAIN authentication %g\"}" 10 | docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic gcs_topic-ldap-authorizer-sasl-plain --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"f1","type":"string"}]}' --property schema.registry.url=http://schema-registry:8081 --producer.config /service/kafka/users/alice.properties
+$ seq -f "{\"f1\": \"This is a message sent with LDAP Authorizer SASL/PLAIN authentication %g\"}" 10 | docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic gcs_topic-ldap-authorizer-sasl-plain --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"f1","type":"string"}]}' --property schema.registry.url=http://schema-registry:8081 --producer.config /service/kafka/users/client.properties
 ```
 
 The connector is created with:

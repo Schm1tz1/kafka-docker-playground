@@ -1,0 +1,2454 @@
+{
+  "name": "playground",
+  "description": "🧠 CLI for Kafka Docker Playground 🐳\n\n👉 Check documentation https://kafka-docker-playground.io/#/cli\n",
+  "usage": "playground [OPTIONS] COMMAND",
+  "options": [],
+  "inheritedOptions": [],
+  "subcommands": [
+    {
+      "name": "help",
+      "description": "Show help about a command\n",
+      "usage": "playground help [COMMAND]",
+      "options": [],
+      "subcommands": null
+    },
+    {
+      "name": "status",
+      "description": "🗺️ Show a status\n",
+      "usage": "playground status",
+      "options": [],
+      "subcommands": null
+    },
+    {
+      "name": "config",
+      "description": "⚙️ Configure CLI\n",
+      "usage": "playground config COMMAND",
+      "options": [],
+      "subcommands": [
+        {
+          "name": "editor",
+          "description": "editor to use to open files\n",
+          "usage": "playground config editor EDITOR",
+          "options": []
+        },
+        {
+          "name": "folder_zip_or_jar",
+          "description": "📂 list of folders where to search for zip or jar\n  current folder is always included\n  \n  default is ~ (home dir)\n",
+          "usage": "playground config folder_zip_or_jar FOLDER...",
+          "options": []
+        },
+        {
+          "name": "clipboard",
+          "description": "copy to clipboard connector config (only working on MacOS)\n",
+          "usage": "playground config clipboard [ENABLED]",
+          "options": []
+        }
+      ]
+    },
+    {
+      "name": "run",
+      "description": "🕹️ Run any example\n\n⛅ When running Confluent Cloud (ccloud) example:\n\n  All you have to do is to be already logged in with confluent CLI.\n\n  By default, a new Confluent Cloud environment with a Cluster will be created.\n\n  You can configure the new cluster by setting:\n\n  --cluster-type (or CLUSTER_TYPE environment variable): The type of cluster (possible values: `basic`, `standard` and `dedicated`, default `basic`)\n  --cluster-cloud (or CLUSTER_CLOUD environment variable): The Cloud provider (possible values: `aws`, `gcp` and `azure`, default `aws`)\n  --cluster-region (or CLUSTER_REGION environment variable): The Cloud region (use `confluent kafka region list` to get the list, default `eu-west-2` for aws, `westeurope`for azure and `europe-west2` for gcp)\n  --cluster-environment (or ENVIRONMENT environment variable) (optional): The environment id where want your new cluster (example: `txxxxx`) \n\n  In case you want to use your own existing cluster, you need to setup, in addition to previous ones:\n\n  --cluster-name (or CLUSTER_NAME environment variable): The cluster name\n  --cluster-creds (or CLUSTER_CREDS environment variable): The Kafka api key and secret to use, it should be separated with colon (example: `<API_KEY>:<API_KEY_SECRET>`)\n  --cluster-schema-registry-creds (or SCHEMA_REGISTRY_CREDS environment variable) (optional, if not set, new one will be created): The Schema Registry api key and secret to use, it should be separated with colon (example: `<SR_API_KEY>:<SR_API_KEY_SECRET>`)\n",
+      "usage": "playground run [OPTIONS] [ARGUMENTS...]",
+      "options": [
+        {
+          "names": [
+            "--environment"
+          ],
+          "argument": "plaintext",
+          "description": "🔐 The environment to start when running a connector example \n\n- plaintext\n- ccloud\n- 2way-ssl\n- kerberos\n- kraft-external-plaintext\n- kraft-plaintext\n- ldap-authorizer-sasl-plain\n- ldap-sasl-plain\n- rbac-sasl-plain\n- sasl-plain\n- sasl-scram\n- sasl-ssl\n- ssl_kerberos\n\nDefault is plaintext.\nThis is only supported when example is a connector example\n\nDefault value: plaintext\n\nAllowed values: ccloud, plaintext, sasl-ssl, sasl-plain, 2way-ssl, sasl-scram, kraft-external-plaintext, kraft-plaintext, kerberos, ssl_kerberos, ldap-authorizer-sasl-plain, ldap-sasl-plain, rbac-sasl-plain\n"
+        },
+        {
+          "names": [
+            "--file",
+            "-f"
+          ],
+          "argument": "FILE",
+          "description": "🔖 Example file to run\n\n❕ It must be absolute full path\n\n🎓 Tip: use <tab> completion to trigger fzf completion\n"
+        },
+        {
+          "names": [
+            "--open",
+            "-o"
+          ],
+          "argument": "",
+          "description": "📖 Opening example file with text editor set with playground config editor <editor> (default is code)\n"
+        },
+        {
+          "names": [
+            "--tag"
+          ],
+          "argument": "TAG",
+          "description": "🎯 Confluent Platform (CP) version to use\n\nMust be greater or equal to 5.3.0\n\n🎓 Tip: use <tab> completion to trigger fzf completion\n"
+        },
+        {
+          "names": [
+            "--connector-tag"
+          ],
+          "argument": "CONNECTOR_TAG",
+          "description": "🔗 Connector version to use\n\nBy default, for each connector, the latest available version on Confluent Hub is used\n\n🎓 Tip: set to \" \" in order to select the version dynamically\n\nConflicts with: --connector-zip\n"
+        },
+        {
+          "names": [
+            "--connector-zip"
+          ],
+          "argument": "CONNECTOR_ZIP",
+          "description": "🤐 Connector zip to use\n\n❕ It must be absolute full path\n\n🎓 Tip: use <tab> completion to trigger fzf completion \n        use playground config folder_zip_or_jar <folder1> <folder2>... (default is home folder and current folder is always included) to configure where to search the files\n\nConflicts with: --connector-tag\n"
+        },
+        {
+          "names": [
+            "--connector-jar"
+          ],
+          "argument": "CONNECTOR_JAR",
+          "description": "♨️ Connector jar to use\n\n❕ It must be absolute full path\n\n🎓 Tip: use <tab> completion to trigger fzf completion \n        use playground config folder_zip_or_jar <folder1> <folder2>... (default is home folder and current folder is always included) to configure where to search the files\n"
+        },
+        {
+          "names": [
+            "--enable-ksqldb"
+          ],
+          "argument": "",
+          "description": "🚀 Enable ksqlDB \n\n❗ not supported with ccloud examples\n\nBy default, ksqldb-server and ksqldb-cli containers are not started for every test\n"
+        },
+        {
+          "names": [
+            "--enable-rest-proxy"
+          ],
+          "argument": "",
+          "description": "🧲 Enable Rest Proxy\n\n❗ not supported with ccloud examples\n\nBy default, rest-proxy container is not started for every test\n"
+        },
+        {
+          "names": [
+            "--enable-control-center"
+          ],
+          "argument": "",
+          "description": "💠 Enable Control Center\n\nBy default, control-center container is not started for every test\n\nControl Center is reachable at http://127.0.0.1:9021\n"
+        },
+        {
+          "names": [
+            "--enable-conduktor"
+          ],
+          "argument": "",
+          "description": "🐺 Enable Conduktor Platform\n\nBy default, Conduktor Platform container is not started for every test\n\nConduktor is reachable at http://127.0.0.1:8080/console (admin/admin)\n"
+        },
+        {
+          "names": [
+            "--enable-multiple-brokers"
+          ],
+          "argument": "",
+          "description": "3️⃣ Enable multiple brokers\n\nBy default, there is only one broker node enabled\n"
+        },
+        {
+          "names": [
+            "--enable-multiple-connect-workers"
+          ],
+          "argument": "",
+          "description": "🥉 Enable multiple connect node\n\nBy default, there is only one connect node enabled\n\nIt only works when plaintext environment is used\n"
+        },
+        {
+          "names": [
+            "--enable-jmx-grafana"
+          ],
+          "argument": "",
+          "description": "Enable Grafana, Prometheus and Pyroscope\n\n📊 Grafana is reachable at http://127.0.0.1:3000 (login/password is admin/password)\n\n🛡️ Prometheus is reachable at http://127.0.0.1:9090\n\n📛 Pyroscope is reachable at http://127.0.0.1:4040\n"
+        },
+        {
+          "names": [
+            "--enable-kcat"
+          ],
+          "argument": "",
+          "description": "🐈‍⬛ Enable kcat\n\nYou can use it with:\n\n$ docker exec kcat kcat -b broker:9092 -L\n"
+        },
+        {
+          "names": [
+            "--enable-sql-datagen"
+          ],
+          "argument": "",
+          "description": "🌪️ Enable SQL Datagen injection\n\nThis only works for Oracle, MySql, Postgres and Microsoft Sql Server source connector examples with JDBC and Debezium\n"
+        },
+        {
+          "names": [
+            "--cluster-cloud"
+          ],
+          "argument": [
+            "aws",
+            "gcp",
+            "azure"
+          ],
+          "description": "🌤 The cloud provider: aws, gcp or azure. Default is aws\n\n🎓 Tip: you can also use CLUSTER_CLOUD environment variable\n\nAllowed values: aws, gcp, azure\n"
+        },
+        {
+          "names": [
+            "--cluster-type"
+          ],
+          "argument": [
+            "basic",
+            "standard",
+            "dedicated"
+          ],
+          "description": "🔋 The cluster type: basic, standard or dedicated. Default is basic\n\n🎓 Tip: you can also use CLUSTER_TYPE environment variable\n\nAllowed values: basic, standard, dedicated\n"
+        },
+        {
+          "names": [
+            "--cluster-region"
+          ],
+          "argument": "CLUSTER-REGION",
+          "description": "🗺 The Cloud region. \n\n🎓 Tip: you can also use CLUSTER_REGION environment variable\n🎓 Tip: use <tab> completion to trigger fzf completion\n"
+        },
+        {
+          "names": [
+            "--cluster-environment"
+          ],
+          "argument": "CLUSTER-ENVIRONMENT",
+          "description": "🌐 The environment id where want your new cluster (example: txxxxx)\n\nℹ️ Optional, if not set, new environment will be created\n\n🎓 Tip: you can also use ENVIRONMENT environment variable\n🎓 Tip: use <tab> completion to trigger fzf completion\n"
+        },
+        {
+          "names": [
+            "--cluster-name"
+          ],
+          "argument": "CLUSTER-NAME",
+          "description": "🎰 The cluster name. \n\n❣️ Only required if you want to use your own existing cluster\n\n🎓 Tip: you can also use CLUSTER_NAME environment variable\n🎓 Tip: use <tab> completion to trigger fzf completion\n"
+        },
+        {
+          "names": [
+            "--cluster-creds"
+          ],
+          "argument": "CLUSTER-CREDS",
+          "description": "🔒 The Kafka api key and secret to use, it should be separated with colon (example: <API_KEY>:<API_KEY_SECRET>)\n\n❣️ Only required if you want to use your own existing cluster\n\n🎓 Tip: you can also use CLUSTER_CREDS environment variable\n"
+        },
+        {
+          "names": [
+            "--cluster-schema-registry-creds"
+          ],
+          "argument": "CLUSTER-SCHEMA-REGISTRY-CREDS",
+          "description": "🔒 The Schema Registry api key and secret to use, it should be separated with colon (example: <SR_API_KEY>:<SR_API_KEY_SECRET>)\n\nℹ️ Optional, if not set, new credentials will be created\n\n❣️ Only required if you want to use your own existing cluster\n\n🎓 Tip: you can also use SCHEMA_REGISTRY_CREDS environment variable\n"
+        }
+      ],
+      "subcommands": null
+    },
+    {
+      "name": "re-run",
+      "description": "⚡ Simply re-run last example you ran with <playground run>\n",
+      "usage": "playground re-run [OPTIONS] [ARGUMENTS...]",
+      "options": [
+        {
+          "names": [
+            "--clear"
+          ],
+          "argument": "",
+          "description": "🧼 Clear any previous flags\n"
+        },
+        {
+          "names": [
+            "--environment"
+          ],
+          "argument": "plaintext",
+          "description": "🔐 The environment to start when running a connector example \n\n- plaintext\n- ccloud\n- 2way-ssl\n- kerberos\n- kraft-external-plaintext\n- kraft-plaintext\n- ldap-authorizer-sasl-plain\n- ldap-sasl-plain\n- rbac-sasl-plain\n- sasl-plain\n- sasl-scram\n- sasl-ssl\n- ssl_kerberos\n\nDefault is plaintext.\nThis is only supported when example is a connector example\n\nDefault value: plaintext\n\nAllowed values: ccloud, plaintext, sasl-ssl, sasl-plain, 2way-ssl, sasl-scram, kraft-external-plaintext, kraft-plaintext, kerberos, ssl_kerberos, ldap-authorizer-sasl-plain, ldap-sasl-plain, rbac-sasl-plain\n"
+        },
+        {
+          "names": [
+            "--tag"
+          ],
+          "argument": "TAG",
+          "description": "🎯 Confluent Platform (CP) version to use\n\nMust be greater or equal to 5.3.0\n\n🎓 Tip: use <tab> completion to trigger fzf completion\n"
+        },
+        {
+          "names": [
+            "--connector-tag"
+          ],
+          "argument": "CONNECTOR_TAG",
+          "description": "🔗 Connector version to use\n\nBy default, for each connector, the latest available version on Confluent Hub is used\n\n🎓 Tip: set to \" \" in order to select the version dynamically\n\nConflicts with: --connector-zip\n"
+        },
+        {
+          "names": [
+            "--connector-zip"
+          ],
+          "argument": "CONNECTOR_ZIP",
+          "description": "🤐 Connector zip to use\n\n❕ It must be absolute full path\n\n🎓 Tip: use <tab> completion to trigger fzf completion \n        use playground config folder_zip_or_jar <folder1> <folder2>... (default is home folder and current folder is always included) to configure where to search the files\n\nConflicts with: --connector-tag\n"
+        },
+        {
+          "names": [
+            "--connector-jar"
+          ],
+          "argument": "CONNECTOR_JAR",
+          "description": "♨️ Connector jar to use\n\n❕ It must be absolute full path\n\n🎓 Tip: use <tab> completion to trigger fzf completion \n        use playground config folder_zip_or_jar <folder1> <folder2>... (default is home folder and current folder is always included) to configure where to search the files\n"
+        },
+        {
+          "names": [
+            "--enable-ksqldb"
+          ],
+          "argument": "",
+          "description": "🚀 Enable ksqlDB \n\n❗ not supported with ccloud examples\n\nBy default, ksqldb-server and ksqldb-cli containers are not started for every test\n"
+        },
+        {
+          "names": [
+            "--enable-rest-proxy"
+          ],
+          "argument": "",
+          "description": "🧲 Enable Rest Proxy\n\n❗ not supported with ccloud examples\n\nBy default, rest-proxy container is not started for every test\n"
+        },
+        {
+          "names": [
+            "--enable-control-center"
+          ],
+          "argument": "",
+          "description": "💠 Enable Control Center\n\nBy default, control-center container is not started for every test\n\nControl Center is reachable at http://127.0.0.1:9021\n"
+        },
+        {
+          "names": [
+            "--enable-conduktor"
+          ],
+          "argument": "",
+          "description": "🐺 Enable Conduktor Platform\n\nBy default, Conduktor Platform container is not started for every test\n\nConduktor is reachable at http://127.0.0.1:8080/console (admin/admin)\n"
+        },
+        {
+          "names": [
+            "--enable-multiple-brokers"
+          ],
+          "argument": "",
+          "description": "3️⃣ Enable multiple brokers\n\nBy default, there is only one broker node enabled\n"
+        },
+        {
+          "names": [
+            "--enable-multiple-connect-workers"
+          ],
+          "argument": "",
+          "description": "🥉 Enable multiple connect node\n\nBy default, there is only one connect node enabled\n\nIt only works when plaintext environment is used\n"
+        },
+        {
+          "names": [
+            "--enable-jmx-grafana"
+          ],
+          "argument": "",
+          "description": "Enable Grafana, Prometheus and Pyroscope\n\n📊 Grafana is reachable at http://127.0.0.1:3000 (login/password is admin/password)\n\n🛡️ Prometheus is reachable at http://127.0.0.1:9090\n\n📛 Pyroscope is reachable at http://127.0.0.1:4040\n"
+        },
+        {
+          "names": [
+            "--enable-kcat"
+          ],
+          "argument": "",
+          "description": "🐈‍⬛ Enable kcat\n\nYou can use it with:\n\n$ docker exec kcat kcat -b broker:9092 -L\n"
+        },
+        {
+          "names": [
+            "--enable-sql-datagen"
+          ],
+          "argument": "",
+          "description": "🌪️ Enable SQL Datagen injection\n\nThis only works for Oracle, MySql, Postgres and Microsoft Sql Server source connector examples with JDBC and Debezium\n"
+        }
+      ],
+      "subcommands": null
+    },
+    {
+      "name": "history",
+      "description": "🏰 Get an history of the examples which were run with run command and run it again\n",
+      "usage": "playground history",
+      "options": [],
+      "subcommands": null
+    },
+    {
+      "name": "start-environment",
+      "description": "🔐 Simply start an environment listed in http://tinyurl.com/y4ybbw32:\n\n- ccloud\n- 2way-ssl\n- kerberos\n- kraft-external-plaintext\n- kraft-plaintext\n- ldap-authorizer-sasl-plain\n- ldap-sasl-plain\n- mdc-kerberos\n- mdc-plaintext\n- mdc-sasl-plain\n- plaintext\n- rbac-sasl-plain\n- sasl-plain\n- sasl-scram\n- sasl-ssl\n- ssl_kerberos\n\nNote: when running an example with <playground run>, it is already automatically done\n",
+      "usage": "playground start-environment [OPTIONS] [ARGUMENTS...]",
+      "options": [
+        {
+          "names": [
+            "--environment"
+          ],
+          "argument": "plaintext",
+          "description": "🔐 The environment to start . \n\n- ccloud\n- 2way-ssl\n- kerberos\n- kraft-external-plaintext\n- kraft-plaintext\n- ldap-authorizer-sasl-plain\n- ldap-sasl-plain\n- mdc-kerberos\n- mdc-plaintext\n- mdc-sasl-plain\n- plaintext\n- rbac-sasl-plain\n- sasl-plain\n- sasl-scram\n- sasl-ssl\n- ssl_kerberos\n\nDefault is plaintext\n\nDefault value: plaintext\n\nAllowed values: ccloud, 2way-ssl, kerberos, kraft-external-plaintext, kraft-plaintext, ldap-authorizer-sasl-plain, ldap-sasl-plain, mdc-kerberos, mdc-plaintext, mdc-sasl-plain, plaintext, rbac-sasl-plain, sasl-plain, sasl-scram, sasl-ssl, ssl_kerberos\n"
+        },
+        {
+          "names": [
+            "--docker-compose-override-file",
+            "-f"
+          ],
+          "argument": "DOCKER-COMPOSE-OVERRIDE-FILE",
+          "description": "🔖 docker-compose override file\n\n❕ It must be absolute full path\n"
+        },
+        {
+          "names": [
+            "--tag"
+          ],
+          "argument": "TAG",
+          "description": "🎯 Confluent Platform (CP) version to use\n\nMust be greater or equal to 5.3.0\n\n🎓 Tip: use <tab> completion to trigger fzf completion\n"
+        },
+        {
+          "names": [
+            "--enable-ksqldb"
+          ],
+          "argument": "",
+          "description": "🚀 Enable ksqlDB \n\n❗ not supported with ccloud examples\n\nBy default, ksqldb-server and ksqldb-cli containers are not started for every test\n"
+        },
+        {
+          "names": [
+            "--enable-rest-proxy"
+          ],
+          "argument": "",
+          "description": "🧲 Enable Rest Proxy\n\n❗ not supported with ccloud examples\n\nBy default, rest-proxy container is not started for every test\n"
+        },
+        {
+          "names": [
+            "--enable-control-center"
+          ],
+          "argument": "",
+          "description": "💠 Enable Control Center\n\nBy default, control-center container is not started for every test\n\nControl Center is reachable at http://127.0.0.1:9021\n"
+        },
+        {
+          "names": [
+            "--enable-conduktor"
+          ],
+          "argument": "",
+          "description": "🐺 Enable Conduktor Platform\n\nBy default, Conduktor Platform container is not started for every test\n\nConduktor is reachable at http://127.0.0.1:8080/console (admin/admin)\n"
+        },
+        {
+          "names": [
+            "--enable-multiple-brokers"
+          ],
+          "argument": "",
+          "description": "3️⃣ Enable multiple brokers\n\nBy default, there is only one broker node enabled\n"
+        },
+        {
+          "names": [
+            "--enable-multiple-connect-workers"
+          ],
+          "argument": "",
+          "description": "🥉 Enable multiple connect node\n\nBy default, there is only one connect node enabled\n\nIt only works when plaintext environment is used\n"
+        },
+        {
+          "names": [
+            "--enable-jmx-grafana"
+          ],
+          "argument": "",
+          "description": "Enable Grafana, Prometheus and Pyroscope\n\n📊 Grafana is reachable at http://127.0.0.1:3000 (login/password is admin/password)\n\n🛡️ Prometheus is reachable at http://127.0.0.1:9090\n\n📛 Pyroscope is reachable at http://127.0.0.1:4040\n"
+        },
+        {
+          "names": [
+            "--enable-kcat"
+          ],
+          "argument": "",
+          "description": "🐈‍⬛ Enable kcat\n\nYou can use it with:\n\n$ docker exec kcat kcat -b broker:9092 -L\n"
+        }
+      ],
+      "subcommands": null
+    },
+    {
+      "name": "switch-ccloud",
+      "description": "🌩️  Switch to ccloud environment.\n\nIt will bootstrap ccloud environment based on your previously ran ccloud example.\n",
+      "usage": "playground switch-ccloud",
+      "options": [],
+      "subcommands": null
+    },
+    {
+      "name": "switch-back",
+      "description": "💺  Switch back from previous environment before switch-ccloud was called.\n",
+      "usage": "playground switch-back",
+      "options": [],
+      "subcommands": null
+    },
+    {
+      "name": "update-version",
+      "description": "✨ Update current confluent platform or connector(s) with new version(s)\n",
+      "usage": "playground update-version [OPTIONS]",
+      "options": [
+        {
+          "names": [
+            "--tag"
+          ],
+          "argument": "TAG",
+          "description": "🎯 Confluent Platform (CP) version to use\n\nMust be greater or equal to 5.3.0\n\n🎓 Tip: use <tab> completion to trigger fzf completion\n"
+        },
+        {
+          "names": [
+            "--connector-tag"
+          ],
+          "argument": "CONNECTOR_TAG",
+          "description": "🔗 Connector version to use\n\nBy default, for each connector, the latest available version on Confluent Hub is used\n\n🎓 Tip: set to \" \" in order to select the version dynamically\n\nConflicts with: --connector-zip\n"
+        },
+        {
+          "names": [
+            "--connector-zip"
+          ],
+          "argument": "CONNECTOR_ZIP",
+          "description": "🤐 Connector zip to use\n\n❕ It must be absolute full path\n\n🎓 Tip: use <tab> completion to trigger fzf completion \n        use playground config folder_zip_or_jar <folder1> <folder2>... (default is home folder and current folder is always included) to configure where to search the files\n\nConflicts with: --connector-tag\n"
+        },
+        {
+          "names": [
+            "--connector-jar"
+          ],
+          "argument": "CONNECTOR_JAR",
+          "description": "♨️ Connector jar to use\n\n❕ It must be absolute full path\n\n🎓 Tip: use <tab> completion to trigger fzf completion \n        use playground config folder_zip_or_jar <folder1> <folder2>... (default is home folder and current folder is always included) to configure where to search the files\n"
+        }
+      ],
+      "subcommands": null
+    },
+    {
+      "name": "open",
+      "description": "👐 When --file is not provided, simply open last example you ran with <playground run>\n\nOtherwise, open any file from the playground using --file.\n",
+      "usage": "playground open [OPTIONS]",
+      "options": [
+        {
+          "names": [
+            "--file",
+            "-f"
+          ],
+          "argument": "FILE",
+          "description": "🔎 Search any file and open it.\n\n❕ It must be absolute full path\n\n🎓 Tip: use <tab> completion to trigger fzf completion\n"
+        }
+      ],
+      "subcommands": null
+    },
+    {
+      "name": "stop",
+      "description": "🛑 Stop currently running example\n",
+      "usage": "playground stop",
+      "options": [],
+      "subcommands": null
+    },
+    {
+      "name": "remove-all-docker-images",
+      "description": "🧨 Remove all docker images (including docker volumes)\n",
+      "usage": "playground remove-all-docker-images",
+      "options": [],
+      "subcommands": null
+    },
+    {
+      "name": "open-docs",
+      "description": "🧑‍🎓 Open Confluent documentation of currently running example\n",
+      "usage": "playground open-docs [OPTIONS]",
+      "options": [
+        {
+          "names": [
+            "--only-show-url"
+          ],
+          "argument": "",
+          "description": "🌐 Only show url\n"
+        }
+      ],
+      "subcommands": null
+    },
+    {
+      "name": "repro",
+      "description": "👷‍♂️ Reproduction model commands\n",
+      "usage": "playground repro COMMAND",
+      "options": [],
+      "subcommands": [
+        {
+          "name": "export",
+          "description": "📤 Export as tgz file uncommitted reproduction models from the folder of current reproduction model\n",
+          "usage": "playground repro export [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--all"
+              ],
+              "argument": "",
+              "description": "Export all uncommitted reproduction models\n"
+            }
+          ]
+        },
+        {
+          "name": "import",
+          "description": "📥 Import tgz file which was created with export command\n",
+          "usage": "playground repro import [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--file",
+                "-f"
+              ],
+              "argument": "FILE",
+              "description": "🤐 playground_repro_export.tgz file\n\n❕ It must be absolute full path\n\n🎓 Tip: use <tab> completion to trigger fzf completion \n        use playground config folder_zip_or_jar <folder1> <folder2>... (default is home folder and current folder is always included) to configure where to search the files\n"
+            }
+          ]
+        },
+        {
+          "name": "bootstrap",
+          "description": "🛠  Bootstrap reproduction model\n  \n  👉 Check documentation https://kafka-docker-playground.io/#/reusables?id=%f0%9f%9b%a0-bootstrap-reproduction-model\n",
+          "usage": "playground repro bootstrap [OPTIONS] [ARGUMENTS...]",
+          "options": [
+            {
+              "names": [
+                "--tag"
+              ],
+              "argument": "TAG",
+              "description": "🎯 Confluent Platform (CP) version to use\n\nMust be greater or equal to 5.3.0\n\n🎓 Tip: use <tab> completion to trigger fzf completion\n"
+            },
+            {
+              "names": [
+                "--connector-tag"
+              ],
+              "argument": "CONNECTOR_TAG",
+              "description": "🔗 Connector version to use\n\nBy default, for each connector, the latest available version on Confluent Hub is used\n\n🎓 Tip: set to \" \" in order to select the version dynamically\n\nConflicts with: --connector-zip\n"
+            },
+            {
+              "names": [
+                "--connector-zip"
+              ],
+              "argument": "CONNECTOR_ZIP",
+              "description": "🤐 Connector zip to use\n\n❕ It must be absolute full path\n\n🎓 Tip: use <tab> completion to trigger fzf completion \n        use playground config folder_zip_or_jar <folder1> <folder2>... (default is home folder and current folder is always included) to configure where to search the files\n\nConflicts with: --connector-tag\n"
+            },
+            {
+              "names": [
+                "--connector-jar"
+              ],
+              "argument": "CONNECTOR_JAR",
+              "description": "♨️ Connector jar to use\n\n❕ It must be absolute full path\n\n🎓 Tip: use <tab> completion to trigger fzf completion \n        use playground config folder_zip_or_jar <folder1> <folder2>... (default is home folder and current folder is always included) to configure where to search the files\n"
+            },
+            {
+              "names": [
+                "--enable-ksqldb"
+              ],
+              "argument": "",
+              "description": "🚀 Enable ksqlDB \n\n❗ not supported with ccloud examples\n\nBy default, ksqldb-server and ksqldb-cli containers are not started for every test\n"
+            },
+            {
+              "names": [
+                "--enable-rest-proxy"
+              ],
+              "argument": "",
+              "description": "🧲 Enable Rest Proxy\n\n❗ not supported with ccloud examples\n\nBy default, rest-proxy container is not started for every test\n"
+            },
+            {
+              "names": [
+                "--enable-control-center"
+              ],
+              "argument": "",
+              "description": "💠 Enable Control Center\n\nBy default, control-center container is not started for every test\n\nControl Center is reachable at http://127.0.0.1:9021\n"
+            },
+            {
+              "names": [
+                "--enable-conduktor"
+              ],
+              "argument": "",
+              "description": "🐺 Enable Conduktor Platform\n\nBy default, Conduktor Platform container is not started for every test\n\nConduktor is reachable at http://127.0.0.1:8080/console (admin/admin)\n"
+            },
+            {
+              "names": [
+                "--enable-multiple-brokers"
+              ],
+              "argument": "",
+              "description": "3️⃣ Enable multiple brokers\n\nBy default, there is only one broker node enabled\n"
+            },
+            {
+              "names": [
+                "--enable-multiple-connect-workers"
+              ],
+              "argument": "",
+              "description": "🥉 Enable multiple connect node\n\nBy default, there is only one connect node enabled\n\nIt only works when plaintext environment is used\n"
+            },
+            {
+              "names": [
+                "--enable-jmx-grafana"
+              ],
+              "argument": "",
+              "description": "Enable Grafana, Prometheus and Pyroscope\n\n📊 Grafana is reachable at http://127.0.0.1:3000 (login/password is admin/password)\n\n🛡️ Prometheus is reachable at http://127.0.0.1:9090\n\n📛 Pyroscope is reachable at http://127.0.0.1:4040\n"
+            },
+            {
+              "names": [
+                "--enable-kcat"
+              ],
+              "argument": "",
+              "description": "🐈‍⬛ Enable kcat\n\nYou can use it with:\n\n$ docker exec kcat kcat -b broker:9092 -L\n"
+            },
+            {
+              "names": [
+                "--enable-sql-datagen"
+              ],
+              "argument": "",
+              "description": "🌪️ Enable SQL Datagen injection\n\nThis only works for Oracle, MySql, Postgres and Microsoft Sql Server source connector examples with JDBC and Debezium\n"
+            },
+            {
+              "names": [
+                "--cluster-type"
+              ],
+              "argument": [
+                "basic",
+                "standard",
+                "dedicated"
+              ],
+              "description": "🔋 The cluster type: basic, standard or dedicated. Default is basic\n\n🎓 Tip: you can also use CLUSTER_TYPE environment variable\n\nAllowed values: basic, standard, dedicated\n"
+            },
+            {
+              "names": [
+                "--cluster-region"
+              ],
+              "argument": "CLUSTER-REGION",
+              "description": "🗺 The Cloud region. \n\n🎓 Tip: you can also use CLUSTER_REGION environment variable\n🎓 Tip: use <tab> completion to trigger fzf completion\n"
+            },
+            {
+              "names": [
+                "--cluster-environment"
+              ],
+              "argument": "CLUSTER-ENVIRONMENT",
+              "description": "🌐 The environment id where want your new cluster (example: txxxxx)\n\nℹ️ Optional, if not set, new environment will be created\n\n🎓 Tip: you can also use ENVIRONMENT environment variable\n🎓 Tip: use <tab> completion to trigger fzf completion\n"
+            },
+            {
+              "names": [
+                "--cluster-name"
+              ],
+              "argument": "CLUSTER-NAME",
+              "description": "🎰 The cluster name. \n\n❣️ Only required if you want to use your own existing cluster\n\n🎓 Tip: you can also use CLUSTER_NAME environment variable\n🎓 Tip: use <tab> completion to trigger fzf completion\n"
+            },
+            {
+              "names": [
+                "--cluster-creds"
+              ],
+              "argument": "CLUSTER-CREDS",
+              "description": "🔒 The Kafka api key and secret to use, it should be separated with colon (example: <API_KEY>:<API_KEY_SECRET>)\n\n❣️ Only required if you want to use your own existing cluster\n\n🎓 Tip: you can also use CLUSTER_CREDS environment variable\n"
+            },
+            {
+              "names": [
+                "--cluster-schema-registry-creds"
+              ],
+              "argument": "CLUSTER-SCHEMA-REGISTRY-CREDS",
+              "description": "🔒 The Schema Registry api key and secret to use, it should be separated with colon (example: <SR_API_KEY>:<SR_API_KEY_SECRET>)\n\nℹ️ Optional, if not set, new credentials will be created\n\n❣️ Only required if you want to use your own existing cluster\n\n🎓 Tip: you can also use SCHEMA_REGISTRY_CREDS environment variable\n"
+            },
+            {
+              "names": [
+                "--file",
+                "-f"
+              ],
+              "argument": "FILE",
+              "description": "🔖 Example file to use as basis, if not set, currently running example is used\n\n❕ It must be absolute full path\n\n🎓 Tip: use <tab> completion to trigger fzf completion\n"
+            },
+            {
+              "names": [
+                "--description",
+                "-d"
+              ],
+              "argument": "DESCRIPTION",
+              "description": "💭 Description for the reproduction model\n\nRequired: ✓ Yes\n"
+            },
+            {
+              "names": [
+                "--producer",
+                "-p"
+              ],
+              "argument": "none",
+              "description": "♨️ Java producer type to use\n\nOne of avro, avro-with-key, protobuf, protobuf-with-key, json-schema, json-schema-with-key\n\n🎓 Tip: Most of times, it's much simpler to use 'playground topic produce'. Use java producer only if you have very specific requirements such as specifying record timestamp or to do perf testing (even though CLI is also good for that)\n\n🎓 Tip: 'with-key' will also produce key with selected converter, otherwise LongConverter is used\n\nDefault value: none\n\nAllowed values: none, avro, avro-with-key, protobuf, protobuf-with-key, json-schema, json-schema-with-key\n\nConflicts with: --pipeline\n"
+            },
+            {
+              "names": [
+                "--nb-producers",
+                "-n"
+              ],
+              "argument": null,
+              "description": "2️⃣ Number of java producers to generate\n\nDefault value: \n"
+            },
+            {
+              "names": [
+                "--producer-schema-key"
+              ],
+              "argument": "",
+              "description": "🔰 Schema to use for the key\n\n✨ Copy and paste the schema you want to use for the key, save and close the file to continue\n"
+            },
+            {
+              "names": [
+                "--producer-schema-value"
+              ],
+              "argument": "",
+              "description": "🔰 Schema to use for the value\n\n✨ Copy and paste the schema you want to use for the key, save and close the file to continue\n"
+            },
+            {
+              "names": [
+                "--custom-smt"
+              ],
+              "argument": "",
+              "description": "⚙️ Add a custom SMT (which is a no-op)\n"
+            },
+            {
+              "names": [
+                "--pipeline"
+              ],
+              "argument": "SINK_FILE",
+              "description": "🔖 Sink example file to use for creating a pipeline. multiple --pipeline flags can be used to create a pipeline with multiple sinks.\n\n❕ It must be absolute full path. \n\n🎓 Tip: use <tab> completion to trigger fzf completion\n\nRepeatable: ✓ Yes\n\nConflicts with: --producer\n"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "get-docker-compose",
+      "description": "🐋 Get docker-compose\n",
+      "usage": "playground get-docker-compose",
+      "options": [],
+      "subcommands": null
+    },
+    {
+      "name": "schema",
+      "description": "🔰 Schema commands\n",
+      "usage": "playground schema COMMAND",
+      "options": [],
+      "subcommands": [
+        {
+          "name": "get",
+          "description": "🔰 Get all schemas versions for specified subject (if --subject is not specified, all subjects will be used)\n",
+          "usage": "playground schema get [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--subject"
+              ],
+              "argument": "SUBJECT",
+              "description": "📛 Subject name\n"
+            },
+            {
+              "names": [
+                "--verbose",
+                "-v"
+              ],
+              "argument": "",
+              "description": "🐞 Show command being ran.\n"
+            },
+            {
+              "names": [
+                "--deleted"
+              ],
+              "argument": "",
+              "description": "🧟 Include soft deleted subjects\n"
+            }
+          ]
+        },
+        {
+          "name": "register",
+          "description": "⏺️ Register a schema in specified subject\n",
+          "usage": "playground schema register [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--subject"
+              ],
+              "argument": "SUBJECT",
+              "description": "📛 Subject name\n\nRequired: ✓ Yes\n"
+            },
+            {
+              "names": [
+                "--verbose",
+                "-v"
+              ],
+              "argument": "",
+              "description": "🐞 Show command being ran.\n"
+            },
+            {
+              "names": [
+                "--schema"
+              ],
+              "argument": "SCHEMA",
+              "description": "🔥 You can either:\n\n* Set your own schema (avro, json-schema, protobuf) with stdin (see example section). \n\n* Use completion to select predefined schemas (or use your own schema file) 🎓 Tip: use <tab> completion to trigger fzf completion\n\nDefault value: -\n"
+            }
+          ]
+        },
+        {
+          "name": "get-compatibility",
+          "description": "🛡️ Get subject-level compatibility\n",
+          "usage": "playground schema get-compatibility [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--subject"
+              ],
+              "argument": "SUBJECT",
+              "description": "📛 Subject name\n\nRequired: ✓ Yes\n"
+            },
+            {
+              "names": [
+                "--verbose",
+                "-v"
+              ],
+              "argument": "",
+              "description": "🐞 Show command being ran.\n"
+            }
+          ]
+        },
+        {
+          "name": "set-compatibility",
+          "description": "🛡️ Set subject-level compatibility\n",
+          "usage": "playground schema set-compatibility [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--subject"
+              ],
+              "argument": "SUBJECT",
+              "description": "📛 Subject name\n\nRequired: ✓ Yes\n"
+            },
+            {
+              "names": [
+                "--verbose",
+                "-v"
+              ],
+              "argument": "",
+              "description": "🐞 Show command being ran.\n"
+            },
+            {
+              "names": [
+                "--compatibility"
+              ],
+              "argument": [
+                "BACKWARD",
+                "BACKWARD_TRANSITIVE",
+                "FORWARD",
+                "FORWARD_TRANSITIVE",
+                "FULL",
+                "FULL_TRANSITIVE",
+                "NONE"
+              ],
+              "description": "Schema Registry compatibility rule\n\nRequired: ✓ Yes\n\nAllowed values: BACKWARD, BACKWARD_TRANSITIVE, FORWARD, FORWARD_TRANSITIVE, FULL, FULL_TRANSITIVE, NONE\n"
+            }
+          ]
+        },
+        {
+          "name": "get-mode",
+          "description": "🔏 Get subject-level mode\n",
+          "usage": "playground schema get-mode [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--subject"
+              ],
+              "argument": "SUBJECT",
+              "description": "📛 Subject name\n\nRequired: ✓ Yes\n"
+            },
+            {
+              "names": [
+                "--verbose",
+                "-v"
+              ],
+              "argument": "",
+              "description": "🐞 Show command being ran.\n"
+            }
+          ]
+        },
+        {
+          "name": "set-mode",
+          "description": "🔏 Set subject-level mode\n  \n  To enable mode changes on a Schema Registry cluster, you must also set mode.mutability=true in the Schema Registry properties file before starting Schema Registry\n",
+          "usage": "playground schema set-mode [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--subject"
+              ],
+              "argument": "SUBJECT",
+              "description": "📛 Subject name\n\nRequired: ✓ Yes\n"
+            },
+            {
+              "names": [
+                "--verbose",
+                "-v"
+              ],
+              "argument": "",
+              "description": "🐞 Show command being ran.\n"
+            },
+            {
+              "names": [
+                "--mode"
+              ],
+              "argument": [
+                "IMPORT",
+                "READONLY",
+                "READWRITE"
+              ],
+              "description": "Schema Registry mode\n\nRequired: ✓ Yes\n\nAllowed values: IMPORT, READONLY, READWRITE\n"
+            }
+          ]
+        },
+        {
+          "name": "delete",
+          "description": "🧟 Delete schema\n",
+          "usage": "playground schema delete [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--subject"
+              ],
+              "argument": "SUBJECT",
+              "description": "📛 Subject name to delete:\n  \n  if --version is provided, only that version will be deleted. Otherwise the complete subject will be deleted\n"
+            },
+            {
+              "names": [
+                "--version"
+              ],
+              "argument": "VERSION",
+              "description": "🔢 Schema version of the provided subject to delete\n\nCan only be used when --subject is provided\n"
+            },
+            {
+              "names": [
+                "--permanent"
+              ],
+              "argument": "",
+              "description": "💀 Hard delete (default is soft delete)\n"
+            },
+            {
+              "names": [
+                "--verbose",
+                "-v"
+              ],
+              "argument": "",
+              "description": "🐞 Show command being ran.\n"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "debug",
+      "description": "🐞 Debug commands\n",
+      "usage": "playground debug COMMAND",
+      "options": [],
+      "subcommands": [
+        {
+          "name": "install-vscode-extension",
+          "description": "🪄 Install a slightly modified version of \"Shell Script Command Completion\" Visual Studio Code extension (https://marketplace.visualstudio.com/items?itemName=tetradresearch.vscode-h2o)\n  \n  After installation, install \"playground\" command:\n  \n  * Go on a .sh file\n  \n  * Type Ctrl+Shift+P (or ⌘+⇧+P on macOS) and choose \"Shell Completion: Load Command Spec (experimental)\"\" and then type \"playground\"\n  \n  👉 Check documentation https://kafka-docker-playground.io/#/cli?id=%f0%9f%aa%84-setup-shell-script-command-completion-visual-studio-code-extension\n",
+          "usage": "playground debug install-vscode-extension",
+          "options": []
+        },
+        {
+          "name": "enable-remote-debugging",
+          "description": "✨ Enable java remote debugging for container\n  \n  👉 Check documentation https://kafka-docker-playground.io/#/reusables?id=%e2%9c%a8-remote-debugging\n",
+          "usage": "playground debug enable-remote-debugging [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--container",
+                "-c"
+              ],
+              "argument": "connect",
+              "description": "🐳 Container name\n\nDefault value: connect\n"
+            }
+          ]
+        },
+        {
+          "name": "testssl",
+          "description": "🔐 Testing TLS/SSL encryption using https://testssl.sh/\n  \n  testssl <URI>, where <URI> is:\n  \n  host|host:port|URL|URL:port   port 443 is default, URL can only contain HTTPS protocol\n",
+          "usage": "playground debug testssl [ARGUMENTS]",
+          "options": []
+        },
+        {
+          "name": "generate-diagnostics",
+          "description": "⛑️ Generate a diagnostic bundle with Diagnostics Bundle Tool\n  \n  ⚠️ only connect and broker containers are supported for now\n  \n  see https://docs.confluent.io/platform/current/tools/diagnostics-tool.html#collect-diagnostics\n",
+          "usage": "playground debug generate-diagnostics [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--container",
+                "-c"
+              ],
+              "argument": "connect",
+              "description": "🐳 Container name\n\nDefault value: connect\n"
+            }
+          ]
+        },
+        {
+          "name": "thread-dump",
+          "description": "🎯 Take a java thread dump\n  \n  🔖 It will save output to a file and open with text editor set with playground config editor <editor> (default is code)\n",
+          "usage": "playground debug thread-dump [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--container",
+                "-c"
+              ],
+              "argument": "connect",
+              "description": "🐳 Container name\n\nDefault value: connect\n"
+            }
+          ]
+        },
+        {
+          "name": "heap-dump",
+          "description": "👻 Take a heap dump\n  \n  🔖 It will save output to a .hprof file. VisualVM (https://visualvm.github.io/) or MAT (https://www.eclipse.org/mat/) can be used to read the file.\n",
+          "usage": "playground debug heap-dump [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--container",
+                "-c"
+              ],
+              "argument": "connect",
+              "description": "🐳 Container name\n\nDefault value: connect\n"
+            }
+          ]
+        },
+        {
+          "name": "tcp-dump",
+          "description": "🕵️‍♂️ Take a tcp dump (sniffing network)\n",
+          "usage": "playground debug tcp-dump [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--container",
+                "-c"
+              ],
+              "argument": "connect",
+              "description": "🐳 Container name\n\nDefault value: connect\n"
+            },
+            {
+              "names": [
+                "--port"
+              ],
+              "argument": "PORT",
+              "description": "Port on which tcp dump should be done, if not set sniffing is done on every port\n"
+            },
+            {
+              "names": [
+                "--duration"
+              ],
+              "argument": 30,
+              "description": "Duration of the dump (default is 30 seconds).\n\nDefault value: 30\n"
+            }
+          ]
+        },
+        {
+          "name": "block-traffic",
+          "description": "🚫 Blocking traffic using iptables\n",
+          "usage": "playground debug block-traffic [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--container",
+                "-c"
+              ],
+              "argument": "connect",
+              "description": "🐳 Container name\n\nDefault value: connect\n"
+            },
+            {
+              "names": [
+                "--destination"
+              ],
+              "argument": "DESTINATION",
+              "description": "Destination: it could be an ip address, a container name or a hostname\n\nRequired: ✓ Yes\n"
+            },
+            {
+              "names": [
+                "--port"
+              ],
+              "argument": "PORT",
+              "description": "Port on which tcp traffic should be blocked\n"
+            },
+            {
+              "names": [
+                "--action"
+              ],
+              "argument": [
+                "start",
+                "stop"
+              ],
+              "description": "🟢 start or stop\n\nRequired: ✓ Yes\n\nAllowed values: start, stop\n"
+            }
+          ]
+        },
+        {
+          "name": "flight-recorder",
+          "description": "🛩️ Record flight recorder\n  \n  Read more about it at https://www.baeldung.com/java-flight-recorder-monitoring\n  \n  Open the jfr file with JDK Mission Control JMC(https://jdk.java.net/jmc/)\n",
+          "usage": "playground debug flight-recorder [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--container",
+                "-c"
+              ],
+              "argument": "connect",
+              "description": "🐳 Container name\n\nDefault value: connect\n"
+            },
+            {
+              "names": [
+                "--action"
+              ],
+              "argument": [
+                "start",
+                "stop"
+              ],
+              "description": "🟢 start or stop\n\nRequired: ✓ Yes\n\nAllowed values: start, stop\n"
+            }
+          ]
+        },
+        {
+          "name": "log-level",
+          "description": "🧬 Set log level for any package\n",
+          "usage": "playground debug log-level COMMAND",
+          "options": []
+        }
+      ]
+    },
+    {
+      "name": "log-level",
+      "description": "🧬 Set log level for any package\n",
+      "usage": "playground debug log-level COMMAND",
+      "options": [],
+      "subcommands": [
+        {
+          "name": "get",
+          "description": "Get log levels\n",
+          "usage": "playground debug log-level get [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--package",
+                "-p"
+              ],
+              "argument": "PACKAGE",
+              "description": "Package name\n"
+            }
+          ]
+        },
+        {
+          "name": "set",
+          "description": "Set log level for specific logger\n",
+          "usage": "playground debug log-level set [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--package",
+                "-p"
+              ],
+              "argument": "PACKAGE",
+              "description": "📦 Package name\n\nRequired: ✓ Yes\n"
+            },
+            {
+              "names": [
+                "--level",
+                "-l"
+              ],
+              "argument": [
+                "INFO",
+                "WARN",
+                "DEBUG",
+                "TRACE"
+              ],
+              "description": "❕Log level\n\nRequired: ✓ Yes\n\nAllowed values: INFO, WARN, DEBUG, TRACE\n"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "get-jmx-metrics",
+      "description": "🔢 Get JMX metrics from a component\n\n👉 Check documentation https://kafka-docker-playground.io/#/how-to-use?id=%f0%9f%94%a2-jmx-metrics\n",
+      "usage": "playground get-jmx-metrics [OPTIONS]",
+      "options": [
+        {
+          "names": [
+            "--component",
+            "-c"
+          ],
+          "argument": "connect",
+          "description": "Component name\n\nDefault value: connect\n\nAllowed values: zookeeper, broker, connect, schema-registry\n"
+        },
+        {
+          "names": [
+            "--open",
+            "-o"
+          ],
+          "argument": "",
+          "description": "🔖 Save output to a file and open with text editor set with playground config editor <editor> (default is code)\n"
+        },
+        {
+          "names": [
+            "--domain",
+            "-d"
+          ],
+          "argument": "DOMAIN",
+          "description": "Domain name\n"
+        }
+      ],
+      "subcommands": null
+    },
+    {
+      "name": "container",
+      "description": "🐳 Container commands\n",
+      "usage": "playground container COMMAND",
+      "options": [],
+      "subcommands": [
+        {
+          "name": "get-properties",
+          "description": "📝 Get properties file from a container\n  \n  👉 Check documentation https://kafka-docker-playground.io/#/how-to-use?id=%f0%9f%93%9d-see-properties-file\n",
+          "usage": "playground container get-properties [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--container",
+                "-c"
+              ],
+              "argument": "connect",
+              "description": "🐳 Container name\n\nDefault value: connect\n"
+            }
+          ]
+        },
+        {
+          "name": "recreate",
+          "description": "💫 Recreate container(s)\n  \n  👉 Check documentation https://kafka-docker-playground.io/#/how-to-use?id=%e2%99%bb%ef%b8%8f-re-create-containers\n",
+          "usage": "playground container recreate [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--ignore-current-versions"
+              ],
+              "argument": "",
+              "description": "Ignore current confluent platform version\n\nBy default, the current version is used\n"
+            }
+          ]
+        },
+        {
+          "name": "get-ip-addresses",
+          "description": "🖥️  Get ip address of running containers\n",
+          "usage": "playground container get-ip-addresses",
+          "options": []
+        },
+        {
+          "name": "kill-all",
+          "description": "💀 Kill all containers\n",
+          "usage": "playground container kill-all",
+          "options": []
+        },
+        {
+          "name": "logs",
+          "description": "🕵️  Tail and follow container logs\n",
+          "usage": "playground container logs [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--container",
+                "-c"
+              ],
+              "argument": "connect",
+              "description": "🐳 Container name\n\nDefault value: connect\n"
+            },
+            {
+              "names": [
+                "--open",
+                "-o"
+              ],
+              "argument": "",
+              "description": "🔖 Save output to a file and open with text editor set with playground config editor <editor> (default is code)\n\nConflicts with: --wait-for-log\n"
+            },
+            {
+              "names": [
+                "--wait-for-log",
+                "-w"
+              ],
+              "argument": "LOG",
+              "description": "😴 Wait until log appears\n\nConflicts with: --open\n"
+            },
+            {
+              "names": [
+                "--max-wait",
+                "-m"
+              ],
+              "argument": 600,
+              "description": "⏳ Max time in seconds to wait when using --wait-for-log (default 600s)\n\nDefault value: 600\n\nConflicts with: --open\n"
+            }
+          ]
+        },
+        {
+          "name": "ssh",
+          "description": "🛬 SSH into container\n",
+          "usage": "playground container ssh [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--container",
+                "-c"
+              ],
+              "argument": "connect",
+              "description": "🐳 Container name\n\nDefault value: connect\n"
+            },
+            {
+              "names": [
+                "--shell",
+                "-s"
+              ],
+              "argument": "bash",
+              "description": "💾 Shell to use (default is bash)\n\nDefault value: bash\n\nAllowed values: bash, sh, ksh, zsh\n"
+            }
+          ]
+        },
+        {
+          "name": "exec",
+          "description": "🪄  Execute command in a container\n",
+          "usage": "playground container exec [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--container",
+                "-c"
+              ],
+              "argument": "connect",
+              "description": "🐳 Container name\n\nDefault value: connect\n"
+            },
+            {
+              "names": [
+                "--command"
+              ],
+              "argument": "COMMAND",
+              "description": "📲 Command to execute\n\nRequired: ✓ Yes\n"
+            },
+            {
+              "names": [
+                "--root"
+              ],
+              "argument": "",
+              "description": "👑 Run command as root\n"
+            },
+            {
+              "names": [
+                "--shell"
+              ],
+              "argument": "bash",
+              "description": "💾 Shell to use (default is bash)\n\nDefault value: bash\n\nAllowed values: bash, sh, ksh, zsh\n"
+            }
+          ]
+        },
+        {
+          "name": "restart",
+          "description": "🔁 Restart a container\n",
+          "usage": "playground container restart [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--container",
+                "-c"
+              ],
+              "argument": "connect",
+              "description": "🐳 Container name\n\nDefault value: connect\n"
+            }
+          ]
+        },
+        {
+          "name": "pause",
+          "description": "⏸️  Pause a container\n",
+          "usage": "playground container pause [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--container",
+                "-c"
+              ],
+              "argument": "connect",
+              "description": "🐳 Container name\n\nDefault value: connect\n"
+            }
+          ]
+        },
+        {
+          "name": "resume",
+          "description": "⏯️  Resume a container\n",
+          "usage": "playground container resume [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--container",
+                "-c"
+              ],
+              "argument": "connect",
+              "description": "🐳 Container name\n\nDefault value: connect\n"
+            }
+          ]
+        },
+        {
+          "name": "kill",
+          "description": "🔫 Kill a container\n",
+          "usage": "playground container kill [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--container",
+                "-c"
+              ],
+              "argument": "connect",
+              "description": "🐳 Container name\n\nDefault value: connect\n"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "topic",
+      "description": "🗳 Topic commands\n",
+      "usage": "playground topic COMMAND",
+      "options": [],
+      "subcommands": [
+        {
+          "name": "get-number-records",
+          "description": "💯 Get number of records in a topic\n",
+          "usage": "playground topic get-number-records [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--topic",
+                "-t"
+              ],
+              "argument": "TOPIC",
+              "description": "🗳 Topic name\n"
+            }
+          ]
+        },
+        {
+          "name": "display-consumer-offsets",
+          "description": "📭 Display content of __consumer_offsets topic\n",
+          "usage": "playground topic display-consumer-offsets [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--verbose",
+                "-v"
+              ],
+              "argument": "",
+              "description": "🐞 Show command being ran.\n"
+            }
+          ]
+        },
+        {
+          "name": "list",
+          "description": "🔘 List topics\n",
+          "usage": "playground topic list",
+          "options": []
+        },
+        {
+          "name": "describe",
+          "description": "🔬 Describe topic\n",
+          "usage": "playground topic describe [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--topic",
+                "-t"
+              ],
+              "argument": "TOPIC",
+              "description": "🗳 Topic name\n"
+            },
+            {
+              "names": [
+                "--verbose",
+                "-v"
+              ],
+              "argument": "",
+              "description": "🐞 Show command being ran.\n"
+            }
+          ]
+        },
+        {
+          "name": "set-schema-compatibility",
+          "description": "🛡️ Change topic's schema compatibility\n",
+          "usage": "playground topic set-schema-compatibility [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--topic",
+                "-t"
+              ],
+              "argument": "TOPIC",
+              "description": "🗳 Topic name\n"
+            },
+            {
+              "names": [
+                "--compatibility"
+              ],
+              "argument": [
+                "BACKWARD",
+                "BACKWARD_TRANSITIVE",
+                "FORWARD",
+                "FORWARD_TRANSITIVE",
+                "FULL",
+                "FULL_TRANSITIVE",
+                "NONE"
+              ],
+              "description": "Schema Registry compatibility rule\n\nRequired: ✓ Yes\n\nAllowed values: BACKWARD, BACKWARD_TRANSITIVE, FORWARD, FORWARD_TRANSITIVE, FULL, FULL_TRANSITIVE, NONE\n"
+            },
+            {
+              "names": [
+                "--verbose",
+                "-v"
+              ],
+              "argument": "",
+              "description": "🐞 Show command being ran.\n"
+            }
+          ]
+        },
+        {
+          "name": "consume",
+          "description": "📥 Consume topic from beginning\n",
+          "usage": "playground topic consume [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--verbose",
+                "-v"
+              ],
+              "argument": "",
+              "description": "🐞 Show command being ran.\n"
+            },
+            {
+              "names": [
+                "--topic",
+                "-t"
+              ],
+              "argument": "TOPIC",
+              "description": "🗳 Topic name\n"
+            },
+            {
+              "names": [
+                "--max-messages"
+              ],
+              "argument": 10,
+              "description": "Max number of messages to display (default is 10)\n\nDefault value: 10\n"
+            },
+            {
+              "names": [
+                "--min-expected-messages"
+              ],
+              "argument": null,
+              "description": "Minimum expected number of messages to be present in topic, returns an error if this is not the case\n\nNote: --topic should be specified in this case.\n\nDefault value: \n"
+            },
+            {
+              "names": [
+                "--grep"
+              ],
+              "argument": null,
+              "description": "Verify that topic content contains record which contains specified string\n\nDefault value: \n"
+            },
+            {
+              "names": [
+                "--timeout"
+              ],
+              "argument": 60,
+              "description": "Max number of seconds to wait when --min-expected-messages is used.\n\nDefault is 60 seconds\n\nDefault value: 60\n"
+            },
+            {
+              "names": [
+                "--tail"
+              ],
+              "argument": "",
+              "description": "Tail on logs.\n\nConflicts with: --min-expected-messages, --max-messages\n"
+            },
+            {
+              "names": [
+                "--plot-latencies-timestamp-field"
+              ],
+              "argument": "TIMESTAMP",
+              "description": "🗳 Timestamp field name that represents when record was created in source system\n"
+            },
+            {
+              "names": [
+                "--key-subject"
+              ],
+              "argument": "KEY-SUBJECT",
+              "description": "📛 Subject for key in schema-registry to use (useful when data was produced with --key-subject-name-strategy other than TopicNameStrategy)\n\nNote: --topic should be specified in this case.\n"
+            },
+            {
+              "names": [
+                "--value-subject"
+              ],
+              "argument": "VALUE-SUBJECT",
+              "description": "📛 Subject for value in schema-registry to use (useful when data was produced with --value-subject-name-strategy other than TopicNameStrategy)\n\nNote: --topic should be specified in this case.\n"
+            },
+            {
+              "names": [
+                "--max-characters"
+              ],
+              "argument": 2500,
+              "description": "Max characters per message to display (default is 2500)\n\nDefault value: 2500\n"
+            }
+          ]
+        },
+        {
+          "name": "produce",
+          "description": "📤 Produce to a topic\n",
+          "usage": "playground topic produce [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--key"
+              ],
+              "argument": "KEY",
+              "description": "🗝️ Key to use. If not set, no key is used.\n\n🔥 You can either:\n\n* Set your own schema (avro, json-schema, protobuf) within single quotes (see examples) \n\n* You can also generate json data using json or sql format using syntax from https://github.com/MaterializeInc/datagen\n\n* Use completion to select predefined schemas (or use your own schema file) 🎓 Tip: use <tab> completion to trigger fzf completion\n\n* Directly set payload (\"%g\" can be used to generate a counter)\n\nIn case of 'raw' data (i.e not using schema):\n\nIf the key contain a number, it will be used as starting point and incremented for each record. \n\nExample: key1 will start with key1, then key2, etc..\nExample: mykey-10-suffix will start with mykey-10-suffix then mykey-11-suffix, etc..\n\n\"%g\" can also be used to generate a counter\n\nExample: key%g will start with key1, then key2, etc..\n\nOtherwise, the key will be same for all records.\n"
+            },
+            {
+              "names": [
+                "--value"
+              ],
+              "argument": "VALUE",
+              "description": "🔥 You can either:\n\n* Set your own schema (avro, json-schema, protobuf) with stdin (see example section). \n\n* You can also generate json data using json or sql format using syntax from https://github.com/MaterializeInc/datagen\n\n* Use completion to select predefined schemas (or use your own schema file) 🎓 Tip: use <tab> completion to trigger fzf completion\n\n* Directly set payload (\"%g\" can be used to generate a counter)\n\nDefault value: -\n"
+            },
+            {
+              "names": [
+                "--verbose",
+                "-v"
+              ],
+              "argument": "",
+              "description": "🐞 Show command being ran.\n"
+            },
+            {
+              "names": [
+                "--debug",
+                "-d"
+              ],
+              "argument": "",
+              "description": "debug mode (internal)\n"
+            },
+            {
+              "names": [
+                "--topic",
+                "-t"
+              ],
+              "argument": "TOPIC",
+              "description": "🗳 Topic name\n\nRequired: ✓ Yes\n"
+            },
+            {
+              "names": [
+                "--nb-messages"
+              ],
+              "argument": 1,
+              "description": "💯 Number of messages to produce (default is 1)\n   \n🎓  - if > <value of --max-nb-messages-per-batch> (default 300000), messages will be sent in batches of <value of --max-nb-messages-per-batch> (default 300000) records\n    - if you set it to -1, an infinite number of records will also be sent in batches\n\nDefault value: 1\n"
+            },
+            {
+              "names": [
+                "--max-nb-messages-per-batch"
+              ],
+              "argument": 300000,
+              "description": "🔼 Max number of messages to send per batch when --nb-messages > --max-nb-messages-per-batch\n   if --nb-messages is set to -1, this is the number of messages sent per batch\n   default is 300000\n\nDefault value: 300000\n"
+            },
+            {
+              "names": [
+                "--sleep-time-between-batch"
+              ],
+              "argument": 0,
+              "description": "💤 Sleep time in seconds between batches\n   default is 0\n\nDefault value: 0\n"
+            },
+            {
+              "names": [
+                "--nb-partitions"
+              ],
+              "argument": null,
+              "description": "🔢 Number of partitions for the topic. (default is 1)\n\n❌ Important: If topic is existing, it will be re-created before producing to topic.\n\nDefault value: \n"
+            },
+            {
+              "names": [
+                "--compression-codec"
+              ],
+              "argument": [
+                "gzip",
+                "snappy",
+                "lz4",
+                "zstd"
+              ],
+              "description": "🤐 The compression codec: either 'gzip', 'snappy', 'lz4', or 'zstd'\nIf not set, there is no compression\n\nAllowed values: gzip, snappy, lz4, zstd\n"
+            },
+            {
+              "names": [
+                "--compatibility"
+              ],
+              "argument": [
+                "BACKWARD",
+                "BACKWARD_TRANSITIVE",
+                "FORWARD",
+                "FORWARD_TRANSITIVE",
+                "FULL",
+                "FULL_TRANSITIVE",
+                "NONE"
+              ],
+              "description": "Schema Registry compatibility rule\n\nAllowed values: BACKWARD, BACKWARD_TRANSITIVE, FORWARD, FORWARD_TRANSITIVE, FULL, FULL_TRANSITIVE, NONE\n"
+            },
+            {
+              "names": [
+                "--key-subject-name-strategy"
+              ],
+              "argument": [
+                "TopicNameStrategy",
+                "RecordNameStrategy",
+                "TopicRecordNameStrategy"
+              ],
+              "description": "Key Subject Name Strategy\n\nAllowed values: TopicNameStrategy, RecordNameStrategy, TopicRecordNameStrategy\n"
+            },
+            {
+              "names": [
+                "--value-subject-name-strategy"
+              ],
+              "argument": [
+                "TopicNameStrategy",
+                "RecordNameStrategy",
+                "TopicRecordNameStrategy"
+              ],
+              "description": "Value Subject Name Strategy\n\nAllowed values: TopicNameStrategy, RecordNameStrategy, TopicRecordNameStrategy\n"
+            },
+            {
+              "names": [
+                "--headers"
+              ],
+              "argument": "HEADERS",
+              "description": "🚏 Headers to use for all records. If not set, no header is used.\n\nExample: --headers \"header1:value1,header2:value2\"\n\nNote: CP 7.2+ is required.\n"
+            },
+            {
+              "names": [
+                "--forced-key"
+              ],
+              "argument": "FORCED-KEY",
+              "description": "☢️ Key to use for all records. \n\n🎓 Tip: use --generate-only first with avro, json-schema or protobuf to get skeleton of messages and then use --forced-key to send the message you need. \n"
+            },
+            {
+              "names": [
+                "--forced-value"
+              ],
+              "argument": "FORCED-VALUE",
+              "description": "☢️ Value to use for all records. \n\n🎓 Tip: use --generate-only first with avro, json-schema or protobuf to get skeleton of messages and then use --forced-value to send the message you need. \n"
+            },
+            {
+              "names": [
+                "--generate-only"
+              ],
+              "argument": "",
+              "description": "🚪 Only generate messages without sending to kafka topic.\n\nUsed with --forced-value, this is a powerful way to send specific messages.\n"
+            },
+            {
+              "names": [
+                "--tombstone"
+              ],
+              "argument": "",
+              "description": "⚰️ Generate tombstone (record with null value). \n\n--key must be set when this flag is used.\n\nNote: CP 7.2+ is required.\n"
+            },
+            {
+              "names": [
+                "--validate"
+              ],
+              "argument": "",
+              "description": "☑️ Validate schema according to connect sink converter used\n"
+            },
+            {
+              "names": [
+                "--validate-config"
+              ],
+              "argument": [
+                "scrub.invalid.names=true",
+                "enhanced.avro.schema.support=true",
+                "connect.meta.data=false",
+                "object.additional.properties=false",
+                "use.optional.for.nonrequired=true",
+                "ignore.default.for.nullables=true",
+                "generalized.sum.type.support=true",
+                "enhanced.protobuf.schema.support=true",
+                "generate.index.for.unions=false",
+                "int.for.enums=true",
+                "optional.for.nullables=true",
+                "generate.struct.for.nulls=true",
+                "wrapper.for.nullables=true",
+                "wrapper.for.raw.primitives=false"
+              ],
+              "description": "🔩 Converter configuration parameters to use \n\nSee docs: https://docs.confluent.io/platform/current/schema-registry/connect.html#using-kconnect-long-with-sr\n\n🎓 Tip: you can pass multiple parameters by specifying --validate-config multiple times\n\nRepeatable: ✓ Yes\n\nAllowed values: scrub.invalid.names=true, enhanced.avro.schema.support=true, connect.meta.data=false, object.additional.properties=false, use.optional.for.nonrequired=true, ignore.default.for.nullables=true, generalized.sum.type.support=true, enhanced.protobuf.schema.support=true, generate.index.for.unions=false, int.for.enums=true, optional.for.nullables=true, generate.struct.for.nulls=true, wrapper.for.nullables=true, wrapper.for.raw.primitives=false\n"
+            },
+            {
+              "names": [
+                "--producer-property"
+              ],
+              "argument": "PRODUCER-PROPERTY",
+              "description": "🔩 Producer configuration parameters to use \n\nSee docs: https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#cp-config-producer\n\n🎓 Tip: you can pass multiple parameters by specifying --producer-property multiple times\n\nExample: --producer-property \"max.request.size=990485760\" --producer-property \"client.id=myid\"\n\nRepeatable: ✓ Yes\n"
+            },
+            {
+              "names": [
+                "--record-size"
+              ],
+              "argument": 0,
+              "description": "🏋️ Record size in bytes, eg. 1048576 for 1MB\n\n📢 If size is > 1Mb, --producer-property max.request.size and topic max.message.bytes will be automatically set to support the record size.\n\nDefault value: 0\n"
+            }
+          ]
+        },
+        {
+          "name": "create",
+          "description": "🆕 Create topic\n",
+          "usage": "playground topic create [OPTIONS] [ARGUMENTS...]",
+          "options": [
+            {
+              "names": [
+                "--verbose",
+                "-v"
+              ],
+              "argument": "",
+              "description": "🐞 Show command being ran.\n"
+            },
+            {
+              "names": [
+                "--topic",
+                "-t"
+              ],
+              "argument": "TOPIC",
+              "description": "🗳 Topic name\n\nRequired: ✓ Yes\n"
+            },
+            {
+              "names": [
+                "--nb-partitions"
+              ],
+              "argument": null,
+              "description": "Number of partitions for the topic. (default is 1)\n\nDefault value: \n"
+            }
+          ]
+        },
+        {
+          "name": "delete",
+          "description": "❌ Delete topic and associated schema/subject if applicable\n",
+          "usage": "playground topic delete [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--verbose",
+                "-v"
+              ],
+              "argument": "",
+              "description": "🐞 Show command being ran.\n"
+            },
+            {
+              "names": [
+                "--topic",
+                "-t"
+              ],
+              "argument": "TOPIC",
+              "description": "🗳 Topic name\n\nRequired: ✓ Yes\n"
+            },
+            {
+              "names": [
+                "--skip-delete-schema"
+              ],
+              "argument": "SKIP-DELETE-SCHEMA",
+              "description": "🔰 Do not delete subject/schema\n"
+            }
+          ]
+        },
+        {
+          "name": "alter",
+          "description": "🪛 Alter topic config\n",
+          "usage": "playground topic alter [OPTIONS] [ARGUMENTS...]",
+          "options": [
+            {
+              "names": [
+                "--verbose",
+                "-v"
+              ],
+              "argument": "",
+              "description": "🐞 Show command being ran.\n"
+            },
+            {
+              "names": [
+                "--topic",
+                "-t"
+              ],
+              "argument": "TOPIC",
+              "description": "🗳 Topic name\n\nRequired: ✓ Yes\n"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "connector-plugin",
+      "description": "🔌 Connector-plugin commands\n",
+      "usage": "playground connector-plugin COMMAND",
+      "options": [],
+      "subcommands": [
+        {
+          "name": "search-jar",
+          "description": "☕ List jars for a connector plugin from confluent hub https://www.confluent.io/hub/ Search for specific class and display method signatures\n",
+          "usage": "playground connector-plugin search-jar [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--connector-plugin",
+                "-c"
+              ],
+              "argument": "CONNECTOR-PLUGIN",
+              "description": "🔌 Connector plugin name\n\n🎓 Tip: use <tab> completion to trigger fzf completion\n\nRequired: ✓ Yes\n"
+            },
+            {
+              "names": [
+                "--connector-tag"
+              ],
+              "argument": "CONNECTOR_TAG",
+              "description": "🔗 Connector version to use\n\nBy default, for each connector, the latest available version on Confluent Hub is used\n\n🎓 Tip: set to \" \" in order to select the version dynamically\n\nConflicts with: --connector-zip\n"
+            },
+            {
+              "names": [
+                "--class"
+              ],
+              "argument": "CLASS",
+              "description": "☕ Java class name to search for in all jars\n"
+            }
+          ]
+        },
+        {
+          "name": "versions",
+          "description": "💯 List versions for a connector plugin from confluent hub https://www.confluent.io/hub/\n",
+          "usage": "playground connector-plugin versions [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--connector-plugin",
+                "-c"
+              ],
+              "argument": "CONNECTOR-PLUGIN",
+              "description": "🔌 Connector plugin name\n\n🎓 Tip: use <tab> completion to trigger fzf completion\n\nRequired: ✓ Yes\n"
+            },
+            {
+              "names": [
+                "--force-refresh"
+              ],
+              "argument": "",
+              "description": "☢️ Force refresh.\n"
+            },
+            {
+              "names": [
+                "--last"
+              ],
+              "argument": "LAST",
+              "description": "🆕 Number of last versions to show\n\nConflicts with: --all\n"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "connector",
+      "description": "🔗 Connector commands\n",
+      "usage": "playground connector COMMAND",
+      "options": [],
+      "subcommands": [
+        {
+          "name": "status",
+          "description": "🧩 Show status of all connectors\n",
+          "usage": "playground connector status [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--verbose",
+                "-v"
+              ],
+              "argument": "",
+              "description": "🐞 Show command being ran.\n"
+            },
+            {
+              "names": [
+                "--connector",
+                "-c"
+              ],
+              "argument": "CONNECTOR",
+              "description": "🔗 Connector name\n\n🎓 Tip: If not specified, the command will apply to all connectors\n"
+            }
+          ]
+        },
+        {
+          "name": "plugins",
+          "description": "🎨 Show all connector plugins installed. You can also display transforms, converters and predicates using --all flag\n",
+          "usage": "playground connector plugins [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--verbose",
+                "-v"
+              ],
+              "argument": "",
+              "description": "🐞 Show command being ran.\n"
+            },
+            {
+              "names": [
+                "--all"
+              ],
+              "argument": "",
+              "description": "🌕 Show also transforms, converters, predicates available\n"
+            }
+          ]
+        },
+        {
+          "name": "pause",
+          "description": "⏸️  Pause connector\n",
+          "usage": "playground connector pause [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--verbose",
+                "-v"
+              ],
+              "argument": "",
+              "description": "🐞 Show command being ran.\n"
+            },
+            {
+              "names": [
+                "--connector",
+                "-c"
+              ],
+              "argument": "CONNECTOR",
+              "description": "🔗 Connector name\n\n🎓 Tip: If not specified, the command will apply to all connectors\n"
+            }
+          ]
+        },
+        {
+          "name": "versions",
+          "description": "🧞 Get current and latest versions available on Confluent Hub for connector(s) used in example\n  \n",
+          "usage": "playground connector versions",
+          "options": []
+        },
+        {
+          "name": "restart",
+          "description": "♻️  Restart connector\n",
+          "usage": "playground connector restart [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--verbose",
+                "-v"
+              ],
+              "argument": "",
+              "description": "🐞 Show command being ran.\n"
+            },
+            {
+              "names": [
+                "--connector",
+                "-c"
+              ],
+              "argument": "CONNECTOR",
+              "description": "🔗 Connector name\n\n🎓 Tip: If not specified, the command will apply to all connectors\n"
+            }
+          ]
+        },
+        {
+          "name": "stop",
+          "description": "🛑 Stop connector (only available if CP > 7.5 )\n",
+          "usage": "playground connector stop [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--verbose",
+                "-v"
+              ],
+              "argument": "",
+              "description": "🐞 Show command being ran.\n"
+            },
+            {
+              "names": [
+                "--connector",
+                "-c"
+              ],
+              "argument": "CONNECTOR",
+              "description": "🔗 Connector name\n\n🎓 Tip: If not specified, the command will apply to all connectors\n"
+            }
+          ]
+        },
+        {
+          "name": "resume",
+          "description": "⏯️  Resume connector\n",
+          "usage": "playground connector resume [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--verbose",
+                "-v"
+              ],
+              "argument": "",
+              "description": "🐞 Show command being ran.\n"
+            },
+            {
+              "names": [
+                "--connector",
+                "-c"
+              ],
+              "argument": "CONNECTOR",
+              "description": "🔗 Connector name\n\n🎓 Tip: If not specified, the command will apply to all connectors\n"
+            }
+          ]
+        },
+        {
+          "name": "delete",
+          "description": "🗑️  Delete connector\n",
+          "usage": "playground connector delete [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--verbose",
+                "-v"
+              ],
+              "argument": "",
+              "description": "🐞 Show command being ran.\n"
+            },
+            {
+              "names": [
+                "--connector",
+                "-c"
+              ],
+              "argument": "CONNECTOR",
+              "description": "🔗 Connector name\n\n🎓 Tip: If not specified, the command will apply to all connectors\n"
+            }
+          ]
+        },
+        {
+          "name": "show-lag",
+          "description": "🐢 Show lag of sink connector\n  \n  It will run until all lag becomes 0 (press ctrl-c to exit)\n  \n",
+          "usage": "playground connector show-lag [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--verbose",
+                "-v"
+              ],
+              "argument": "",
+              "description": "🐞 Show command being ran.\n"
+            },
+            {
+              "names": [
+                "--connector",
+                "-c"
+              ],
+              "argument": "CONNECTOR",
+              "description": "🔗 Connector name\n\n🎓 Tip: If not specified, the command will apply to all connectors\n"
+            },
+            {
+              "names": [
+                "--interval"
+              ],
+              "argument": 20,
+              "description": "Interval between lag checks (default is 20 seconds).\n\nDefault value: 20\n"
+            }
+          ]
+        },
+        {
+          "name": "show-config",
+          "description": "🧰 Show current connector config that was applied\n  \n  use --force-rest-endpoint to get results with REST API /config endpoint (https://docs.confluent.io/platform/current/connect/references/restapi.html#get--connectors-(string-name)-config)\n  \n",
+          "usage": "playground connector show-config [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--verbose",
+                "-v"
+              ],
+              "argument": "",
+              "description": "🐞 Show command being ran.\n"
+            },
+            {
+              "names": [
+                "--connector",
+                "-c"
+              ],
+              "argument": "CONNECTOR",
+              "description": "🔗 Connector name\n\n🎓 Tip: If not specified, the command will apply to all connectors\n"
+            },
+            {
+              "names": [
+                "--no-clipboard"
+              ],
+              "argument": "",
+              "description": "do not copy to clipboard (internal)\n"
+            },
+            {
+              "names": [
+                "--force-rest-endpoint"
+              ],
+              "argument": "",
+              "description": "☢️ Force using REST API /config endpoint (https://docs.confluent.io/platform/current/connect/references/restapi.html#get--connectors-(string-name)-config)\n"
+            }
+          ]
+        },
+        {
+          "name": "show-config-parameters",
+          "description": "🔩 Show all possible configuration parameters of connector\n",
+          "usage": "playground connector show-config-parameters [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--verbose",
+                "-v"
+              ],
+              "argument": "",
+              "description": "🐞 Show command being ran.\n"
+            },
+            {
+              "names": [
+                "--connector",
+                "-c"
+              ],
+              "argument": "CONNECTOR",
+              "description": "🔗 Connector name\n\n🎓 Tip: If not specified, the command will apply to all connectors\n"
+            },
+            {
+              "names": [
+                "--open",
+                "-o"
+              ],
+              "argument": "",
+              "description": "🔖 Save output to a file and open with text editor set with playground config editor <editor> (default is code)\n"
+            },
+            {
+              "names": [
+                "--force-refresh"
+              ],
+              "argument": "",
+              "description": "☢️ Force refresh.\n"
+            },
+            {
+              "names": [
+                "--only-show-file-path"
+              ],
+              "argument": "",
+              "description": "📂 Only show the path of the file containing the configuration parameters\n"
+            },
+            {
+              "names": [
+                "--only-show-json"
+              ],
+              "argument": "",
+              "description": "📗 Only show list of all available parameters for connector (with default value when applicable)\n"
+            },
+            {
+              "names": [
+                "--only-show-json-file-path"
+              ],
+              "argument": "",
+              "description": "📂 Only show the path of the json file containing the configuration parameters\n"
+            }
+          ]
+        },
+        {
+          "name": "select-config",
+          "description": "🗜️ Easily select config from all possible configuration parameters of connector\n  \n  🎓 Tip: use <tab> to select multiple config at once !\n",
+          "usage": "playground connector select-config [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--connector",
+                "-c"
+              ],
+              "argument": "CONNECTOR",
+              "description": "🔗 Connector name\n\n🎓 Tip: If not specified, the command will apply to all connectors\n"
+            }
+          ]
+        },
+        {
+          "name": "snippets",
+          "description": "🔌 useful snippets\n",
+          "usage": "playground connector snippets [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--converter"
+              ],
+              "argument": [
+                "avro",
+                "protobuf",
+                "json-schema",
+                "json",
+                "json-schema-enabled",
+                "string",
+                "bytearray"
+              ],
+              "description": "🔌 Converter\n\nAllowed values: avro, protobuf, json-schema, json, json-schema-enabled, string, bytearray\n"
+            },
+            {
+              "names": [
+                "--dlq"
+              ],
+              "argument": "",
+              "description": "💀 dlq\n"
+            }
+          ]
+        },
+        {
+          "name": "open-docs",
+          "description": "🧑‍🎓 Open connector documentation of currently running conector(s)\n",
+          "usage": "playground connector open-docs [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--only-show-url"
+              ],
+              "argument": "",
+              "description": "🌐 Only show url\n"
+            }
+          ]
+        },
+        {
+          "name": "log-level",
+          "description": "🧬 Set connect log level\n  \n  🎓 Tip: it will also set io.confluent.kafka.schemaregistry.client.rest.RestService (to see schema registry rest requests) and org.apache.kafka.connect.runtime.TransformationChain (to see records before and after SMTs)\n",
+          "usage": "playground connector log-level [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--connector",
+                "-c"
+              ],
+              "argument": "CONNECTOR",
+              "description": "🔗 Connector name\n\n🎓 Tip: If not specified, the command will apply to all connectors\n"
+            },
+            {
+              "names": [
+                "--level",
+                "-l"
+              ],
+              "argument": [
+                "INFO",
+                "WARN",
+                "DEBUG",
+                "TRACE"
+              ],
+              "description": "❕Log level\n\nRequired: ✓ Yes\n\nAllowed values: INFO, WARN, DEBUG, TRACE\n"
+            }
+          ]
+        },
+        {
+          "name": "create-or-update",
+          "description": "🧑‍🎨  Create or update connector\n",
+          "usage": "playground connector create-or-update [JSON] [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--verbose",
+                "-v"
+              ],
+              "argument": "",
+              "description": "🐞 Show command being ran.\n"
+            },
+            {
+              "names": [
+                "--connector",
+                "-c"
+              ],
+              "argument": "CONNECTOR",
+              "description": "🔗 Connector name\n\nRequired: ✓ Yes\n"
+            },
+            {
+              "names": [
+                "--level",
+                "-l"
+              ],
+              "argument": [
+                "INFO",
+                "WARN",
+                "DEBUG",
+                "TRACE"
+              ],
+              "description": "❕Log level\n\n⚠️ Not available for ccloud connectors\n\nAllowed values: INFO, WARN, DEBUG, TRACE\n"
+            },
+            {
+              "names": [
+                "--package",
+                "-p"
+              ],
+              "argument": "PACKAGE",
+              "description": "Package name\n"
+            },
+            {
+              "names": [
+                "--validate"
+              ],
+              "argument": "",
+              "description": "✅ Validate config using PUT /connector-plugins/(string:name)/config/validate (https://docs.confluent.io/platform/current/connect/references/restapi.html#put--connector-plugins-(string-name)-config-validate)\n"
+            }
+          ]
+        },
+        {
+          "name": "update",
+          "description": "🛠️ Update connector configuration by opening current connector config in text editor set with playground config editor <editor> (default is code). Once file is saved, the new configuration is updated.\n",
+          "usage": "playground connector update [OPTIONS]",
+          "options": [
+            {
+              "names": [
+                "--connector",
+                "-c"
+              ],
+              "argument": "CONNECTOR",
+              "description": "🔗 Connector name\n\n🎓 Tip: If not specified, the command will apply to all connectors\n"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

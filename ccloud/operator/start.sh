@@ -10,18 +10,12 @@ verify_installed "helm"
 
 bootstrap_ccloud_environment
 
-if [ -f /tmp/delta_configs/env.delta ]
-then
-     source /tmp/delta_configs/env.delta
-else
-     logerror "ERROR: /tmp/delta_configs/env.delta has not been generated"
-     exit 1
-fi
+
 
 # Use most basic values file and override it with --set
 VALUES_FILE="${DIR}/../../operator/private.yaml"
 
-if [ -z "$CI" ]
+if [ -z "$GITHUB_RUN_NUMBER" ]
 then
    # not running with github actions
   verify_installed "minikube"
@@ -54,7 +48,7 @@ log "Download Confluent Operator in ${DIR}/confluent-operator"
 rm -rf ${DIR}/confluent-operator
 mkdir ${DIR}/confluent-operator
 cd ${DIR}/confluent-operator
-wget https://platform-ops-bin.s3-us-west-1.amazonaws.com/operator/confluent-operator-1.7.0.tar.gz
+wget -q https://platform-ops-bin.s3-us-west-1.amazonaws.com/operator/confluent-operator-1.7.0.tar.gz
 tar xvfz confluent-operator-1.7.0.tar.gz
 cd -
 

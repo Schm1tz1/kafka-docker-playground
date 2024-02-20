@@ -5,15 +5,9 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
 #############
-${DIR}/../../ccloud/environment/start.sh "${PWD}/docker-compose-connect-onprem-to-cloud.yml"
+playground start-environment --environment ccloud --docker-compose-override-file "${PWD}/docker-compose-connect-onprem-to-cloud.yml"
 
-if [ -f /tmp/delta_configs/env.delta ]
-then
-     source /tmp/delta_configs/env.delta
-else
-     logerror "ERROR: /tmp/delta_configs/env.delta has not been generated"
-     exit 1
-fi
+
 #############
 
 log "Creating topic in Confluent Cloud (auto.create.topics.enable=false)"
@@ -24,9 +18,9 @@ playground topic create --topic products
 set -e
 
 log "Sending messages to topic products on source OnPREM cluster"
-seq 10 | docker exec -i broker kafka-console-producer --broker-list broker:9092 --topic products
+seq -f "This is a message %g" 10 | docker exec -i broker kafka-console-producer --broker-list broker:9092 --topic products
 
-playground connector create-or-update --connector replicate-onprem-to-cloud << EOF
+playground connector create-or-update --connector replicate-onprem-to-cloud  << EOF
 {
      "connector.class":"io.confluent.connect.replicator.ReplicatorSourceConnector",
      "key.converter": "io.confluent.connect.replicator.util.ByteArrayConverter",
@@ -56,4 +50,4 @@ EOF
 
 
 log "Verify we have received the data in products topic"
-timeout 60 docker container exec -e BOOTSTRAP_SERVERS="$BOOTSTRAP_SERVERS" -e SASL_JAAS_CONFIG="$SASL_JAAS_CONFIG" -e SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO="$SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO" -e SCHEMA_REGISTRY_URL="$SCHEMA_REGISTRY_URL" connect bash -c 'kafka-console-consumer --topic products --bootstrap-server $BOOTSTRAP_SERVERS --consumer-property ssl.endpoint.identification.algorithm=https --consumer-property sasl.mechanism=PLAIN --consumer-property security.protocol=SASL_SSL --consumer-property sasl.jaas.config="$SASL_JAAS_CONFIG" --property basic.auth.credentials.source=$BASIC_AUTH_CREDENTIALS_SOURCE --from-beginning --max-messages 10'
+playground topic consume --topic products --min-expected-messages 10 --timeout 60

@@ -1,19 +1,47 @@
+function verbose_begin () {
+  # Check if set -x is currently active
+  if [[ $- = *x* ]]
+  then
+    # Disable set -x
+    set +x
+    was_x_set=1
+  else
+    was_x_set=0
+  fi
+}
+
+function verbose_end () {
+  ret="$?"
+  # If set -x was initially active, re-enable it
+  if [[ $was_x_set -eq 1 ]]
+  then
+    set -x
+  fi
+  return $ret
+}
+
 function log() {
+  verbose_begin
   YELLOW='\033[0;33m'
   NC='\033[0m' # No Color
-  echo -e "$YELLOW`date +"%H:%M:%S"` ℹ️ $@$NC"
+  echo -e "$YELLOW$(date +"%H:%M:%S") ℹ️ $@$NC"
+  verbose_end
 }
 
 function logerror() {
+  verbose_begin
   RED='\033[0;31m'
   NC='\033[0m' # No Color
-  echo -e "$RED`date +"%H:%M:%S"` 🔥 $@$NC"
+  echo -e "$RED$(date +"%H:%M:%S") 🔥 $@$NC"
+  verbose_end
 }
 
 function logwarn() {
+  verbose_begin
   PURPLE='\033[0;35m'
   NC='\033[0m' # No Color
   echo -e "$PURPLE`date +"%H:%M:%S"` ❗ $@$NC"
+  verbose_end
 }
 
 function urlencode() {
@@ -36,21 +64,25 @@ function urlencode() {
 }
 
 function jq() {
-    if [[ $(type -f jq 2>&1) =~ "not found" ]]
-    then
-      docker run --rm -i imega/jq "$@"
-    else
-      $(which jq) "$@"
-    fi
+  verbose_begin
+  if [[ $(type -f jq 2>&1) =~ "not found" ]]
+  then
+    docker run --rm -i imega/jq "$@"
+  else
+    $(type -f jq | awk '{print $3}') "$@"
+  fi
+  verbose_end
 }
 
 function yq() {
-    if [[ $(type -f yq 2>&1) =~ "not found" ]]
-    then
-      docker run -u0 -v /tmp:/tmp --rm -i mikefarah/yq "$@"
-    else
-      $(which yq) "$@"
-    fi
+  verbose_begin
+  if [[ $(type -f yq 2>&1) =~ "not found" ]]
+  then
+    docker run -u0 -v /tmp:/tmp --rm -i mikefarah/yq "$@"
+  else
+    $(type -f yq | awk '{print $3}') "$@"
+  fi
+  verbose_end
 }
 
 # https://stackoverflow.com/a/24067243
@@ -60,6 +92,16 @@ function version_gt() {
 
 function set_kafka_client_tag()
 {
+    if [[ $TAG_BASE = 7.6.* ]]
+    then
+      export KAFKA_CLIENT_TAG="3.6.0"
+    fi
+
+    if [[ $TAG_BASE = 7.5.* ]]
+    then
+      export KAFKA_CLIENT_TAG="3.5.0"
+    fi
+
     if [[ $TAG_BASE = 7.4.* ]]
     then
       export KAFKA_CLIENT_TAG="3.4.0"
@@ -164,16 +206,20 @@ function verify_installed()
 {
   local cmd="$1"
   if [[ $(type $cmd 2>&1) =~ "not found" ]]; then
-    echo -e "\nERROR: This script requires '$cmd'. Please install '$cmd' and run again.\n"
+    logerror "❌ the script requires $cmd. Please install $cmd and run again"
     exit 1
   fi
 }
 
 function maybe_create_image()
 {
+  if [ ! -z "$DOCKER_COMPOSE_FILE_UPDATE_VERSION" ]
+  then
+    return
+  fi
   set +e
   log "🧰 Checking if Docker image ${CP_CONNECT_IMAGE}:${CONNECT_TAG} contains additional tools"
-  log "🧰 it can take a while if image is downloaded for the first time"
+  log "⏳ it can take a while if image is downloaded for the first time"
   docker run --rm ${CP_CONNECT_IMAGE}:${CONNECT_TAG} type unzip > /dev/null 2>&1
   if [ $? != 0 ]
   then
@@ -182,16 +228,16 @@ function maybe_create_image()
       export CONNECT_USER="appuser"
       if [ `uname -m` = "arm64" ]
       then
-        CONNECT_3RDPARTY_INSTALL="if [ ! -f /tmp/done ]; then yum -y install --disablerepo='Confluent*' bind-utils openssl unzip findutils net-tools nc jq which iptables libmnl krb5-workstation krb5-libs vim && yum clean all && rm -rf /var/cache/yum && dnf -y install iproute && rpm -i --nosignature http://mirror.centos.org/centos/8-stream/BaseOS/aarch64/os/Packages/iproute-tc-5.18.0-1.1.el8.aarch64.rpm && rpm -i --nosignature https://rpmfind.net/linux/centos/8-stream/AppStream/aarch64/os/Packages/tcpdump-4.9.3-2.el8.aarch64.rpm && touch /tmp/done; fi"
+        CONNECT_3RDPARTY_INSTALL="if [ ! -f /tmp/done ]; then yum -y install --disablerepo='Confluent*' bind-utils openssl unzip findutils net-tools nc jq which iptables libmnl krb5-workstation krb5-libs vim && yum clean all && rm -rf /var/cache/yum && rpm -i --nosignature https://rpmfind.net/linux/centos/8-stream/AppStream/aarch64/os/Packages/tcpdump-4.9.3-2.el8.aarch64.rpm && touch /tmp/done; fi"
       else
-        CONNECT_3RDPARTY_INSTALL="if [ ! -f /tmp/done ]; then wget http://vault.centos.org/8.1.1911/BaseOS/x86_64/os/Packages/iproute-tc-4.18.0-15.el8.x86_64.rpm && rpm -i --nodeps --nosignature http://vault.centos.org/8.1.1911/BaseOS/x86_64/os/Packages/iproute-tc-4.18.0-15.el8.x86_64.rpm && curl http://mirror.centos.org/centos/8-stream/AppStream/x86_64/os/Packages/tcpdump-4.9.3-1.el8.x86_64.rpm -o tcpdump-4.9.3-1.el8.x86_64.rpm && rpm -Uvh tcpdump-4.9.3-1.el8.x86_64.rpm && yum -y install --disablerepo='Confluent*' bind-utils openssl unzip findutils net-tools nc jq which iptables libmnl krb5-workstation krb5-libs vim && yum clean all && rm -rf /var/cache/yum && touch /tmp/done; fi"
+        CONNECT_3RDPARTY_INSTALL="if [ ! -f /tmp/done ]; then curl http://mirror.centos.org/centos/8-stream/AppStream/x86_64/os/Packages/tcpdump-4.9.3-1.el8.x86_64.rpm -o tcpdump-4.9.3-1.el8.x86_64.rpm && rpm -Uvh tcpdump-4.9.3-1.el8.x86_64.rpm && yum -y install --disablerepo='Confluent*' bind-utils openssl unzip findutils net-tools nc jq which iptables libmnl krb5-workstation krb5-libs vim && yum clean all && rm -rf /var/cache/yum && touch /tmp/done; fi"
       fi
     else
       export CONNECT_USER="root"
-      CONNECT_3RDPARTY_INSTALL="if [ ! -f /tmp/done ]; then apt-get update && echo bind-utils openssl unzip findutils net-tools nc jq which iptables iproute tree | xargs -n 1 apt-get install --force-yes -y && rm -rf /var/lib/apt/lists/* && touch /tmp/done; fi"
+      CONNECT_3RDPARTY_INSTALL="if [ ! -f /tmp/done ]; then apt-get update && echo bind-utils openssl unzip findutils net-tools nc jq which iptables tree | xargs -n 1 apt-get install --force-yes -y && rm -rf /var/lib/apt/lists/* && touch /tmp/done; fi"
     fi
 
-    tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
+    tmp_dir=$(mktemp -d -t pg-XXXXXXXXXX)
     trap 'rm -rf $tmp_dir' EXIT
 cat << EOF > $tmp_dir/Dockerfile
 FROM ${CP_CONNECT_IMAGE}:${CONNECT_TAG}
@@ -275,7 +321,7 @@ function verify_confluent_details()
 
 function check_if_continue()
 {
-    if [ ! -z "$CI" ]
+    if [ ! -z "$GITHUB_RUN_NUMBER" ]
     then
         # running with github actions, continue
         return
@@ -284,7 +330,7 @@ function check_if_continue()
     case "$choice" in
     y|Y ) ;;
     n|N ) exit 1;;
-    * ) logerror "invalid response!";exit 1;;
+    * ) logerror "invalid response <$choice>!";exit 1;;
     esac
 }
 
@@ -321,7 +367,7 @@ function version_gt() {
 }
 
 function get_docker_compose_version() {
-  docker-compose version | grep "^docker-compose version" | cut -d' ' -f3 | cut -d',' -f1
+  docker compose version | grep "^Docker Compose version" | cut -d' ' -f3 | cut -d',' -f1
 }
 
 function check_docker_compose_version() {
@@ -329,7 +375,7 @@ function check_docker_compose_version() {
   DOCKER_COMPOSE_VER=$(get_docker_compose_version)
 
   if version_gt $REQUIRED_DOCKER_COMPOSE_VER $DOCKER_COMPOSE_VER; then
-    logerror "docker-compose version ${REQUIRED_DOCKER_COMPOSE_VER} or greater is required. Current reported version: ${DOCKER_COMPOSE_VER}"
+    logerror "docker compose version ${REQUIRED_DOCKER_COMPOSE_VER} or greater is required. Current reported version: ${DOCKER_COMPOSE_VER}"
     exit 1
   fi
 }
@@ -347,6 +393,121 @@ function check_bash_version() {
   if version_gt $REQUIRED_BASH_VER $BASH_VER; then
     logerror "bash version ${REQUIRED_BASH_VER} or greater is required. Current reported version: ${BASH_VER}"
     exit 1
+  fi
+}
+
+function set_profiles() {
+  # https://docs.docker.com/compose/profiles/
+  profile_control_center_command=""
+  if [ -z "$ENABLE_CONTROL_CENTER" ]
+  then
+    log "🛑 control-center is disabled"
+    playground state del flags.ENABLE_CONTROL_CENTER
+  else
+    log "💠 control-center is enabled"
+    log "Use http://localhost:9021 to login"
+    profile_control_center_command="--profile control-center"
+    playground state set flags.ENABLE_CONTROL_CENTER 1
+  fi
+
+  profile_ksqldb_command=""
+  if [ -z "$ENABLE_KSQLDB" ]
+  then
+    log "🛑 ksqldb is disabled"
+    playground state del flags.ENABLE_KSQLDB
+  else
+    log "🚀 ksqldb is enabled"
+    log "🔧 You can use ksqlDB with CLI using:"
+    log "docker exec -i ksqldb-cli ksql http://ksqldb-server:8088"
+    profile_ksqldb_command="--profile ksqldb"
+    playground state set flags.ENABLE_KSQLDB 1
+  fi
+
+  profile_rest_proxy_command=""
+  if [ -z "$ENABLE_RESTPROXY" ]
+  then
+    log "🛑 REST Proxy is disabled"
+    playground state del flags.ENABLE_RESTPROXY
+  else
+    log "📲 REST Proxy is enabled"
+    profile_rest_proxy_command="--profile rest-proxy"
+    playground state set flags.ENABLE_RESTPROXY 1
+  fi
+
+  # defined grafana variable and when profile is included/excluded
+  profile_grafana_command=""
+  if [ -z "$ENABLE_JMX_GRAFANA" ]
+  then
+    log "🛑 Grafana is disabled"
+    playground state del flags.ENABLE_JMX_GRAFANA
+  else
+    log "📊 Grafana is enabled"
+    profile_grafana_command="--profile grafana"
+    playground state set flags.ENABLE_JMX_GRAFANA 1
+  fi
+  profile_kcat_command=""
+  if [ -z "$ENABLE_KCAT" ]
+  then
+    log "🛑 kcat is disabled"
+    playground state del flags.ENABLE_KCAT
+  else
+    log "🧰 kcat is enabled"
+    profile_kcat_command="--profile kcat"
+    playground state set flags.ENABLE_KCAT 1
+  fi
+  profile_conduktor_command=""
+  if [ -z "$ENABLE_CONDUKTOR" ]
+  then
+    log "🛑 conduktor is disabled"
+    playground state del flags.ENABLE_CONDUKTOR
+  else
+    log "🐺 conduktor is enabled"
+    log "Use http://localhost:8080/console (admin/admin) to login"
+    profile_conduktor_command="--profile conduktor"
+    playground state set flags.ENABLE_CONDUKTOR 1
+  fi
+  profile_sql_datagen_command=""
+  if [ ! -z "$SQL_DATAGEN" ]
+  then
+    profile_sql_datagen_command="--profile sql_datagen"
+    playground state set flags.SQL_DATAGEN 1
+  else
+    playground state del flags.SQL_DATAGEN
+  fi
+
+  #define kafka_nodes variable and when profile is included/excluded
+  profile_kafka_nodes_command=""
+  if [ -z "$ENABLE_KAFKA_NODES" ]
+  then
+    profile_kafka_nodes_command=""
+    playground state del flags.ENABLE_KAFKA_NODES
+  else
+    log "3️⃣  Multi broker nodes enabled"
+    profile_kafka_nodes_command="--profile kafka_nodes"
+    playground state set flags.ENABLE_KAFKA_NODES 1
+  fi
+
+  # defined 3 Connect variable and when profile is included/excluded
+  profile_connect_nodes_command=""
+  if [ -z "$ENABLE_CONNECT_NODES" ]
+  then
+    playground state del flags.ENABLE_CONNECT_NODES
+  elif [ ${nb_connect_services} -gt 1 ]
+  then
+    log "🥉 Multiple Connect nodes mode is enabled, connect2 and connect 3 containers will be started"
+    profile_connect_nodes_command="--profile connect_nodes"
+    export CONNECT_NODES_PROFILES="connect_nodes"
+    playground state set flags.CONNECT_NODES_PROFILES 1
+  else
+    if [ ! -f "${DOCKER_COMPOSE_FILE_OVERRIDE}" ]
+    then
+      log "🥉 Multiple connect nodes mode is enabled, connect2 and connect 3 containers will be started"
+      profile_connect_nodes_command="--profile connect_nodes"
+      playground state set flags.CONNECT_NODES_PROFILES 1
+    else
+      logerror "🛑 Could not find connect2 and connect3 in ${DOCKER_COMPOSE_FILE_OVERRIDE}. Update the yaml files to contain the connect2 && connect3 in ${DOCKER_COMPOSE_FILE_OVERRIDE}"
+      exit 1
+    fi
   fi
 }
 
@@ -399,7 +560,7 @@ function remove_partition() {
 
 function aws() {
 
-    if [ -z "$AWS_ACCESS_KEY_ID" ] && [ -z "$AWS_SECRET_ACCESS_KEY" ] && [ ! -f $HOME/.aws/config ] && [ ! -f $HOME/.aws/credentials ]
+    if [ -z "$AWS_ACCESS_KEY_ID" ] && [ -z "$AWS_SECRET_ACCESS_KEY" ] && [ ! -f $HOME/.aws/credentials ]
     then
       logerror 'ERROR: Neither AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY or $HOME/.aws/credentials are set. AWS credentials must be set !'
       if [ -z "$AWS_ACCESS_KEY_ID" ]
@@ -419,31 +580,66 @@ function aws() {
 
     if [ ! -f $HOME/.aws/config ]
     then
-          tmp_dir=$(mktemp -d -t pg-XXXXXXXXXX)
+      tmp_dir=$(mktemp -d -t pg-XXXXXXXXXX)
 cat << EOF > $tmp_dir/config
 [default]
 region = $AWS_REGION
 EOF
     fi
 
-    if [ ! -f $HOME/.aws/credentials ]
+    if [ ! -z "$AWS_ACCESS_KEY_ID" ] && [ ! -z "$AWS_SECRET_ACCESS_KEY" ]
     then
-      #log "Using aws cli with environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY"
-      docker run --rm -iv $tmp_dir/config:/root/.aws/config -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY -v $(pwd):/aws -v /tmp:/tmp amazon/aws-cli "$@"
-      rm -rf $tmp_dir
+      # log "💭 Using environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY"
+      if [ -f $tmp_dir/config ]
+      then
+        docker run --rm -iv $tmp_dir/config:/root/.aws/config -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN -v $(pwd):/aws -v /tmp:/tmp amazon/aws-cli "$@"
+        rm -rf $tmp_dir
+      else
+        docker run --rm -iv $HOME/.aws/config:/root/.aws/config -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN -v $(pwd):/aws -v /tmp:/tmp amazon/aws-cli "$@"
+      fi
     else
-      #log "Using aws cli with credentials file"
-      docker run --rm -iv $HOME/.aws:/root/.aws -v $(pwd):/aws -v /tmp:/tmp amazon/aws-cli "$@"
+      if [ ! -f $HOME/.aws/credentials ]
+      then
+        logerror '$HOME/.aws/credentials does not exist.'
+      else
+        # log "💭 AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are set based on $HOME/.aws/credentials"
+        docker run --rm -iv $HOME/.aws:/root/.aws -v $(pwd):/aws -v /tmp:/tmp amazon/aws-cli "$@"
+      fi
     fi
 }
 
 function timeout() {
+  verbose_begin
   if [[ $(type -f timeout 2>&1) =~ "not found" ]]; then
     # ignore
     shift
     eval "$@"
   else
-    $(which timeout) "$@"
+    $(type -f timeout | awk '{print $3}') "$@"
+  fi
+  verbose_end
+}
+
+function get_connect_image() {
+  set +e
+  CONNECT_TAG=$(docker inspect -f '{{.Config.Image}}' connect 2> /dev/null | cut -d ":" -f 2)
+  set -e
+  if [ "$CONNECT_TAG" == "" ]
+  then
+    CONNECT_TAG=$(grep "export TAG" $root_folder/scripts/utils.sh | head -1 | cut -d "=" -f 2)
+
+    if [ "$CONNECT_TAG" == "" ]
+    then
+      logerror "Error while getting default TAG in get_connect_image()"
+      exit 1
+    fi
+  fi
+
+  if version_gt $CONNECT_TAG 5.2.99
+  then
+    CP_CONNECT_IMAGE=confluentinc/cp-server-connect-base
+  else
+    CP_CONNECT_IMAGE=confluentinc/cp-kafka-connect-base
   fi
 }
 
@@ -464,9 +660,9 @@ function display_docker_container_error_log() {
       if [[ "$container" == "connect" ]] || [[ "$container" == "sap" ]]
       then
           # always show all logs for connect
-          docker container logs --tail=100 $container 2>&1 | grep -v "was supplied but isn't a known config"
+          docker container logs --tail=500 $container 2>&1 | grep -v "was supplied but isn't a known config"
       else
-          docker container logs $container 2>&1 | egrep "ERROR|FATAL" 
+          docker container logs $container 2>&1 | egrep "ERROR|FATAL"
       fi
       logwarn "####################################################"
   done
@@ -721,19 +917,7 @@ function addhost() {
 }
 
 function stop_all() {
-  current_dir="$1"
-  cd ${current_dir}
-  if ls docker-compose.* 1> /dev/null 2>&1;
-  then
-    for docker_compose_file in $(ls docker-compose.*)
-    do
-        environment=$(echo $docker_compose_file | cut -d "." -f 2)
-        ${DIR}/../../environment/${environment}/stop.sh "${PWD}/${docker_compose_file}"
-    done
-  else
-    ${DIR}/../../environment/plaintext/stop.sh
-  fi
-  cd -
+  playground stop
 }
 
 function display_jmx_info() {
@@ -743,13 +927,13 @@ function display_jmx_info() {
   else
     log "🛡️ Prometheus is reachable at http://127.0.0.1:9090"
     log "📛 Pyroscope is reachable at http://127.0.0.1:4040"
-    log "📊 Grafana is reachable at http://127.0.0.1:3000 or JMX metrics are available locally on those ports:"
-  fi  
+    log "📊 Grafana is reachable at http://127.0.0.1:3000 (login/password is admin/password) or JMX metrics are available locally on those ports:"
+  fi
   log "    - zookeeper       : 9999"
   log "    - broker          : 10000"
   log "    - schema-registry : 10001"
   log "    - connect         : 10002"
-    
+
   if [ ! -z "$ENABLE_KSQLDB" ]
   then
     log "    - ksqldb-server   : 10003"
@@ -825,20 +1009,20 @@ done
 
   if [[ -n "$open" ]]
   then
-    if config_has_key "editor"
+    editor=$(playground config get editor)
+    if [ "$editor" != "" ]
     then
-      editor=$(config_get "editor")
       log "📖 Opening /tmp/jmx_metrics.log using configured editor $editor"
       $editor /tmp/jmx_metrics.log
     else
-      if [[ $(type code 2>&1) =~ "not found" ]]
-      then
-        logerror "Could not determine an editor to use as default code is not found - you can change editor by updating config.ini"
-        exit 1
-      else
-        log "📖 Opening /tmp/jmx_metrics.log with code (default) - you can change editor by updating config.ini"
-        code /tmp/jmx_metrics.log
-      fi
+        if [[ $(type code 2>&1) =~ "not found" ]]
+        then
+            logerror "Could not determine an editor to use as default code is not found - you can change editor by using playground config editor <editor>"
+            exit 1
+        else
+            log "📖 Opening /tmp/jmx_metrics.log with code (default) - you can change editor by using playground config editor <editor>"
+            code /tmp/jmx_metrics.log
+        fi
     fi
   fi
 }
@@ -904,9 +1088,9 @@ function add_latency() {
 
     src_container=$1
     if valid_ip $2
-    then 
+    then
       dst_ip=$2
-    else 
+    else
       dst_ip=$(container_to_ip $2)
     fi
     latency=$3
@@ -948,9 +1132,9 @@ function add_packet_corruption() {
 
     src_container=$1
     if valid_ip $2
-    then 
+    then
       dst_ip=$2
-    else 
+    else
       dst_ip=$(container_to_ip $2)
     fi
     corruption=$3
@@ -964,24 +1148,24 @@ function add_packet_corruption() {
     # Add a classful priority queue which lets us differentiate messages.
     # This queue is named 1:.
     # Three children classes, 1:1, 1:2 and 1:3, are automatically created.
-    docker exec --privileged -u0 -t $src_container tc qdisc add dev eth0 root handle 1: prio 
+    docker exec --privileged -u0 -t $src_container tc qdisc add dev eth0 root handle 1: prio
 
 
     # Add a filter to the parent queue 1: (also called 1:0). The filter has priority 1 (if we had more filters this would make a difference).
     # For all messages with the ip of dst_ip as their destination, it routes them to class 1:1, which
     # subsequently sends them to its only child, queue 10: (All messages need to  "end up" in a queue).
-    docker exec --privileged -u0 -t $src_container tc filter add dev eth0 protocol ip parent 1: prio 1 u32 match ip dst $dst_ip flowid 1:1 
+    docker exec --privileged -u0 -t $src_container tc filter add dev eth0 protocol ip parent 1: prio 1 u32 match ip dst $dst_ip flowid 1:1
 
     # Route the rest of the of the packets without any control.
     # Add a filter to the parent queue 1:. The filter has priority 2.
-    docker exec --privileged -u0 -t $src_container tc filter add dev eth0 protocol all parent 1: prio 2 u32 match ip dst 0.0.0.0/0 flowid 1:2 
-    docker exec --privileged -u0 -t $src_container tc filter add dev eth0 protocol all parent 1: prio 2 u32 match ip protocol 1 0xff flowid 1:2 
+    docker exec --privileged -u0 -t $src_container tc filter add dev eth0 protocol all parent 1: prio 2 u32 match ip dst 0.0.0.0/0 flowid 1:2
+    docker exec --privileged -u0 -t $src_container tc filter add dev eth0 protocol all parent 1: prio 2 u32 match ip protocol 1 0xff flowid 1:2
 
     # Add a child queue named 10: under class 1:1. All outgoing packets that will be routed to 10: will have corrupt applied them.
     docker exec --privileged -u0 -t $src_container tc qdisc add dev eth0 parent 1:1 handle 10: netem corrupt $corruption
 
     # Add a child queue named 20: under class 1:2
-    docker exec --privileged -u0 -t $src_container tc qdisc add dev eth0 parent 1:2 handle 20: sfq 
+    docker exec --privileged -u0 -t $src_container tc qdisc add dev eth0 parent 1:2 handle 20: sfq
 }
 
 function add_packet_loss() {
@@ -992,9 +1176,9 @@ function add_packet_loss() {
 
     src_container=$1
     if valid_ip $2
-    then 
+    then
       dst_ip=$2
-    else 
+    else
       dst_ip=$(container_to_ip $2)
     fi
     loss=$3
@@ -1008,24 +1192,24 @@ function add_packet_loss() {
     # Add a classful priority queue which lets us differentiate messages.
     # This queue is named 1:.
     # Three children classes, 1:1, 1:2 and 1:3, are automatically created.
-    docker exec --privileged -u0 -t $src_container tc qdisc add dev eth0 root handle 1: prio 
+    docker exec --privileged -u0 -t $src_container tc qdisc add dev eth0 root handle 1: prio
 
 
     # Add a filter to the parent queue 1: (also called 1:0). The filter has priority 1 (if we had more filters this would make a difference).
     # For all messages with the ip of dst_ip as their destination, it routes them to class 1:1, which
     # subsequently sends them to its only child, queue 10: (All messages need to  "end up" in a queue).
-    docker exec --privileged -u0 -t $src_container tc filter add dev eth0 protocol ip parent 1: prio 1 u32 match ip dst $dst_ip flowid 1:1 
+    docker exec --privileged -u0 -t $src_container tc filter add dev eth0 protocol ip parent 1: prio 1 u32 match ip dst $dst_ip flowid 1:1
 
     # Route the rest of the of the packets without any control.
     # Add a filter to the parent queue 1:. The filter has priority 2.
-    docker exec --privileged -u0 -t $src_container tc filter add dev eth0 protocol all parent 1: prio 2 u32 match ip dst 0.0.0.0/0 flowid 1:2 
-    docker exec --privileged -u0 -t $src_container tc filter add dev eth0 protocol all parent 1: prio 2 u32 match ip protocol 1 0xff flowid 1:2 
+    docker exec --privileged -u0 -t $src_container tc filter add dev eth0 protocol all parent 1: prio 2 u32 match ip dst 0.0.0.0/0 flowid 1:2
+    docker exec --privileged -u0 -t $src_container tc filter add dev eth0 protocol all parent 1: prio 2 u32 match ip protocol 1 0xff flowid 1:2
 
     # Add a child queue named 10: under class 1:1. All outgoing packets that will be routed to 10: will have loss applied them.
     docker exec --privileged -u0 -t $src_container tc qdisc add dev eth0 parent 1:1 handle 10: netem loss $loss
 
     # Add a child queue named 20: under class 1:2
-    docker exec --privileged -u0 -t $src_container tc qdisc add dev eth0 parent 1:2 handle 20: sfq 
+    docker exec --privileged -u0 -t $src_container tc qdisc add dev eth0 parent 1:2 handle 20: sfq
 }
 
 function get_3rdparty_file () {
@@ -1082,7 +1266,12 @@ function remove_cdb_oracle_image() {
 
   SETUP_FILE=${SETUP_FOLDER}/01_user-setup.sh
   SETUP_FILE_CKSUM=$(cksum $SETUP_FILE | awk '{ print $1 }')
-  ORACLE_IMAGE="db-prebuilt-$SETUP_FILE_CKSUM:$ORACLE_VERSION"
+  if [ `uname -m` = "arm64" ]
+  then
+      export ORACLE_IMAGE="db-prebuilt-arm64-$SETUP_FILE_CKSUM:$ORACLE_VERSION"
+  else
+      export ORACLE_IMAGE="db-prebuilt-$SETUP_FILE_CKSUM:$ORACLE_VERSION"
+  fi
 
   if ! test -z "$(docker images -q $ORACLE_IMAGE)"
   then
@@ -1105,6 +1294,12 @@ function create_or_get_oracle_image() {
   then
       ORACLE_VERSION="21.3.0-ee"
   else
+      if [ `uname -m` = "arm64" ]
+      then
+          ZIP_FILE="LINUX.ARM64_1919000_db_home.zip"
+      else
+          ZIP_FILE="LINUX.X64_193000_db_home.zip"
+      fi
       ORACLE_VERSION="19.3.0-ee"
   fi
   # used for docker-images repo
@@ -1113,7 +1308,13 @@ function create_or_get_oracle_image() {
   # https://github.com/oracle/docker-images/tree/main/OracleDatabase/SingleInstance/samples/prebuiltdb
   SETUP_FILE=${SETUP_FOLDER}/01_user-setup.sh
   SETUP_FILE_CKSUM=$(cksum $SETUP_FILE | awk '{ print $1 }')
-  export ORACLE_IMAGE="db-prebuilt-$SETUP_FILE_CKSUM:$ORACLE_VERSION"
+
+  if [ `uname -m` = "arm64" ]
+  then
+      export ORACLE_IMAGE="db-prebuilt-arm64-$SETUP_FILE_CKSUM:$ORACLE_VERSION"
+  else
+      export ORACLE_IMAGE="db-prebuilt-$SETUP_FILE_CKSUM:$ORACLE_VERSION"
+  fi
   TEMP_CONTAINER="oracle-build-$ORACLE_VERSION-$(basename $SETUP_FOLDER)"
 
   if test -z "$(docker images -q $ORACLE_IMAGE)"
@@ -1123,11 +1324,11 @@ function create_or_get_oracle_image() {
     if [ $? -eq 0 ]
     then
         log "Downloading <s3://kafka-docker-playground/3rdparty/$ORACLE_IMAGE.tar> from S3 bucket"
-        aws s3 cp --only-show-errors "s3://kafka-docker-playground/3rdparty/$ORACLE_IMAGE.tar" /tmp/
+        aws s3 cp --only-show-errors "s3://kafka-docker-playground/3rdparty/$ORACLE_IMAGE.tar" .
         if [ $? -eq 0 ]
         then
           log "📄 <s3://kafka-docker-playground/3rdparty/$ORACLE_IMAGE.tar> was downloaded from S3 bucket"
-          docker load -i /tmp/$ORACLE_IMAGE.tar
+          docker load -i $ORACLE_IMAGE.tar
           if [ $? -eq 0 ]
           then
             log "📄 image $ORACLE_IMAGE has been installed locally"
@@ -1135,11 +1336,11 @@ function create_or_get_oracle_image() {
 
           if [[ "$OSTYPE" == "darwin"* ]]
           then
-            log "🧹 Removing /tmp/$ORACLE_IMAGE.tar"
-            rm -f /tmp/$ORACLE_IMAGE.tar
+            log "🧹 Removing $ORACLE_IMAGE.tar"
+            rm -f $ORACLE_IMAGE.tar
           else
-            log "🧹 Removing /tmp/$ORACLE_IMAGE.tar with sudo"
-            sudo rm -f /tmp/$ORACLE_IMAGE.tar
+            log "🧹 Removing $ORACLE_IMAGE.tar with sudo"
+            sudo rm -f $ORACLE_IMAGE.tar
           fi
         fi
     else
@@ -1163,11 +1364,11 @@ function create_or_get_oracle_image() {
     if [ $? -eq 0 ]
     then
         log "Downloading <s3://kafka-docker-playground/3rdparty/oracle_database_$ORACLE_VERSION.tar> from S3 bucket"
-        aws s3 cp --only-show-errors "s3://kafka-docker-playground/3rdparty/oracle_database_$ORACLE_VERSION.tar" /tmp/
+        aws s3 cp --only-show-errors "s3://kafka-docker-playground/3rdparty/oracle_database_$ORACLE_VERSION.tar" .
         if [ $? -eq 0 ]
         then
           log "📄 <s3://kafka-docker-playground/3rdparty/oracle_database_$ORACLE_VERSION.tar> was downloaded from S3 bucket"
-          docker load -i /tmp/oracle_database_$ORACLE_VERSION.tar
+          docker load -i oracle_database_$ORACLE_VERSION.tar
           if [ $? -eq 0 ]
           then
             log "📄 image $BASE_ORACLE_IMAGE has been installed locally"
@@ -1175,11 +1376,11 @@ function create_or_get_oracle_image() {
 
           if [[ "$OSTYPE" == "darwin"* ]]
           then
-            log "🧹 Removing /tmp/$ORACLE_IMAGE.tar"
-            rm -f /tmp/oracle_database_$ORACLE_VERSION.tar
+            log "🧹 Removing $ORACLE_IMAGE.tar"
+            rm -f oracle_database_$ORACLE_VERSION.tar
           else
-            log "🧹 Removing /tmp/$ORACLE_IMAGE.tar with sudo"
-            sudo rm -f /tmp/oracle_database_$ORACLE_VERSION.tar
+            log "🧹 Removing $ORACLE_IMAGE.tar with sudo"
+            sudo rm -f oracle_database_$ORACLE_VERSION.tar
           fi
         fi
     fi
@@ -1219,8 +1420,6 @@ function create_or_get_oracle_image() {
       cd ${OLDDIR}
   fi
 
-  export ORACLE_IMAGE="db-prebuilt-$SETUP_FILE_CKSUM:$ORACLE_VERSION"
-
   if test -z "$(docker images -q $ORACLE_IMAGE)"
   then
       log "🏭 Prebuilt $ORACLE_IMAGE docker image does not exist, building it now..it can take a while..."
@@ -1251,7 +1450,7 @@ function create_or_get_oracle_image() {
       log "🧹 Clean up ${TEMP_CONTAINER}"
       docker rm ${TEMP_CONTAINER}
 
-      if [ ! -z "$CI" ]
+      if [ ! -z "$GITHUB_RUN_NUMBER" ]
       then
           set +e
           aws s3 ls s3://kafka-docker-playground/3rdparty/$ORACLE_IMAGE.tar > /dev/null 2>&1
@@ -1283,7 +1482,7 @@ function print_code_pass() {
 	done
   shift $((OPTIND-1))
 	printf "${PRETTY_PASS}${PRETTY_CODE}%s\e[0m\n" "${CODE}"
-	[[ -z "$MESSAGE" ]] || printf "\t$MESSAGE\n"			
+	[[ -z "$MESSAGE" ]] || printf "\t$MESSAGE\n"
 }
 function print_code_error() {
   local MESSAGE=""
@@ -1297,7 +1496,7 @@ function print_code_error() {
 	done
   shift $((OPTIND-1))
 	printf "${PRETTY_ERROR}${PRETTY_CODE}%s\e[0m\n" "${CODE}"
-	[[ -z "$MESSAGE" ]] || printf "\t$MESSAGE\n"			
+	[[ -z "$MESSAGE" ]] || printf "\t$MESSAGE\n"
 }
 
 function exit_with_error()
@@ -1323,8 +1522,14 @@ function exit_with_error()
   exit $CODE
 }
 
+function get_kafka_docker_playground_dir () {
+  DIR_UTILS="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+  KAFKA_DOCKER_PLAYGROUND_DIR="$(echo $DIR_UTILS | sed 's|\(.*kafka-docker-playground\).*|\1|')"
+}
+
 function maybe_delete_ccloud_environment () {
-  DELTA_CONFIGS_ENV=/tmp/delta_configs/env.delta
+  get_kafka_docker_playground_dir
+  DELTA_CONFIGS_ENV=$KAFKA_DOCKER_PLAYGROUND_DIR/.ccloud/env.delta
 
   if [ -f $DELTA_CONFIGS_ENV ]
   then
@@ -1336,7 +1541,7 @@ function maybe_delete_ccloud_environment () {
 
   if [ -z "$CLUSTER_NAME" ]
   then
-    # 
+    #
     # CLUSTER_NAME is not set
     #
     log "🧹❌ Confluent Cloud cluster will be deleted..."
@@ -1361,9 +1566,12 @@ function maybe_delete_ccloud_environment () {
 }
 
 function bootstrap_ccloud_environment () {
-  DELTA_CONFIGS_ENV=/tmp/delta_configs/env.delta
 
-  if [ -z "$CI" ] && [ -z "$CLOUDFORMATION" ]
+  DIR_UTILS="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+  get_kafka_docker_playground_dir
+  DELTA_CONFIGS_ENV=$KAFKA_DOCKER_PLAYGROUND_DIR/.ccloud/env.delta
+
+  if [ -z "$GITHUB_RUN_NUMBER" ] && [ -z "$CLOUDFORMATION" ]
   then
     # not running with CI
     verify_installed "confluent"
@@ -1379,9 +1587,62 @@ function bootstrap_ccloud_environment () {
       confluent login --save
   fi
 
+  suggest_use_previous_example_ccloud=1
+  for item in {ENVIRONMENT,CLUSTER_NAME,CLUSTER_CLOUD,CLUSTER_REGION,CLUSTER_CREDS}
+  do
+      i=$(playground state get "ccloud.${item}")
+      if [ "$i" == "" ]
+      then
+        # at least one mandatory field is missing
+        suggest_use_previous_example_ccloud=0
+        break
+      fi
+  done
+
+  if [ ! -z "$CLUSTER_NAME" ]
+  then
+    if [ "$(playground state get "ccloud.CLUSTER_NAME")" == "$CLUSTER_NAME" ]
+    then
+      suggest_use_previous_example_ccloud=0
+    fi
+  fi
+
+  if [ $suggest_use_previous_example_ccloud -eq 1 ] && [ -z "$GITHUB_RUN_NUMBER" ]
+  then
+    log "🙋 Use previously used ccloud cluster:"
+    log "  🌐 ENVIRONMENT=$(playground state get ccloud.ENVIRONMENT)"
+    log "  🎰 CLUSTER_NAME=$(playground state get ccloud.CLUSTER_NAME)"
+    log "  🌤  CLUSTER_CLOUD=$(playground state get ccloud.CLUSTER_CLOUD)"
+    log "  🗺  CLUSTER_REGION=$(playground state get ccloud.CLUSTER_REGION)"
+
+    read -p "Continue (y/n)?" choice
+    case "$choice" in
+    y|Y ) 
+      ENVIRONMENT=$(playground state get ccloud.ENVIRONMENT)
+      CLUSTER_NAME=$(playground state get ccloud.CLUSTER_NAME)
+      CLUSTER_CLOUD=$(playground state get ccloud.CLUSTER_CLOUD)
+      CLUSTER_REGION=$(playground state get ccloud.CLUSTER_REGION)
+      CLUSTER_CREDS=$(playground state get ccloud.CLUSTER_CREDS)
+      SCHEMA_REGISTRY_CREDS=$(playground state get ccloud.SCHEMA_REGISTRY_CREDS)
+      ;;
+    n|N ) 
+      playground state del ccloud.ENVIRONMENT
+      playground state del ccloud.CLUSTER_NAME
+      playground state del ccloud.CLUSTER_CLOUD
+      playground state del ccloud.CLUSTER_REGION
+      playground state del ccloud.CLUSTER_CREDS
+      playground state del ccloud.SCHEMA_REGISTRY_CREDS
+      ;;
+    * ) 
+      logerror "invalid response!";
+      exit 1
+      ;;
+    esac
+  fi
+
   if [ -z "$CLUSTER_NAME" ]
   then
-    # 
+    #
     # CLUSTER_NAME is not set
     #
     log "🛠👷‍♀️ CLUSTER_NAME is not set, a new Confluent Cloud cluster will be created..."
@@ -1390,7 +1651,7 @@ function bootstrap_ccloud_environment () {
     if [ -z "$CLUSTER_CLOUD" ] || [ -z "$CLUSTER_REGION" ]
     then
       logwarn "CLUSTER_CLOUD and/or CLUSTER_REGION are not set, the cluster will be created 🌤 AWS provider and 🗺 eu-west-2 region"
-      export CLUSTER_CLOUD=aws 
+      export CLUSTER_CLOUD=aws
       export CLUSTER_REGION=eu-west-2
     fi
 
@@ -1398,6 +1659,7 @@ function bootstrap_ccloud_environment () {
     then
       log "🌐 ENVIRONMENT is set with $ENVIRONMENT and will be used"
     fi
+    log "🔋  CLUSTER_TYPE is set with $CLUSTER_TYPE"
     log "🌤  CLUSTER_CLOUD is set with $CLUSTER_CLOUD"
     log "🗺  CLUSTER_REGION is set with $CLUSTER_REGION"
 
@@ -1407,7 +1669,7 @@ function bootstrap_ccloud_environment () {
 
     check_if_continue
   else
-    # 
+    #
     # CLUSTER_NAME is set
     #
     log "🌱 CLUSTER_NAME is set, your existing Confluent Cloud cluster will be used..."
@@ -1425,7 +1687,32 @@ function bootstrap_ccloud_environment () {
     log "🌐 ENVIRONMENT is set with $ENVIRONMENT"
     log "🎰 CLUSTER_NAME is set with $CLUSTER_NAME"
     log "🌤  CLUSTER_CLOUD is set with $CLUSTER_CLOUD"
-    log "🗺  CLUSTER_REGION is set with $CLUSTER_REGION" 
+    log "🗺  CLUSTER_REGION is set with $CLUSTER_REGION"
+
+    for row in $(confluent kafka cluster list --output json | jq -r '.[] | @base64'); do
+        _jq() {
+        echo ${row} | base64 --decode | jq -r ${1}
+        }
+        
+        is_current=$(echo $(_jq '.is_current'))
+        name=$(echo $(_jq '.name'))
+
+        if [ "$is_current" == "true" ] && [ "$name" == "$CLUSTER_NAME" ]
+        then
+          if [ -f $DELTA_CONFIGS_ENV ]
+          then
+            source $DELTA_CONFIGS_ENV
+            log "🌱 cluster $CLUSTER_NAME is ready to be used!"
+
+            # trick
+            playground state set run.environment "ccloud"
+            return
+          else
+            logwarn "$DELTA_CONFIGS_ENV has not been generated, doing it now..."
+            break
+          fi
+        fi
+    done
 
     export WARMUP_TIME=0
   fi
@@ -1448,8 +1735,15 @@ function bootstrap_ccloud_environment () {
     exit 1
   fi
 
+  playground state set ccloud.ENVIRONMENT "$ENVIRONMENT"
+  playground state set ccloud.CLUSTER_NAME "$CLUSTER_NAME"
+  playground state set ccloud.CLUSTER_CLOUD "$CLUSTER_CLOUD"
+  playground state set ccloud.CLUSTER_REGION "$CLUSTER_REGION"
+  playground state set ccloud.CLUSTER_CREDS "$CLUSTER_CREDS"
+  playground state set ccloud.SCHEMA_REGISTRY_CREDS "$SCHEMA_REGISTRY_CREDS"
+
   # trick
-  echo "ccloud/environment" > /tmp/playground-command
+  playground state set run.environment "ccloud"
 }
 
 function create_ccloud_connector() {
@@ -1792,7 +2086,7 @@ function ccloud::validate_schema_registry_up() {
 function ccloud::get_environment_id_from_service_id() {
   SERVICE_ACCOUNT_ID=$1
 
-  ENVIRONMENT_NAME_PREFIX=${ENVIRONMENT_NAME_PREFIX:-"pg-$SERVICE_ACCOUNT_ID"}
+  ENVIRONMENT_NAME_PREFIX=${ENVIRONMENT_NAME_PREFIX:-"pg-${USER}-$$SERVICE_ACCOUNT_ID"}
   local environment_id=$(confluent environment list -o json | jq -r 'map(select(.name | startswith("'"$ENVIRONMENT_NAME_PREFIX"'"))) | .[].id')
 
   echo $environment_id
@@ -1822,7 +2116,7 @@ function ccloud::find_cluster() {
   local FOUND_CLUSTER=$(confluent kafka cluster list -o json | jq -c -r '.[] | select((.name == "'"$CLUSTER_NAME"'") and (.provider == "'"$CLUSTER_CLOUD"'") and (.region == "'"$CLUSTER_REGION"'"))')
   [[ ! -z "$FOUND_CLUSTER" ]] && {
       echo "$FOUND_CLUSTER" | jq -r .id
-      return 0 
+      return 0
     } || {
       return 1
     }
@@ -1838,8 +2132,17 @@ function ccloud::create_and_use_cluster() {
   (($? != 0)) && { echo "$OUTPUT"; exit 1; }
   CLUSTER=$(echo "$OUTPUT" | jq -r .id)
   confluent kafka cluster use $CLUSTER 2>/dev/null
-  echo $CLUSTER
 
+  # Wait until the cluster status is not PROVISIONING
+  while true; do
+    CLUSTER_STATUS=$(confluent kafka cluster describe $CLUSTER --output json | jq -r .status)
+    if [ "$CLUSTER_STATUS" != "PROVISIONING" ]; then
+      break
+    fi
+    sleep 5
+  done
+
+  echo $CLUSTER
   return 0
 }
 
@@ -1910,7 +2213,7 @@ function ccloud::find_credentials_resource() {
   local FOUND_COUNT=$(echo "$FOUND_CRED" | jq 'length')
   [[ $FOUND_COUNT -ne 0 ]] && {
       echo "$FOUND_CRED" | jq -r '.[0].api_key'
-      return 0 
+      return 0
     } || {
       return 1
     }
@@ -1937,7 +2240,7 @@ function ccloud::create_credentials_resource() {
 function ccloud::maybe_create_credentials_resource() {
   SERVICE_ACCOUNT_ID=$1
   RESOURCE=$2
-  
+
   local KEY=$(ccloud::find_credentials_resource $SERVICE_ACCOUNT_ID $RESOURCE)
   [[ -z $KEY ]] && {
     ccloud::create_credentials_resource $SERVICE_ACCOUNT_ID $RESOURCE
@@ -1955,7 +2258,7 @@ function ccloud::find_ksqldb_app() {
   local FOUND_COUNT=$(echo "$FOUND_APP" | jq 'length')
   [[ $FOUND_COUNT -ne 0 ]] && {
       echo "$FOUND_APP" | jq -r '.[].id'
-      return 0 
+      return 0
     } || {
       return 1
     }
@@ -1979,7 +2282,7 @@ function ccloud::maybe_create_ksqldb_app() {
   CLUSTER=$2
   # colon deliminated credentials (APIKEY:APISECRET)
   local ksqlDB_kafka_creds=$3
-  
+
   APP_ID=$(ccloud::find_ksqldb_app $KSQLDB_NAME $CLUSTER)
   if [ $? -eq 0 ]
   then
@@ -2004,7 +2307,7 @@ function ccloud::create_acls_all_resources_full_access() {
   confluent kafka acl create --allow --service-account $SERVICE_ACCOUNT_ID --operations READ,WRITE,CREATE,DESCRIBE --consumer-group '*' &>"$REDIRECT_TO"
 
   confluent kafka acl create --allow --service-account $SERVICE_ACCOUNT_ID --operations DESCRIBE,WRITE --transactional-id '*' &>"$REDIRECT_TO"
-  
+
   confluent kafka acl create --allow --service-account $SERVICE_ACCOUNT_ID --operations IDEMPOTENT-WRITE,DESCRIBE --cluster-scope &>"$REDIRECT_TO"
 
   return 0
@@ -2284,8 +2587,8 @@ function ccloud::create_acls_connect_topics() {
   TOPIC=connect-demo-offsets
   confluent kafka topic create $TOPIC --partitions 6 --config "cleanup.policy=compact"
   confluent kafka acl create --allow --service-account $serviceAccount --operations WRITE,READ --topic $TOPIC --prefix
-  
-  TOPIC=connect-demo-statuses 
+
+  TOPIC=connect-demo-statuses
   confluent kafka topic create $TOPIC --partitions 3 --config "cleanup.policy=compact"
   confluent kafka acl create --allow --service-account $serviceAccount --operations WRITE,READ  --topic $TOPIC --prefix
 
@@ -2293,7 +2596,7 @@ function ccloud::create_acls_connect_topics() {
     confluent kafka topic create $TOPIC --partitions 1 &>/dev/null
     confluent kafka acl create --allow --service-account $serviceAccount --operations WRITE,READ  --topic $TOPIC --prefix
   done
- 
+
   confluent kafka acl create --allow --service-account $serviceAccount --operations READ --consumer-group connect-cloud
 
   echo "Connectors: creating topics and ACLs for service account $serviceAccount"
@@ -2387,7 +2690,7 @@ function ccloud::create_ccloud_stack() {
     if [[ -z "$SERVICE_ACCOUNT_ID" ]]; then
       # Service Account is not received so it will be created
       local RANDOM_NUM=$((1 + RANDOM % 1000000))
-      SERVICE_NAME=${SERVICE_NAME:-"pg-app-$RANDOM_NUM"}
+      SERVICE_NAME=${SERVICE_NAME:-"pg-${USER}-app-$RANDOM_NUM"}
       SERVICE_ACCOUNT_ID=$(ccloud::create_service_account $SERVICE_NAME)
     fi
 
@@ -2398,18 +2701,18 @@ function ccloud::create_ccloud_stack() {
 
     echo "Creating Confluent Cloud stack for service account $SERVICE_NAME, ID: $SERVICE_ACCOUNT_ID."
   fi
-  
-  if [[ -z "$ENVIRONMENT" ]]; 
+
+  if [[ -z "$ENVIRONMENT" ]];
   then
     # Environment is not received so it will be created
-    ENVIRONMENT_NAME=${ENVIRONMENT_NAME:-"pg-$SERVICE_ACCOUNT_ID-$EXAMPLE"}
+    ENVIRONMENT_NAME=${ENVIRONMENT_NAME:-"pg-${USER}-$SERVICE_ACCOUNT_ID-$EXAMPLE"}
     ENVIRONMENT=$(ccloud::create_and_use_environment $ENVIRONMENT_NAME)
     (($? != 0)) && { echo "$ENVIRONMENT"; exit 1; }
   else
     confluent environment use $ENVIRONMENT || exit 1
   fi
 
-  CLUSTER_NAME=${CLUSTER_NAME:-"pg-cluster-$SERVICE_ACCOUNT_ID"}
+  CLUSTER_NAME=${CLUSTER_NAME:-"pg-${USER}-cluster-$SERVICE_ACCOUNT_ID"}
   CLUSTER_CLOUD="${CLUSTER_CLOUD:-aws}"
   CLUSTER_REGION="${CLUSTER_REGION:-us-west-2}"
   CLUSTER_TYPE="${CLUSTER_TYPE:-basic}"
@@ -2428,7 +2731,7 @@ function ccloud::create_ccloud_stack() {
   else
     BOOTSTRAP_SERVERS="$endpoint"
   fi
-  
+
   NEED_ACLS=0
   # VINC: added
   if [[ -z "$CLUSTER_CREDS" ]]
@@ -2448,25 +2751,27 @@ function ccloud::create_ccloud_stack() {
     # Estimating another 80s wait still sometimes required
     WARMUP_TIME=${WARMUP_TIME:-80}
     echo "Sleeping an additional ${WARMUP_TIME} seconds to ensure propagation of all metadata"
-    sleep $WARMUP_TIME 
+    sleep $WARMUP_TIME
 
     ccloud::create_acls_all_resources_full_access $SERVICE_ACCOUNT_ID
   fi
 
   SCHEMA_REGISTRY_GEO="${SCHEMA_REGISTRY_GEO:-us}"
   SCHEMA_REGISTRY=$(ccloud::enable_schema_registry $CLUSTER_CLOUD $SCHEMA_REGISTRY_GEO)
-  SCHEMA_REGISTRY_ENDPOINT=$(confluent schema-registry cluster describe -o json | jq -r ".endpoint_url")
+
   # VINC: added
   if [[ -z "$SCHEMA_REGISTRY_CREDS" ]]
   then
     if [[ -z "$SERVICE_ACCOUNT_ID" ]]; then
       # Service Account is not received so it will be created
       local RANDOM_NUM=$((1 + RANDOM % 1000000))
-      SERVICE_NAME=${SERVICE_NAME:-"pg-app-$RANDOM_NUM"}
+      SERVICE_NAME=${SERVICE_NAME:-"pg-${USER}-app-$RANDOM_NUM"}
       SERVICE_ACCOUNT_ID=$(ccloud::create_service_account $SERVICE_NAME)
     fi
     SCHEMA_REGISTRY_CREDS=$(ccloud::maybe_create_credentials_resource $SERVICE_ACCOUNT_ID $SCHEMA_REGISTRY)
   fi
+
+  SCHEMA_REGISTRY_ENDPOINT=$(confluent schema-registry cluster describe -o json | jq -r ".endpoint_url")
 
   if [[ $NEED_ACLS -eq 1 ]]
   then
@@ -2498,7 +2803,7 @@ function ccloud::create_ccloud_stack() {
     if [[ -z "$CCLOUD_CONFIG_FILE" ]]; then
       CCLOUD_CONFIG_FILE="/tmp/tmp.config"
     fi
-  
+
     cat <<EOF > $CCLOUD_CONFIG_FILE
 # --------------------------------------
 # Confluent Cloud connection information
@@ -2530,9 +2835,6 @@ ksql.endpoint=${KSQLDB_ENDPOINT}
 ksql.basic.auth.user.info=`echo $KSQLDB_CREDS | awk -F: '{print $1}'`:`echo $KSQLDB_CREDS | awk -F: '{print $2}'`
 EOF
     fi
-
-    echo
-    echo "Client configuration file saved to: $CCLOUD_CONFIG_FILE"
   fi
 
   return 0
@@ -2551,14 +2853,14 @@ function ccloud::destroy_ccloud_stack() {
 
   PRESERVE_ENVIRONMENT="${PRESERVE_ENVIRONMENT:-false}"
 
-  ENVIRONMENT_NAME_PREFIX=${ENVIRONMENT_NAME_PREFIX:-"pg-$SERVICE_ACCOUNT_ID"}
-  CLUSTER_NAME=${CLUSTER_NAME:-"pg-cluster-$SERVICE_ACCOUNT_ID"}
+  ENVIRONMENT_NAME_PREFIX=${ENVIRONMENT_NAME_PREFIX:-"pg-${USER}-$SERVICE_ACCOUNT_ID"}
+  CLUSTER_NAME=${CLUSTER_NAME:-"pg-${USER}-cluster-$SERVICE_ACCOUNT_ID"}
   CCLOUD_CONFIG_FILE=${CCLOUD_CONFIG_FILE:-"/tmp/tmp.config"}
   KSQLDB_NAME=${KSQLDB_NAME:-"demo-ksqldb-$SERVICE_ACCOUNT_ID"}
 
   # Setting default QUIET=false to surface potential errors
   QUIET="${QUIET:-false}"
-  [[ $QUIET == "true" ]] && 
+  [[ $QUIET == "true" ]] &&
     local REDIRECT_TO="/dev/null" ||
     local REDIRECT_TO="/dev/tty"
 
@@ -2584,7 +2886,7 @@ function ccloud::destroy_ccloud_stack() {
   confluent api-key list --service-account $SERVICE_ACCOUNT_ID -o json | jq -r '.[].api_key' | xargs -I{} confluent api-key delete {} --force
 
   # Delete service account
-  confluent iam service-account delete $SERVICE_ACCOUNT_ID --force &>"$REDIRECT_TO" 
+  confluent iam service-account delete $SERVICE_ACCOUNT_ID --force &>"$REDIRECT_TO"
 
   if [[ $PRESERVE_ENVIRONMENT == "false" ]]; then
     local environment_id=$(confluent environment list -o json | jq -r 'map(select(.name | startswith("'"$ENVIRONMENT_NAME_PREFIX"'"))) | .[].id')
@@ -2595,7 +2897,7 @@ function ccloud::destroy_ccloud_stack() {
       confluent environment delete $environment_id &> "$REDIRECT_TO"
     fi
   fi
-  
+
   rm -f $CCLOUD_CONFIG_FILE
 
   return 0
@@ -2669,10 +2971,10 @@ function ccloud::generate_configs() {
     echo "See https://docs.confluent.io/current/cloud/connect/auto-generate-configs.html for more information"
     return 1
   fi
-  
-  echo -e "\nGenerating component configurations from $CCLOUD_CONFIG_FILE"
-  echo -e "\n(If you want to run any of these components to talk to Confluent Cloud, these are the configurations to add to the properties file for each component)"
-  
+
+  log "Generating component configurations"
+  log "(If you want to run any of these components to talk to Confluent Cloud, these are the configurations to add to the properties file for each component)"
+
   # Set permissions
   PERM=600
   if ls --version 2>/dev/null | grep -q 'coreutils' ; then
@@ -2682,15 +2984,15 @@ function ccloud::generate_configs() {
     # BSD
     PERM=$(stat -f "%OLp" $CCLOUD_CONFIG_FILE)
   fi
-  
+
   # Make destination
-  DEST="/tmp/delta_configs"
+  get_kafka_docker_playground_dir
+  DEST=$KAFKA_DOCKER_PLAYGROUND_DIR/.ccloud
   mkdir -p $DEST
-  
   ################################################################################
   # Glean parameters from the Confluent Cloud configuration file
   ################################################################################
-  
+
   # Kafka cluster
   BOOTSTRAP_SERVERS=$( grep "^bootstrap.server" $CCLOUD_CONFIG_FILE | awk -F'=' '{print $2;}' )
   BOOTSTRAP_SERVERS=${BOOTSTRAP_SERVERS/\\/}
@@ -2699,16 +3001,16 @@ function ccloud::generate_configs() {
   SASL_JAAS_CONFIG_PROPERTY_FORMAT=${SASL_JAAS_CONFIG_PROPERTY_FORMAT/password\\=/password=}
   CLOUD_KEY=$( echo $SASL_JAAS_CONFIG | awk '{print $3}' | awk -F"'" '$0=$2' )
   CLOUD_SECRET=$( echo $SASL_JAAS_CONFIG | awk '{print $4}' | awk -F"'" '$0=$2' )
-  
+
   # Schema Registry
   BASIC_AUTH_CREDENTIALS_SOURCE=$( grep "^basic.auth.credentials.source" $CCLOUD_CONFIG_FILE | awk -F'=' '{print $2;}' )
   SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO=$( grep "^basic.auth.user.info" $CCLOUD_CONFIG_FILE | awk -F'=' '{print $2;}' )
   SCHEMA_REGISTRY_URL=$( grep "^schema.registry.url" $CCLOUD_CONFIG_FILE | awk -F'=' '{print $2;}' )
-  
+
   # ksqlDB
   KSQLDB_ENDPOINT=$( grep "^ksql.endpoint" $CCLOUD_CONFIG_FILE | awk -F'=' '{print $2;}' )
   KSQLDB_BASIC_AUTH_USER_INFO=$( grep "^ksql.basic.auth.user.info" $CCLOUD_CONFIG_FILE | awk -F'=' '{print $2;}' )
-  
+
   ################################################################################
   # Build configuration file with Confluent Cloud connection parameters and
   # Confluent Monitoring Interceptors for Streams Monitoring in Confluent Control Center
@@ -2753,9 +3055,9 @@ function ccloud::generate_configs() {
     fi
   done < "$CCLOUD_CONFIG_FILE"
   chmod $PERM $INTERCEPTORS_CONFIG_FILE
-  
-  echo -e "\nConfluent Platform Components:"
-  
+
+  log "Confluent Platform Components:"
+
   ################################################################################
   # Confluent Schema Registry instance (local) for Confluent Cloud
   ################################################################################
@@ -2771,7 +3073,7 @@ function ccloud::generate_configs() {
     fi
   done < "$CCLOUD_CONFIG_FILE"
   chmod $PERM $SR_CONFIG_DELTA
-  
+
   ################################################################################
   # Confluent Replicator (executable) for Confluent Cloud
   ################################################################################
@@ -2785,7 +3087,7 @@ function ccloud::generate_configs() {
   REPLICATOR_SASL_JAAS_CONFIG=${REPLICATOR_SASL_JAAS_CONFIG//\\=/=}
   REPLICATOR_SASL_JAAS_CONFIG=${REPLICATOR_SASL_JAAS_CONFIG//\"/\\\"}
   chmod $PERM $REPLICATOR_PRODUCER_DELTA
-  
+
   ################################################################################
   # ksqlDB Server runs locally and connects to Confluent Cloud
   ################################################################################
@@ -2813,7 +3115,7 @@ function ccloud::generate_configs() {
     fi
   done < $CCLOUD_CONFIG_FILE
   chmod $PERM $KSQLDB_SERVER_DELTA
-  
+
   ################################################################################
   # KSQL DataGen for Confluent Cloud
   ################################################################################
@@ -2833,7 +3135,7 @@ function ccloud::generate_configs() {
     fi
   done < $CCLOUD_CONFIG_FILE
   chmod $PERM $KSQL_DATAGEN_DELTA
-  
+
   ################################################################################
   # Confluent Control Center runs locally, monitors Confluent Cloud, and uses Confluent Cloud cluster as the backstore
   ################################################################################
@@ -2865,7 +3167,7 @@ function ccloud::generate_configs() {
     fi
   done < $CCLOUD_CONFIG_FILE
   chmod $PERM $C3_DELTA
-  
+
   ################################################################################
   # Confluent Metrics Reporter to Confluent Cloud
   ################################################################################
@@ -2883,7 +3185,7 @@ function ccloud::generate_configs() {
     fi
   done < "$CCLOUD_CONFIG_FILE"
   chmod $PERM $METRICS_REPORTER_DELTA
-  
+
   ################################################################################
   # Confluent REST Proxy to Confluent Cloud
   ################################################################################
@@ -2909,7 +3211,7 @@ function ccloud::generate_configs() {
     fi
   done < $CCLOUD_CONFIG_FILE
   chmod $PERM $REST_PROXY_DELTA
-  
+
   ################################################################################
   # Kafka Connect runs locally and connects to Confluent Cloud
   ################################################################################
@@ -2936,9 +3238,9 @@ EOF
       fi
     fi
   done < "$CCLOUD_CONFIG_FILE"
-  
+
   for prefix in "producer" "consumer" "producer.confluent.monitoring.interceptor" "consumer.confluent.monitoring.interceptor" ; do
-  
+
   echo -e "\n# Configuration for embedded $prefix" >> $CONNECT_DELTA
   while read -r line
     do
@@ -2951,10 +3253,10 @@ EOF
       fi
     fi
   done < "$CCLOUD_CONFIG_FILE"
-  
+
   done
-  
-  
+
+
   cat <<EOF >> $CONNECT_DELTA
 
 # Confluent Schema Registry for Kafka Connect
@@ -2964,7 +3266,7 @@ value.converter.schema.registry.basic.auth.user.info=$SCHEMA_REGISTRY_BASIC_AUTH
 value.converter.schema.registry.url=$SCHEMA_REGISTRY_URL
 EOF
   chmod $PERM $CONNECT_DELTA
-  
+
   ################################################################################
   # Kafka connector
   ################################################################################
@@ -2979,7 +3281,7 @@ value.converter.schema.registry.basic.auth.user.info=$SCHEMA_REGISTRY_BASIC_AUTH
 value.converter.schema.registry.url=$SCHEMA_REGISTRY_URL
 EOF
   chmod $PERM $CONNECTOR_DELTA
-  
+
   ################################################################################
   # AK command line tools
   ################################################################################
@@ -2988,17 +3290,17 @@ EOF
   rm -f $AK_TOOLS_DELTA
   cp $CCLOUD_CONFIG_FILE $AK_TOOLS_DELTA
   chmod $PERM $AK_TOOLS_DELTA
-  
-  
-  echo -e "\nKafka Clients:"
-  
+
+
+  log "Kafka Clients:"
+
   ################################################################################
   # Java (Producer/Consumer)
   ################################################################################
   JAVA_PC_CONFIG=$DEST/java_producer_consumer.delta
   echo "$JAVA_PC_CONFIG"
   rm -f $JAVA_PC_CONFIG
-  
+
   cat <<EOF >> $JAVA_PC_CONFIG
 import java.util.Properties;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -3040,14 +3342,14 @@ props.put(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG + SaslConfigs.SASL_JAAS_CONF
 // .... additional configuration settings
 EOF
   chmod $PERM $JAVA_PC_CONFIG
-  
+
   ################################################################################
   # Java (Streams)
   ################################################################################
   JAVA_STREAMS_CONFIG=$DEST/java_streams.delta
   echo "$JAVA_STREAMS_CONFIG"
   rm -f $JAVA_STREAMS_CONFIG
-  
+
   cat <<EOF >> $JAVA_STREAMS_CONFIG
 import java.util.Properties;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -3090,14 +3392,14 @@ props.put(StreamsConfig.CONSUMER_PREFIX + ConsumerConfig.INTERCEPTOR_CLASSES_CON
 // .... additional configuration settings
 EOF
   chmod $PERM $JAVA_STREAMS_CONFIG
-  
+
   ################################################################################
   # librdkafka
   ################################################################################
   LIBRDKAFKA_CONFIG=$DEST/librdkafka.delta
   echo "$LIBRDKAFKA_CONFIG"
   rm -f $LIBRDKAFKA_CONFIG
-  
+
   cat <<EOF >> $LIBRDKAFKA_CONFIG
 bootstrap.servers="$BOOTSTRAP_SERVERS"
 security.protocol=SASL_SSL
@@ -3108,14 +3410,14 @@ schema.registry.url="$SCHEMA_REGISTRY_URL"
 basic.auth.user.info="$SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO"
 EOF
   chmod $PERM $LIBRDKAFKA_CONFIG
-  
+
   ################################################################################
   # Python
   ################################################################################
   PYTHON_CONFIG=$DEST/python.delta
   echo "$PYTHON_CONFIG"
   rm -f $PYTHON_CONFIG
-  
+
   cat <<EOF >> $PYTHON_CONFIG
 from confluent_kafka import Producer, Consumer, KafkaError
 
@@ -3146,14 +3448,14 @@ consumer = Consumer({
 })
 EOF
   chmod $PERM $PYTHON_CONFIG
-  
+
   ################################################################################
-  # .NET 
+  # .NET
   ################################################################################
   DOTNET_CONFIG=$DEST/dotnet.delta
   echo "$DOTNET_CONFIG"
   rm -f $DOTNET_CONFIG
-  
+
   cat <<EOF >> $DOTNET_CONFIG
 using Confluent.Kafka;
 
@@ -3186,19 +3488,19 @@ var consumerConfig = new Dictionary<string, object>
 };
 EOF
   chmod $PERM $DOTNET_CONFIG
-  
+
   ################################################################################
   # Go
   ################################################################################
   GO_CONFIG=$DEST/go.delta
   echo "$GO_CONFIG"
   rm -f $GO_CONFIG
-  
+
   cat <<EOF >> $GO_CONFIG
 import (
   "github.com/confluentinc/confluent-kafka-go/kafka"
-  
- 
+
+
 producer, err := kafka.NewProducer(&kafka.ConfigMap{
            "bootstrap.servers": "$BOOTSTRAP_SERVERS",
           "broker.version.fallback": "0.10.0.0",
@@ -3211,7 +3513,7 @@ producer, err := kafka.NewProducer(&kafka.ConfigMap{
                  "plugin.library.paths": "monitoring-interceptor",
                  // .... additional configuration settings
                  })
- 
+
 consumer, err := kafka.NewConsumer(&kafka.ConfigMap{
      "bootstrap.servers": "$BOOTSTRAP_SERVERS",
        "broker.version.fallback": "0.10.0.0",
@@ -3227,14 +3529,14 @@ consumer, err := kafka.NewConsumer(&kafka.ConfigMap{
                  })
 EOF
   chmod $PERM $GO_CONFIG
-  
+
   ################################################################################
   # Node.js
   ################################################################################
   NODE_CONFIG=$DEST/node.delta
   echo "$NODE_CONFIG"
   rm -f $NODE_CONFIG
-  
+
   cat <<EOF >> $NODE_CONFIG
 var Kafka = require('node-rdkafka');
 
@@ -3265,14 +3567,14 @@ var consumer = Kafka.KafkaConsumer.createReadStream({
 });
 EOF
   chmod $PERM $NODE_CONFIG
-  
+
   ################################################################################
   # C++
   ################################################################################
   CPP_CONFIG=$DEST/cpp.delta
   echo "$CPP_CONFIG"
   rm -f $CPP_CONFIG
-  
+
   cat <<EOF >> $CPP_CONFIG
 #include <librdkafka/rdkafkacpp.h>
 
@@ -3307,14 +3609,16 @@ if (consumerConfig->set("metadata.broker.list", "$BOOTSTRAP_SERVERS", errstr) !=
 RdKafka::Consumer *consumer = RdKafka::Consumer::create(consumerConfig, errstr);
 EOF
   chmod $PERM $CPP_CONFIG
-  
+
   ################################################################################
   # ENV
   ################################################################################
-  ENV_CONFIG=$DEST/env.delta
-  echo "$ENV_CONFIG"
-  rm -f $ENV_CONFIG
-  
+  get_kafka_docker_playground_dir
+  DELTA_CONFIGS_ENV=$KAFKA_DOCKER_PLAYGROUND_DIR/.ccloud/env.delta
+  ENV_CONFIG=$DELTA_CONFIGS_ENV
+  echo "$DELTA_CONFIGS_ENV"
+  rm -f $DELTA_CONFIGS_ENV
+
   cat <<EOF >> $ENV_CONFIG
 export BOOTSTRAP_SERVERS="$BOOTSTRAP_SERVERS"
 export SASL_JAAS_CONFIG="$SASL_JAAS_CONFIG"
@@ -3334,9 +3638,9 @@ EOF
 }
 
 ##############################################
-# These are some duplicate functions from 
-#  helper.sh to decouple the script files.  In 
-#  the future we can work to remove this 
+# These are some duplicate functions from
+#  helper.sh to decouple the script files.  In
+#  the future we can work to remove this
 #  duplication if necessary
 ##############################################
 function ccloud::retry() {
@@ -3360,7 +3664,7 @@ function ccloud::retry() {
     done
     printf "\n"
 }
-function ccloud::version_gt() { 
+function ccloud::version_gt() {
   test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1";
 }
 
@@ -3370,7 +3674,7 @@ function ccloud::version_gt() {
 ## END
 ##############
 
-function check_arm64_support() { 
+function check_arm64_support() {
   DIR="$1"
   DOCKER_COMPOSE_FILE="$2"
   set +e
@@ -3400,12 +3704,14 @@ function check_arm64_support() {
 }
 
 function playground() {
+  verbose_begin
   if [[ $(type -f playground 2>&1) =~ "not found" ]]
   then
     ../../scripts/cli/playground "$@"
   else
     $(which playground) "$@"
   fi
+  verbose_end
 }
 
 function force_enable () {
@@ -3413,8 +3719,8 @@ function force_enable () {
   env_variable=$2
 
   logwarn "💪 Forcing $flag ($env_variable env variable)"
-  line_final_source=$(grep -n 'source ${DIR}/../../scripts/utils.sh' $repro_test_file | cut -d ":" -f 1 | tail -n1)
-  tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
+  line_final_source=$(grep -n 'source ${DIR}/../../scripts/utils.sh$' $repro_test_file | cut -d ":" -f 1 | tail -n1)
+  tmp_dir=$(mktemp -d -t pg-XXXXXXXXXX)
   trap 'rm -rf $tmp_dir' EXIT
   echo "# remove or comment those lines if you don't need it anymore" > $tmp_dir/tmp_force_enable
   echo "logwarn \"💪 Forcing $flag ($env_variable env variable) as it was set when reproduction model was created\"" >> $tmp_dir/tmp_force_enable
@@ -3422,4 +3728,156 @@ function force_enable () {
   cp $repro_test_file $tmp_dir/tmp_file
 
   { head -n $(($line_final_source+1)) $tmp_dir/tmp_file; cat $tmp_dir/tmp_force_enable; tail -n  +$(($line_final_source+1)) $tmp_dir/tmp_file; } > $repro_test_file
+}
+
+function load_env_variables () {
+  for item in {ENABLE_CONTROL_CENTER,ENABLE_KSQLDB,ENABLE_RESTPROXY,ENABLE_JMX_GRAFANA,ENABLE_KCAT,ENABLE_CONDUKTOR,SQL_DATAGEN,ENABLE_KAFKA_NODES,CONNECT_NODES_PROFILES,CONNECT_NODES_PROFILES}
+  do
+    i=$(playground state get "flags.${item}")
+    if [ "$i" != "" ]
+    then
+      log "⛳ exporting environment variable ${item}"
+      export "${item}"=1
+    fi
+  done
+}
+
+function get_connector_paths () {
+    # determining the docker-compose file from from test_file
+    docker_compose_file=$(grep "start-environment" "$test_file" |  awk '{print $6}' | cut -d "/" -f 2 | cut -d '"' -f 1 | tail -n1 | xargs)
+    test_file_directory="$(dirname "${test_file}")"
+    docker_compose_file="${test_file_directory}/${docker_compose_file}"
+
+    if [ "${docker_compose_file}" != "" ] && [ ! -f "${docker_compose_file}" ]
+    then
+      echo ""
+    else
+      connector_paths=$(grep "CONNECT_PLUGIN_PATH" "${docker_compose_file}" | grep -v "KSQL_CONNECT_PLUGIN_PATH" | cut -d ":" -f 2  | tr -s " " | head -1)
+    fi
+}
+
+function generate_connector_versions () {
+  get_connector_paths
+  if [ "$connector_paths" == "" ]
+  then
+      return
+  else
+      connector_tags=""
+      for connector_path in ${connector_paths//,/ }
+      do
+        full_connector_name=$(basename "$connector_path")
+        owner=$(echo "$full_connector_name" | cut -d'-' -f1)
+        name=$(echo "$full_connector_name" | cut -d'-' -f2-)
+
+        if [ "$owner" == "java" ] || [ "$name" == "hub-components" ] || [ "$owner" == "filestream" ]
+        then
+          # happens when plugin is not coming from confluent hub
+          continue
+        fi
+
+        playground connector-plugin versions --connector-plugin $owner/$name --force-refresh
+      done
+  fi
+}
+
+readonly CONNECTOR_TYPE_FULLY_MANAGED="🌤️🤖fully managed"
+readonly CONNECTOR_TYPE_CUSTOM="🌤️🛃custom"
+readonly CONNECTOR_TYPE_SELF_MANAGED="⛈️👷self managed"
+readonly CONNECTOR_TYPE_ONPREM="🌎onprem"
+
+function get_connector_type () {
+  get_connector_paths
+  if [ "$connector_paths" == "" ]
+  then
+    if grep -q -e "fully-managed-connect" <<< "$test_file"
+    then
+      echo "$CONNECTOR_TYPE_FULLY_MANAGED"
+    elif grep -q -e "custom-connector" <<< "$test_file"
+    then
+      echo "$CONNECTOR_TYPE_CUSTOM"
+    else
+      echo ""
+    fi
+  else
+    if grep -q -e "ccloud" <<< "$test_file"
+    then
+      echo "$CONNECTOR_TYPE_SELF_MANAGED"
+    elif [[ -n "$environment" ]] && [ "$environment" == "ccloud" ]
+    then
+      echo "$CONNECTOR_TYPE_SELF_MANAGED"
+    else
+      echo "$CONNECTOR_TYPE_ONPREM"
+    fi
+  fi
+}
+
+function handle_ccloud_connect_rest_api () {
+  curl_request="$1"
+  get_ccloud_connect
+  if [[ -n "$verbose" ]]
+  then
+    log "🐞 curl command used"
+    echo "$curl_request"
+  fi
+  eval "curl_output=\$($curl_request)"
+  ret=$?
+  if [ $ret -eq 0 ]
+  then
+      if [ "$curl_output" == "[]" ]
+      then
+        # logerror "No connector running"
+        # exit 1
+        echo ""
+        return
+      fi
+      if echo "$curl_output" | jq 'if .error then .error | has("code") else has("error_code") end' 2> /dev/null | grep -q true
+      then
+        if echo "$curl_output" | jq '.error | has("code")' 2> /dev/null | grep -q true
+        then
+          code=$(echo "$curl_output" | jq -r .error.code)
+          message=$(echo "$curl_output" | jq -r .error.message)
+        else
+          code=$(echo "$curl_output" | jq -r .error_code)
+          message=$(echo "$curl_output" | jq -r .message)
+        fi
+        logerror "Command failed with error code $code"
+        logerror "$message"
+        exit 1
+      fi
+  else
+    logerror "❌ curl request failed with error code $ret!"
+    exit 1
+  fi
+}
+
+function handle_onprem_connect_rest_api () {
+  curl_request="$1"
+  if [[ -n "$verbose" ]]
+  then
+    log "🐞 curl command used"
+    echo "$curl_request"
+  fi
+  eval "curl_output=\$($curl_request)"
+  ret=$?
+  if [ $ret -eq 0 ]
+  then
+      if [ "$curl_output" == "[]" ]
+      then
+        # logerror "No connector running"
+        # exit 1
+        echo ""
+        return
+      fi
+      if echo "$curl_output" | jq '. | has("error_code")' 2> /dev/null | grep -q true 
+      then
+        error_code=$(echo "$curl_output" | jq -r .error_code)
+        message=$(echo "$curl_output" | jq -r .message)
+        logerror "Command failed with error code $error_code"
+        logerror "$message"
+        exit 1
+      fi
+  else
+      logerror "❌ curl request failed with error code $ret!"
+      exit 1
+  fi
 }

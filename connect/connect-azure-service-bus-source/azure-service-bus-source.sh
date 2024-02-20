@@ -71,10 +71,11 @@ sed -e "s|:AZURE_SAS_KEY:|$AZURE_SAS_KEY|g" \
     -e "s|:AZURE_SERVICE_BUS_QUEUE_NAME:|$AZURE_SERVICE_BUS_QUEUE_NAME|g" \
     ../../connect/connect-azure-service-bus-source/data.template > ../../connect/connect-azure-service-bus-source/data
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Creating Azure Service Bus Source connector"
-playground connector create-or-update --connector azure-service-bus-source << EOF
+playground connector create-or-update --connector azure-service-bus-source  << EOF
 {
     "connector.class": "io.confluent.connect.azure.servicebus.ServiceBusSourceConnector",
     "kafka.topic": "servicebus-topic",
@@ -107,4 +108,5 @@ log "Verifying topic servicebus-topic"
 playground topic consume --topic servicebus-topic --min-expected-messages 5 --timeout 60
 
 log "Deleting resource group"
+check_if_continue
 az group delete --name $AZURE_RESOURCE_GROUP --yes --no-wait

@@ -27,7 +27,8 @@ else
 fi
 cd -
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.nginx-proxy.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.nginx-proxy.yml"
 
 log "Doing gsutil authentication"
 set +e
@@ -57,7 +58,7 @@ docker run -i --volumes-from gcloud-config google/cloud-sdk:latest gcloud pubsub
 sleep 10
 
 log "Creating GCP PubSub Source connector"
-playground connector create-or-update --connector pubsub-source << EOF
+playground connector create-or-update --connector pubsub-source  << EOF
 {
     "connector.class" : "io.confluent.connect.gcp.pubsub.PubSubSourceConnector",
     "tasks.max" : "1",

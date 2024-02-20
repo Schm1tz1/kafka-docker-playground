@@ -10,7 +10,8 @@ then
     exit 111
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 
 log "Create table"
@@ -50,30 +51,29 @@ GO
 EOF
 
 log "Creating Debezium SQL Server source connector"
-playground connector create-or-update --connector debezium-sqlserver-source << EOF
+playground connector create-or-update --connector debezium-sqlserver-source  << EOF
 {
+  "connector.class": "io.debezium.connector.sqlserver.SqlServerConnector",
+  "tasks.max": "1",
+  "database.hostname": "sqlserver",
+  "database.port": "1433",
+  "database.user": "sa",
+  "database.password": "Password!",
+  "database.names" : "testDB",
 
-              "connector.class": "io.debezium.connector.sqlserver.SqlServerConnector",
-              "tasks.max": "1",
-              "database.hostname": "sqlserver",
-              "database.port": "1433",
-              "database.user": "sa",
-              "database.password": "Password!",
-              "database.names" : "testDB",
+  "table.include.list" : "dbo.customers,dbo.debezium_signal",
+  "signal.data.collection": "dbo.debezium_signal",
 
-              "table.include.list" : "dbo.customers,dbo.debezium_signal",
-              "signal.data.collection": "dbo.debezium_signal",
-
-              "_comment": "old version before 2.x",
-              "database.server.name": "server1",
-              "database.history.kafka.bootstrap.servers": "broker:9092",
-              "database.history.kafka.topic": "schema-changes.inventory",
-              "_comment": "new version since 2.x",
-              "database.encrypt": "false",
-              "topic.prefix": "server1",
-              "schema.history.internal.kafka.bootstrap.servers": "broker:9092",
-              "schema.history.internal.kafka.topic": "schema-changes.inventory"
-          }
+  "_comment": "old version before 2.x",
+  "database.server.name": "server1",
+  "database.history.kafka.bootstrap.servers": "broker:9092",
+  "database.history.kafka.topic": "schema-changes.inventory",
+  "_comment": "new version since 2.x",
+  "database.encrypt": "false",
+  "topic.prefix": "server1",
+  "schema.history.internal.kafka.bootstrap.servers": "broker:9092",
+  "schema.history.internal.kafka.topic": "schema-changes.inventory"
+}
 EOF
 
 sleep 5
@@ -112,7 +112,7 @@ EOF
 
 
 log "Updating Debezium SQL Server source connector with new table customers2"
-playground connector create-or-update --connector debezium-sqlserver-source << EOF
+playground connector create-or-update --connector debezium-sqlserver-source  << EOF
 {
   "connector.class": "io.debezium.connector.sqlserver.SqlServerConnector",
   "tasks.max": "1",
@@ -148,6 +148,8 @@ INSERT INTO customers2(first_name,last_name,email)
   VALUES ('Anne2','Kretchmar2','annek2@noanswer.org');
 GO
 EOF
+
+sleep 30
 
 log "Verifying topic server1.testDB.dbo.customers2 : there will be only the new record"
 playground topic consume --topic server1.testDB.dbo.customers2 --min-expected-messages 1 --timeout 60

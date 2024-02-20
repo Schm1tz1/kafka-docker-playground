@@ -7,12 +7,13 @@ source ${DIR}/../../scripts/utils.sh
 create_or_get_oracle_image "LINUX.X64_213000_db_home.zip" "../../connect/connect-cdc-oracle21-source/ora-setup-scripts-cdb-table"
 
 # required to make utils.sh script being able to work, do not remove:
-# ${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+# PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+#playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 
-docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" down -v --remove-orphans
+docker compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" down -v --remove-orphans
 log "Starting up oracle container to get ojdbc8.jar and aqapi.jar"
-docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" up -d oracle
+docker compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" up -d oracle
 
 
 # Verify Oracle DB has started within MAX_WAIT seconds
@@ -49,7 +50,7 @@ fi
 if [ ! -f jta-1.1.jar ]
 then
      # NoClassDefFoundError: javax/transaction/Synchronization
-     wget https://repo1.maven.org/maven2/javax/transaction/jta/1.1/jta-1.1.jar
+     wget -q https://repo1.maven.org/maven2/javax/transaction/jta/1.1/jta-1.1.jar
 fi
 
 if [[ "$OSTYPE" == "darwin"* ]]
@@ -63,7 +64,11 @@ else
     ls -lrt
 fi
 
-docker-compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" up -d
+docker compose -f ../../environment/plaintext/docker-compose.yml -f "${PWD}/docker-compose.plaintext.yml" up -d
+command="source ${DIR}/../../scripts/utils.sh && docker compose -f ../../environment/plaintext/docker-compose.yml -f ${PWD}/docker-compose.plaintext.yml up -d ${profile_control_center_command} ${profile_ksqldb_command} ${profile_grafana_command} ${profile_kcat_command} up -d"
+playground state set run.docker_command "$command"
+playground state set run.environment "plaintext"
+log "✨ If you modify a docker-compose file and want to re-create the container(s), run cli command playground container recreate"
 
 ../../scripts/wait-for-connect-and-controlcenter.sh
 
@@ -108,15 +113,14 @@ select owner, table_name from dba_all_tables where table_name = 'FOOQUEUETABLE';
 EOF
 
 log "Sending messages to topic sink-messages"
-docker exec -i broker kafka-console-producer --broker-list broker:9092 --topic sink-messages << EOF
-This is my message 1
-This is my message 2
+playground topic produce -t sink-messages --nb-messages 2 << 'EOF'
+This is my message %g
 EOF
 
 
 
 log "Creating JMS Oracle AQ sink connector"
-playground connector create-or-update --connector jms-oracle-sink << EOF
+playground connector create-or-update --connector jms-oracle-sink  << EOF
 {
      "connector.class": "io.confluent.connect.jms.JmsSinkConnector",
      "tasks.max": "1",

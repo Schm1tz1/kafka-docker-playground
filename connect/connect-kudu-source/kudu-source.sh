@@ -12,7 +12,8 @@ then
      exit 1
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 sleep 120
 
@@ -35,7 +36,7 @@ EOF
 sleep 5
 
 log "Creating Kudu source connector"
-playground connector create-or-update --connector kudu-source << EOF
+playground connector create-or-update --connector kudu-source  << EOF
 {
                     "connector.class": "io.confluent.connect.kudu.KuduSourceConnector",
                     "tasks.max": "1",

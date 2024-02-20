@@ -20,8 +20,8 @@ else
         if [ -f $HOME/.aws/credentials ]
         then
             logwarn "💭 AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are set based on $HOME/.aws/credentials"
-            export AWS_ACCESS_KEY_ID=$( grep "^aws_access_key_id" $HOME/.aws/credentials| awk -F'=' '{print $2;}' )
-            export AWS_SECRET_ACCESS_KEY=$( grep "^aws_secret_access_key" $HOME/.aws/credentials| awk -F'=' '{print $2;}' ) 
+            export AWS_ACCESS_KEY_ID=$( grep "^aws_access_key_id" $HOME/.aws/credentials | head -1 | awk -F'=' '{print $2;}' )
+            export AWS_SECRET_ACCESS_KEY=$( grep "^aws_secret_access_key" $HOME/.aws/credentials | head -1 | awk -F'=' '{print $2;}' ) 
         fi
     fi
     if [ -z "$AWS_REGION" ]
@@ -42,21 +42,8 @@ else
      export CONNECT_CONTAINER_HOME_DIR="/root"
 fi
 
-for component in  producer-repro-000001
-do
-    set +e
-    log "🏗 Building jar for ${component}"
-    docker run -i --rm -e KAFKA_CLIENT_TAG=$KAFKA_CLIENT_TAG -e TAG=$TAG_BASE -v "${PWD}/${component}":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -v "$PWD/../../scripts/settings.xml:/tmp/settings.xml" -v "${PWD}/${component}/target:/usr/src/mymaven/target" -w /usr/src/mymaven maven:3.6.1-jdk-11 mvn -s /tmp/settings.xml -Dkafka.tag=$TAG -Dkafka.client.tag=$KAFKA_CLIENT_TAG package > /tmp/result.log 2>&1
-    if [ $? != 0 ]
-    then
-        logerror "ERROR: failed to build java component "
-        tail -500 /tmp/result.log
-        exit 1
-    fi
-    set -e
-done
-
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.repro-000001-stackoverflowerror-with-s3-sink-connector.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.repro-000001-stackoverflowerror-with-s3-sink-connector.yml"
 
 AWS_BUCKET_NAME=pg-bucket-${USER}
 AWS_BUCKET_NAME=${AWS_BUCKET_NAME//[-.]/}
@@ -78,30 +65,60 @@ set -e
 
 
 log "Creating S3 Sink connector with bucket name <$AWS_BUCKET_NAME>"
-playground connector create-or-update --connector s3-sink << EOF
+playground connector create-or-update --connector s3-sink  << EOF
 {
-               "connector.class": "io.confluent.connect.s3.S3SinkConnector",
-               "key.converter": "org.apache.kafka.connect.storage.StringConverter",
-               "value.converter": "io.confluent.connect.avro.AvroConverter",
-               "value.converter.schema.registry.url": "http://schema-registry:8081",
-               "tasks.max": "1",
-               "topics": "customer_avro",
-               "s3.region": "$AWS_REGION",
-               "s3.bucket.name": "$AWS_BUCKET_NAME",
-               "topics.dir": "$TAG",
-               "s3.part.size": 52428801,
-               "flush.size": "3",
-               "aws.access.key.id" : "$AWS_ACCESS_KEY_ID",
-               "aws.secret.access.key": "$AWS_SECRET_ACCESS_KEY",
-               "storage.class": "io.confluent.connect.s3.storage.S3Storage",
-               "format.class": "io.confluent.connect.s3.format.parquet.ParquetFormat",
-               "schema.compatibility": "NONE"
-          }
+    "connector.class": "io.confluent.connect.s3.S3SinkConnector",
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "io.confluent.connect.avro.AvroConverter",
+    "value.converter.schema.registry.url": "http://schema-registry:8081",
+    "tasks.max": "1",
+    "topics": "customer_avro",
+    "s3.region": "$AWS_REGION",
+    "s3.bucket.name": "$AWS_BUCKET_NAME",
+    "topics.dir": "$TAG",
+    "s3.part.size": "52428801",
+    "flush.size": "3",
+    "aws.access.key.id" : "$AWS_ACCESS_KEY_ID",
+    "aws.secret.access.key": "$AWS_SECRET_ACCESS_KEY",
+    "storage.class": "io.confluent.connect.s3.storage.S3Storage",
+    "format.class": "io.confluent.connect.s3.format.parquet.ParquetFormat",
+    "schema.compatibility": "NONE"
+}
 EOF
 
 
-log "✨ Run the  java producer v1 which produces to topic customer_avro"
-docker exec producer-repro-000001 bash -c "java ${JAVA_OPTS} -jar producer-1.0.0-jar-with-dependencies.jar"
+playground topic produce -t customer_avro --nb-messages 1 --verbose << 'EOF'
+{
+    "type": "record",
+    "namespace": "acme",
+    "name": "Characteristic",
+    "fields": [
+        {
+            "name": "physicalCharacteristic",
+            "type": [
+                "null",
+                {
+                    "type": "record",
+                    "name": "PhysicalCharacteristic",
+                    "fields": [
+                        {
+                            "name": "children",
+                            "type": [
+                                "null",
+                                {
+                                    "type": "array",
+                                    "items": "PhysicalCharacteristic"
+                                }
+                            ],
+                            "default": null
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
+EOF
 
 sleep 10
 

@@ -30,7 +30,8 @@ then
      cp ${PWD}/install/wmq/JavaSE/lib/com.ibm.mq.allclient.jar ${PWD}/
 fi
 cd -
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Sending messages to topic sink-messages"
 playground topic produce --topic sink-messages --nb-messages 1 << 'EOF'
@@ -38,25 +39,25 @@ This is my message
 EOF
 
 log "Creating IBM MQ source connector"
-playground connector create-or-update --connector ibm-mq-sink << EOF
+playground connector create-or-update --connector ibm-mq-sink  << EOF
 {
-               "connector.class": "io.confluent.connect.jms.IbmMqSinkConnector",
-                    "topics": "sink-messages",
-                    "mq.hostname": "ibmmq",
-                    "mq.port": "1414",
-                    "mq.transport.type": "client",
-                    "mq.queue.manager": "QM1",
-                    "mq.channel": "DEV.APP.SVRCONN",
-                    "mq.username": "app",
-                    "mq.password": "passw0rd",
-                    "jms.destination.name": "DEV.QUEUE.1",
-                    "jms.destination.type": "queue",
-                    "value.converter": "org.apache.kafka.connect.storage.StringConverter",
-                    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
-                    "confluent.license": "",
-                    "confluent.topic.bootstrap.servers": "broker:9092",
-                    "confluent.topic.replication.factor": "1"
-          }
+     "connector.class": "io.confluent.connect.jms.IbmMqSinkConnector",
+     "topics": "sink-messages",
+     "mq.hostname": "ibmmq",
+     "mq.port": "1414",
+     "mq.transport.type": "client",
+     "mq.queue.manager": "QM1",
+     "mq.channel": "DEV.APP.SVRCONN",
+     "mq.username": "app",
+     "mq.password": "passw0rd",
+     "jms.destination.name": "DEV.QUEUE.1",
+     "jms.destination.type": "queue",
+     "value.converter": "org.apache.kafka.connect.storage.StringConverter",
+     "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+     "confluent.license": "",
+     "confluent.topic.bootstrap.servers": "broker:9092",
+     "confluent.topic.replication.factor": "1"
+}
 EOF
 
 sleep 10

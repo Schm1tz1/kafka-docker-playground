@@ -34,7 +34,8 @@ then
      cd ${OLDDIR}
 fi
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 log "Sending EMS messages m1 m2 m3 m4 m5 in queue connector-quickstart"
 docker exec tibco-ems bash -c '
@@ -48,21 +49,21 @@ java tibjmsMsgProducer -user admin -queue connector-quickstart m1 m2 m3 m4 m5'
 
 
 log "Creating JMS TIBCO source connector"
-playground connector create-or-update --connector jms-tibco-source << EOF
+playground connector create-or-update --connector jms-tibco-source  << EOF
 {
-               "connector.class": "io.confluent.connect.jms.JmsSourceConnector",
-                    "tasks.max": "1",
-                    "kafka.topic": "from-tibco-messages",
-                    "java.naming.factory.initial": "com.tibco.tibjms.naming.TibjmsInitialContextFactory",
-                    "java.naming.provider.url": "tibjmsnaming://tibco-ems:7222",
-                    "jms.destination.type": "queue",
-                    "jms.destination.name": "connector-quickstart",
-                    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
-                    "value.converter": "org.apache.kafka.connect.storage.StringConverter",
-                    "confluent.license": "",
-                    "confluent.topic.bootstrap.servers": "broker:9092",
-                    "confluent.topic.replication.factor": "1"
-          }
+     "connector.class": "io.confluent.connect.jms.JmsSourceConnector",
+     "tasks.max": "1",
+     "kafka.topic": "from-tibco-messages",
+     "java.naming.factory.initial": "com.tibco.tibjms.naming.TibjmsInitialContextFactory",
+     "java.naming.provider.url": "tibjmsnaming://tibco-ems:7222",
+     "jms.destination.type": "queue",
+     "jms.destination.name": "connector-quickstart",
+     "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+     "value.converter": "org.apache.kafka.connect.storage.StringConverter",
+     "confluent.license": "",
+     "confluent.topic.bootstrap.servers": "broker:9092",
+     "confluent.topic.replication.factor": "1"
+}
 EOF
 
 sleep 5

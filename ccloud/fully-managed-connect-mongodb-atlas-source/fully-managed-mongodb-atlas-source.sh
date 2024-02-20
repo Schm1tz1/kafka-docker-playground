@@ -6,17 +6,11 @@ source ${DIR}/../../scripts/utils.sh
 
 bootstrap_ccloud_environment
 
-if [ -f /tmp/delta_configs/env.delta ]
-then
-     source /tmp/delta_configs/env.delta
-else
-     logerror "ERROR: /tmp/delta_configs/env.delta has not been generated"
-     exit 1
-fi
+
 
 
 log "Creating MongoDB source connector"
-playground ccloud-connector create-or-update --connector mongodb-source2 << EOF
+playground connector create-or-update --connector mongodb-source2 << EOF
 {
      "connector.class" : "MongoDbAtlasSource",
      "name": "mongodb-source2",

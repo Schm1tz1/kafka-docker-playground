@@ -10,7 +10,7 @@ Quickly test [JDBC Sybase](https://docs.confluent.io/current/connect/kafka-conne
 Simply run:
 
 ```
-$ playground run -f sybase-source<tab>
+$ playground run -f sybase-source<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path>
 ```
 
 ## Details of what the script is doing
@@ -36,7 +36,7 @@ EOF
 Creating JDBC Sybase source connector
 
 ```bash
-playground connector create-or-update --connector jdbc-sybase-source << EOF
+playground connector create-or-update --connector jdbc-sybase-source  << EOF
 {
                 "connector.class" : "io.confluent.connect.jdbc.JdbcSourceConnector",
                 "tasks.max" : "1",

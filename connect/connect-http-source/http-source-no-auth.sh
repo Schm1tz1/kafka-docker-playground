@@ -19,23 +19,24 @@ fi
 
 
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.no-auth.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.no-auth.yml"
 
 log "Creating http-source connector"
-playground connector create-or-update --connector http-source << EOF
+playground connector create-or-update --connector http-source  << EOF
 {
-               "tasks.max": "1",
-               "connector.class": "io.confluent.connect.http.HttpSourceConnector",
-               "key.converter": "org.apache.kafka.connect.storage.StringConverter",
-               "value.converter": "org.apache.kafka.connect.storage.StringConverter",
-               "confluent.topic.bootstrap.servers": "broker:9092",
-               "confluent.topic.replication.factor": "1",
-               "url": "http://httpserver:8080/api/messages",
-               "topic.name.pattern":"http-topic-\${entityName}",
-               "entity.names": "messages",
-               "http.offset.mode": "SIMPLE_INCREMENTING",
-               "http.initial.offset": "1"
-          }
+     "tasks.max": "1",
+     "connector.class": "io.confluent.connect.http.HttpSourceConnector",
+     "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+     "value.converter": "org.apache.kafka.connect.storage.StringConverter",
+     "confluent.topic.bootstrap.servers": "broker:9092",
+     "confluent.topic.replication.factor": "1",
+     "url": "http://httpserver:8080/api/messages",
+     "topic.name.pattern":"http-topic-\${entityName}",
+     "entity.names": "messages",
+     "http.offset.mode": "SIMPLE_INCREMENTING",
+     "http.initial.offset": "1"
+}
 EOF
 
 

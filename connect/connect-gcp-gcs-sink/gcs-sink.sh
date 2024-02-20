@@ -27,7 +27,8 @@ else
 fi
 cd -
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.yml"
 
 GCS_BUCKET_NAME=kafka-docker-playground-bucket-${USER}${TAG}
 GCS_BUCKET_NAME=${GCS_BUCKET_NAME//[-.]/}
@@ -64,7 +65,7 @@ EOF
 
 
 log "Creating GCS Sink connector"
-playground connector create-or-update --connector gcs-sink << EOF
+playground connector create-or-update --connector gcs-sink  << EOF
 {
     "connector.class": "io.confluent.connect.gcs.GcsSinkConnector",
     "tasks.max" : "1",

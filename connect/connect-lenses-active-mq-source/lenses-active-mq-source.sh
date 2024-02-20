@@ -7,7 +7,7 @@ source ${DIR}/../../scripts/utils.sh
 if [ ! -f ${DIR}/activemq-all-5.15.4.jar ]
 then
      log "Downloading activemq-all-5.15.4.jar"
-     wget https://repo1.maven.org/maven2/org/apache/activemq/activemq-all/5.15.4/activemq-all-5.15.4.jar
+     wget -q https://repo1.maven.org/maven2/org/apache/activemq/activemq-all/5.15.4/activemq-all-5.15.4.jar
 fi
 
 if [ -z "$CONNECTOR_TAG" ]
@@ -24,7 +24,8 @@ fi
 export VERSION=$CONNECTOR_TAG
 unset CONNECTOR_TAG
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 
 log "Creating Lenses JMS ActiveMQ source connector"

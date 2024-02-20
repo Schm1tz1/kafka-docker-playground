@@ -28,7 +28,8 @@ else
 fi
 cd -
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 
 log "Produce test data to the functions-messages topic in Kafka"
@@ -37,7 +38,7 @@ value%g
 EOF
 
 log "Creating Google Cloud Functions Sink connector"
-playground connector create-or-update --connector gcp-functions << EOF
+playground connector create-or-update --connector gcp-functions  << EOF
 {
     "connector.class": "io.confluent.connect.gcp.functions.GoogleCloudFunctionsSinkConnector",
     "tasks.max" : "1",

@@ -6,10 +6,11 @@ source ${DIR}/../../scripts/utils.sh
 
 cd ${DIR}/security
 log "🔐 Generate keys and certificates used for SSL using rmohr/activemq:5.15.9 image"
-docker run -u0 --rm -v $PWD:/tmp rmohr/activemq:5.15.9 bash -c "/tmp/certs-create.sh && chown -R $(id -u $USER):$(id -g $USER) /tmp/"
+docker run -u0 --rm -v $PWD:/tmp rmohr/activemq:5.15.9 bash -c "/tmp/certs-create.sh > /dev/null 2>&1 && chown -R $(id -u $USER):$(id -g $USER) /tmp/"
 cd ${DIR}
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.mtls.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.mtls.yml"
 
 log "Sending messages to topic sink-messages"
 playground topic produce --topic sink-messages --nb-messages 1 << 'EOF'
@@ -17,7 +18,7 @@ This is my message
 EOF
 
 log "Creating ActiveMQ sink connector"
-playground connector create-or-update --connector active-mq-sink-mtls << EOF
+playground connector create-or-update --connector active-mq-sink-mtls  << EOF
 {
      "connector.class": "io.confluent.connect.jms.ActiveMqSinkConnector",
      "topics": "sink-messages",
@@ -37,7 +38,7 @@ EOF
 sleep 5
 
 log "Get messages from DEV.QUEUE.1 JMS queue:"
-curl -XGET -u admin:admin -d "body=message" http://localhost:8161/api/message/DEV.QUEUE.1?type=queue > /tmp/result.log  2>&1
+curl -XGET -u admin:admin http://localhost:8161/api/message/DEV.QUEUE.1?type=queue > /tmp/result.log  2>&1
 cat /tmp/result.log
 grep "This is my message" /tmp/result.log
 

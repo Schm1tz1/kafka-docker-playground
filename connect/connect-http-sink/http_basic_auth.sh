@@ -4,20 +4,25 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 source ${DIR}/../../scripts/utils.sh
 
+cd ../../connect/connect-http-sink/
 if [ ! -f jcl-over-slf4j-2.0.7.jar ]
 then
-     wget https://repo1.maven.org/maven2/org/slf4j/jcl-over-slf4j/2.0.7/jcl-over-slf4j-2.0.7.jar
+     wget -q https://repo1.maven.org/maven2/org/slf4j/jcl-over-slf4j/2.0.7/jcl-over-slf4j-2.0.7.jar
 fi
+cd -
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.basic.auth.yml"
 
 log "Sending messages to topic http-messages"
-seq 10 | docker exec -i broker kafka-console-producer --broker-list broker:9092 --topic http-messages
+playground topic produce -t http-messages --nb-messages 10 << 'EOF'
+%g
+EOF
 
 playground debug log-level set --package "org.apache.http" --level TRACE
 
 log "Creating HttpSinkBasicAuth connector"
-playground connector create-or-update --connector HttpSinkBasicAuth << EOF
+playground connector create-or-update --connector HttpSinkBasicAuth  << EOF
 {
      "topics": "http-messages",
      "tasks.max": "1",

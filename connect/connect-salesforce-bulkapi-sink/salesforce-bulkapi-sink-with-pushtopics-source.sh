@@ -74,7 +74,8 @@ PUSH_TOPICS_NAME=${PUSH_TOPICS_NAME//[-._]/}
 sed -e "s|:PUSH_TOPIC_NAME:|$PUSH_TOPICS_NAME|g" \
      ../../connect/connect-salesforce-bulkapi-sink/MyLeadPushTopics-template.apex > ../../connect/connect-salesforce-bulkapi-sink/MyLeadPushTopics.apex
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 # the Salesforce PushTopic source connector is used to get data into Kafka and the Salesforce Bulk API sink connector is used to export data from Kafka to Salesforce
 
@@ -92,28 +93,28 @@ log "Create $PUSH_TOPICS_NAME"
 docker exec sfdx-cli sh -c "sfdx apex run --target-org \"$SALESFORCE_USERNAME\" -f \"/tmp/MyLeadPushTopics.apex\""
 
 log "Creating Salesforce PushTopics Source connector"
-playground connector create-or-update --connector salesforce-pushtopic-source << EOF
+playground connector create-or-update --connector salesforce-pushtopic-source  << EOF
 {
-                    "connector.class": "io.confluent.salesforce.SalesforcePushTopicSourceConnector",
-                    "kafka.topic": "sfdc-pushtopic-leads",
-                    "tasks.max": "1",
-                    "curl.logging": "true",
-                    "salesforce.object" : "Lead",
-                    "salesforce.push.topic.name" : "$PUSH_TOPICS_NAME",
-                    "salesforce.instance" : "$SALESFORCE_INSTANCE",
-                    "salesforce.username" : "$SALESFORCE_USERNAME",
-                    "salesforce.password" : "$SALESFORCE_PASSWORD",
-                    "salesforce.password.token" : "$SALESFORCE_SECURITY_TOKEN",
-                    "salesforce.consumer.key" : "$SALESFORCE_CONSUMER_KEY",
-                    "salesforce.consumer.secret" : "$SALESFORCE_CONSUMER_PASSWORD",
-                    "salesforce.initial.start" : "latest",
-                    "connection.max.message.size": "10048576",
-                    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
-                    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
-                    "confluent.license": "",
-                    "confluent.topic.bootstrap.servers": "broker:9092",
-                    "confluent.topic.replication.factor": "1"
-          }
+     "connector.class": "io.confluent.salesforce.SalesforcePushTopicSourceConnector",
+     "kafka.topic": "sfdc-pushtopic-leads",
+     "tasks.max": "1",
+     "curl.logging": "true",
+     "salesforce.object" : "Lead",
+     "salesforce.push.topic.name" : "$PUSH_TOPICS_NAME",
+     "salesforce.instance" : "$SALESFORCE_INSTANCE",
+     "salesforce.username" : "$SALESFORCE_USERNAME",
+     "salesforce.password" : "$SALESFORCE_PASSWORD",
+     "salesforce.password.token" : "$SALESFORCE_SECURITY_TOKEN",
+     "salesforce.consumer.key" : "$SALESFORCE_CONSUMER_KEY",
+     "salesforce.consumer.secret" : "$SALESFORCE_CONSUMER_PASSWORD",
+     "salesforce.initial.start" : "latest",
+     "connection.max.message.size": "10048576",
+     "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+     "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+     "confluent.license": "",
+     "confluent.topic.bootstrap.servers": "broker:9092",
+     "confluent.topic.replication.factor": "1"
+}
 EOF
 
 sleep 5
@@ -130,7 +131,7 @@ playground topic consume --topic sfdc-pushtopic-leads --min-expected-messages 1 
 
 
 log "Creating Salesforce Bulk API Sink connector"
-playground connector create-or-update --connector salesforce-bulkapi-sink << EOF
+playground connector create-or-update --connector salesforce-bulkapi-sink  << EOF
 {
                     "connector.class": "io.confluent.connect.salesforce.SalesforceBulkApiSinkConnector",
                     "topics": "sfdc-pushtopic-leads",

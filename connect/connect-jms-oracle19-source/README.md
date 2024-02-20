@@ -19,7 +19,7 @@ Note: The first time you'll run the script, it will build (using this [project](
 ## How to run
 
 ```
-$ playground run -f jms-oracle19-source<tab>
+$ playground run -f jms-oracle19-source<use tab key to activate fzf completion (see https://kafka-docker-playground.io/#/cli?id=%e2%9a%a1-setup-completion), otherwise use full path, or correct relative path>
 ```
 
 ## Details of what the script is doing
@@ -81,7 +81,7 @@ EOF
 Creating JMS Oracle AQ source connector:
 
 ```bash
-playground connector create-or-update --connector jms-oracle-source << EOF
+playground connector create-or-update --connector jms-oracle-source  << EOF
 {
                "connector.class": "io.confluent.connect.jms.JmsSourceConnector",
                "tasks.max": "1",

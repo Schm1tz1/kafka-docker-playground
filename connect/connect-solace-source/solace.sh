@@ -27,11 +27,12 @@ cd ../../connect/connect-solace-source
 if [ ! -f ${DIR}/sol-jms-10.6.4.jar ]
 then
      log "Downloading sol-jms-10.6.4.jar"
-     wget https://repo1.maven.org/maven2/com/solacesystems/sol-jms/10.6.4/sol-jms-10.6.4.jar
+     wget -q https://repo1.maven.org/maven2/com/solacesystems/sol-jms/10.6.4/sol-jms-10.6.4.jar
 fi
 cd -
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.yml"
 
 wait_for_solace
 log "Solace UI is accessible at http://127.0.0.1:8080 (admin/admin)"
@@ -47,7 +48,7 @@ do
 done
 
 log "Creating Solace source connector"
-playground connector create-or-update --connector solace-source << EOF
+playground connector create-or-update --connector solace-source  << EOF
 {
      "connector.class": "io.confluent.connect.solace.SolaceSourceConnector",
      "tasks.max": "1",

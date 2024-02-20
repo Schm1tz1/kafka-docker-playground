@@ -6,12 +6,12 @@ source ${DIR_UTILS}/../scripts/cli/src/lib/utils_function.sh
 if [ -z "$TAG" ]
 then
     # TAG is not set, use default:
-    export TAG=7.4.1
+    export TAG=7.6.0
     # to handle ubi8 images
     export TAG_BASE=$TAG
     if [ -z "$CP_KAFKA_IMAGE" ]
     then
-      if [ -z "$IGNORE_CHECK_FOR_DOCKER_COMPOSE" ]
+      if [ -z "$IGNORE_CHECK_FOR_DOCKER_COMPOSE" ] && [ -z "$DOCKER_COMPOSE_FILE_UPDATE_VERSION" ]
       then
         log "💫 Using default CP version $TAG"
         log "🎓 Use --tag option to specify different version, see https://kafka-docker-playground.io/#/how-to-use?id=🎯-for-confluent-platform-cp"
@@ -96,12 +96,16 @@ then
   export GRAFANA_AGENT_CONNECT=""
   export GRAFANA_AGENT_PRODUCER=""
   export GRAFANA_AGENT_CONSUMER=""
+  export GRAFANA_AGENT_SR=""
+  export GRAFANA_AGENT_KSQLDB=""
 else
-  export GRAFANA_AGENT_ZK="-javaagent:/usr/share/jmx_exporter/pyroscope-0.11.2.jar -javaagent:/usr/share/jmx_exporter/jmx_prometheus_javaagent-0.16.1.jar=1234:/usr/share/jmx_exporter/zookeeper.yml"
-  export GRAFANA_AGENT_BROKER="-javaagent:/usr/share/jmx_exporter/pyroscope-0.11.2.jar -javaagent:/usr/share/jmx_exporter/jmx_prometheus_javaagent-0.16.1.jar=1234:/usr/share/jmx_exporter/broker.yml"
-  export GRAFANA_AGENT_CONNECT="-javaagent:/usr/share/jmx_exporter/pyroscope-0.11.2.jar -javaagent:/usr/share/jmx_exporter/jmx_prometheus_javaagent-0.16.1.jar=1234:/usr/share/jmx_exporter/connect.yml"
-  export GRAFANA_AGENT_PRODUCER="-javaagent:/usr/share/jmx_exporter/pyroscope-0.11.2.jar -javaagent:/usr/share/jmx_exporter/jmx_prometheus_javaagent-0.16.1.jar=1234:/usr/share/jmx_exporter/kafka-producer.yml"
-  export GRAFANA_AGENT_CONSUMER="-javaagent:/usr/share/jmx_exporter/pyroscope-0.11.2.jar -javaagent:/usr/share/jmx_exporter/jmx_prometheus_javaagent-0.16.1.jar=1234:/usr/share/jmx_exporter/kafka-consumer.yml"
+  export GRAFANA_AGENT_ZK="-javaagent:/usr/share/jmx_exporter/pyroscope-0.11.2.jar -javaagent:/usr/share/jmx_exporter/jmx_prometheus_javaagent-0.20.0.jar=1234:/usr/share/jmx_exporter/zookeeper.yml"
+  export GRAFANA_AGENT_BROKER="-javaagent:/usr/share/jmx_exporter/pyroscope-0.11.2.jar -javaagent:/usr/share/jmx_exporter/jmx_prometheus_javaagent-0.20.0.jar=1234:/usr/share/jmx_exporter/kafka_broker.yml"
+  export GRAFANA_AGENT_CONNECT="-javaagent:/usr/share/jmx_exporter/pyroscope-0.11.2.jar -javaagent:/usr/share/jmx_exporter/jmx_prometheus_javaagent-0.20.0.jar=1234:/usr/share/jmx_exporter/kafka_connect.yml"
+  export GRAFANA_AGENT_PRODUCER="-javaagent:/usr/share/jmx_exporter/pyroscope-0.11.2.jar -javaagent:/usr/share/jmx_exporter/jmx_prometheus_javaagent-0.20.0.jar=1234:/usr/share/jmx_exporter/kafka-producer.yml"
+  export GRAFANA_AGENT_CONSUMER="-javaagent:/usr/share/jmx_exporter/pyroscope-0.11.2.jar -javaagent:/usr/share/jmx_exporter/jmx_prometheus_javaagent-0.20.0.jar=1234:/usr/share/jmx_exporter/kafka-consumer.yml"
+  export GRAFANA_AGENT_SR="-javaagent:/usr/share/jmx_exporter/pyroscope-0.11.2.jar -javaagent:/usr/share/jmx_exporter/jmx_prometheus_javaagent-0.20.0.jar=1234:/usr/share/jmx_exporter/confluent_schemaregistry.yml"
+  export GRAFANA_AGENT_KSQLDB="-javaagent:/usr/share/jmx_exporter/pyroscope-0.11.2.jar -javaagent:/usr/share/jmx_exporter/jmx_prometheus_javaagent-0.20.0.jar=1234:/usr/share/jmx_exporter/confluent_ksql.yml"
 fi
 
 # Migrate SimpleAclAuthorizer to AclAuthorizer #1276
@@ -156,9 +160,12 @@ then
     fi
     # determining the connector from current path
     docker_compose_file=""
-    if [ -f "$PWD/$0" ]
+    if [ ! -z "$DOCKER_COMPOSE_FILE_UPDATE_VERSION" ]
     then
-      docker_compose_file=$(grep "environment" "$PWD/$0" | grep DIR | grep start.sh | cut -d "/" -f 7 | cut -d '"' -f 1 | head -n1)
+      docker_compose_file=$DOCKER_COMPOSE_FILE_UPDATE_VERSION
+    elif [ -f "$PWD/$0" ]
+    then
+      docker_compose_file=$(grep "start-environment" "$PWD/$0" |  awk '{print $6}' | cut -d "/" -f 2 | cut -d '"' -f 1 | tail -n1 | xargs)
     fi
     if [ "${docker_compose_file}" != "" ] && [ -f "${docker_compose_file}" ]
     then
@@ -204,7 +211,22 @@ then
               fi
           fi
           log "🎱 Installing connector $owner/$name:$CONNECTOR_VERSION"
-          docker run -u0 -i --rm -v ${DIR_UTILS}/../confluent-hub:/usr/share/confluent-hub-components ${CP_CONNECT_IMAGE}:${CONNECT_TAG} bash -c "confluent-hub install --no-prompt $owner/$name:$CONNECTOR_VERSION && chown -R $(id -u $USER):$(id -g $USER) /usr/share/confluent-hub-components"
+          set +e
+          docker run -u0 -i --rm -v ${DIR_UTILS}/../confluent-hub:/usr/share/confluent-hub-components ${CP_CONNECT_IMAGE}:${CONNECT_TAG} bash -c "confluent-hub install --no-prompt $owner/$name:$CONNECTOR_VERSION && chown -R $(id -u $USER):$(id -g $USER) /usr/share/confluent-hub-components" > /tmp/result.log 2>&1
+          if [ $? != 0 ]
+          then
+              logerror "❌ failed to install connector $owner/$name:$CONNECTOR_VERSION"
+              tail -500 /tmp/result.log
+              exit 1
+          else
+            grep "Download" /tmp/result.log
+          fi
+          set -e
+
+          log "♨️ Listing jar files"
+          cd ${DIR_UTILS}/../confluent-hub/$owner-$name/lib > /dev/null 2>&1
+          ls -1 | sort
+          cd - > /dev/null 2>&1
 
           if [ "$first_loop" = true ]
           then
@@ -289,9 +311,12 @@ else
     :
   else
     docker_compose_file=""
-    if [ -f "$PWD/$0" ]
+    if [ ! -z "$DOCKER_COMPOSE_FILE_UPDATE_VERSION" ]
     then
-      docker_compose_file=$(grep "environment" "$PWD/$0" | grep DIR | grep start.sh | cut -d "/" -f 7 | cut -d '"' -f 1 | head -n1)
+      docker_compose_file=$DOCKER_COMPOSE_FILE_UPDATE_VERSION
+    elif [ -f "$PWD/$0" ]
+    then
+      docker_compose_file=$(grep "start-environment" "$PWD/$0" |  awk '{print $6}' | cut -d "/" -f 2 | cut -d '"' -f 1 | tail -n1 | xargs)
     fi
     if [ "${docker_compose_file}" != "" ] && [ -f "${docker_compose_file}" ]
     then
@@ -354,7 +379,17 @@ else
               maybe_create_image
 
               log "🎱 Installing connector from zip $connector_zip_name"
-              docker run -u0 -i --rm -v ${DIR_UTILS}/../confluent-hub:/usr/share/confluent-hub-components  -v /tmp:/tmp ${CP_CONNECT_IMAGE}:${CONNECT_TAG} bash -c "confluent-hub install --no-prompt /tmp/${connector_zip_name} && chown -R $(id -u $USER):$(id -g $USER) /usr/share/confluent-hub-components"
+              set +e
+              docker run -u0 -i --rm -v ${DIR_UTILS}/../confluent-hub:/usr/share/confluent-hub-components  -v /tmp:/tmp ${CP_CONNECT_IMAGE}:${CONNECT_TAG} bash -c "confluent-hub install --no-prompt /tmp/${connector_zip_name} && chown -R $(id -u $USER):$(id -g $USER) /usr/share/confluent-hub-components" > /tmp/result.log 2>&1
+              if [ $? != 0 ]
+              then
+                  logerror "❌ failed to install connector from zip $connector_zip_name"
+                  tail -500 /tmp/result.log
+                  exit 1
+              else
+                grep "Installing" /tmp/result.log
+              fi
+              set -e
               first_loop=false
               continue
             fi
@@ -387,7 +422,21 @@ else
             maybe_create_image
 
             log "🎱 Installing connector $owner/$name:$version_to_get_from_hub"
-            docker run -u0 -i --rm -v ${DIR_UTILS}/../confluent-hub:/usr/share/confluent-hub-components ${CP_CONNECT_IMAGE}:${CONNECT_TAG} bash -c "confluent-hub install --no-prompt $owner/$name:$version_to_get_from_hub && chown -R $(id -u $USER):$(id -g $USER) /usr/share/confluent-hub-components"
+            set +e
+            docker run -u0 -i --rm -v ${DIR_UTILS}/../confluent-hub:/usr/share/confluent-hub-components ${CP_CONNECT_IMAGE}:${CONNECT_TAG} bash -c "confluent-hub install --no-prompt $owner/$name:$version_to_get_from_hub && chown -R $(id -u $USER):$(id -g $USER) /usr/share/confluent-hub-components" > /tmp/result.log 2>&1
+            if [ $? != 0 ]
+            then
+                logerror "❌ failed to install connector $owner/$name:$version_to_get_from_hub"
+                tail -500 /tmp/result.log
+                exit 1
+            else
+              grep "Download" /tmp/result.log
+            fi
+            set -e
+            log "♨️ Listing jar files"
+            cd ${DIR_UTILS}/../confluent-hub/$owner-$name/lib > /dev/null 2>&1
+            ls -1 | sort
+            cd - > /dev/null 2>&1
 
             version=$(cat ${DIR_UTILS}/../confluent-hub/${connector_path}/manifest.json | jq -r '.version')
             release_date=$(cat ${DIR_UTILS}/../confluent-hub/${connector_path}/manifest.json | jq -r '.release_date')
@@ -430,7 +479,11 @@ else
               fi
               if [ "$first_loop" = true ]
               then
-                log "💫 Using 🔗connector: $owner/$name:$version 📅release date: $release_date 🌐documentation: $documentation_url"
+                log "💫 Using connector:"
+                log "    🔗 Plugin: $owner/$name:$version"
+                log "    📅 Release date: $release_date"
+                log "    🌐 Documentation: $documentation_url"
+
                 # echo "💫 🔗 $owner/$name:$version 📅 $release_date 🌐 $documentation_url" > /tmp/connector_info
                 log "🎓 To specify different version, check the documentation https://kafka-docker-playground.io/#/how-to-use?id=🔗-for-connectors"
                 CONNECTOR_TAG=$version  

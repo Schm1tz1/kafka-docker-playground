@@ -16,13 +16,14 @@ fi
 if [ ! -f ${DIR}/presto.jar ]
 then
      log "Getting presto-cli-0.183-executable.jar"
-     wget https://repo1.maven.org/maven2/com/facebook/presto/presto-cli/0.183/presto-cli-0.183-executable.jar
+     wget -q https://repo1.maven.org/maven2/com/facebook/presto/presto-cli/0.183/presto-cli-0.183-executable.jar
      mv presto-cli-0.183-executable.jar presto.jar
      chmod +x presto.jar
 fi
 
 
-${DIR}/../../environment/plaintext/start.sh "${PWD}/docker-compose.plaintext.datadirect.yml"
+PLAYGROUND_ENVIRONMENT=${PLAYGROUND_ENVIRONMENT:-"plaintext"}
+playground start-environment --environment "${PLAYGROUND_ENVIRONMENT}" --docker-compose-override-file "${PWD}/docker-compose.plaintext.datadirect.yml"
 
 sleep 30
 
@@ -37,21 +38,36 @@ show databases
 EOF
 
 log "Sending messages to topic pokes"
-seq -f "{\"foo\": %g,\"bar\": \"a string\"}" 10 | docker exec -i connect kafka-avro-console-producer --broker-list broker:9092 --property schema.registry.url=http://schema-registry:8081 --topic pokes --property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"foo","type":"int"},{"name":"bar","type":"string"}]}'
+playground topic produce -t pokes --nb-messages 10 --forced-value "{\"foo\": %g,\"bar\": \"a string\"}" << 'EOF'
+{
+  "fields": [
+    {
+      "name": "foo",
+      "type": "int"
+    },
+    {
+      "name": "bar",
+      "type": "string"
+    }
+  ],
+  "name": "myrecord",
+  "type": "record"
+}
+EOF
 
 log "Creating JDBC Hive (with Datadirect) sink connector"
-playground connector create-or-update --connector jdbc-hive-sink << EOF
+playground connector create-or-update --connector jdbc-hive-sink  << EOF
 {
-               "connector.class" : "io.confluent.connect.jdbc.JdbcSinkConnector",
-               "tasks.max" : "1",
-               "connection.url": "jdbc:datadirect:hive://hive-server:10000;DatabaseName=default;User=hive;Password=hive;TransactionMode=ignore",
-               "auto.create": "true",
-               "auto.evolve": "true",
-               "topics": "pokes",
-               "pk.mode": "record_value",
-               "pk.fields": "foo",
-               "table.name.format": "default.\${topic}"
-          }
+     "connector.class" : "io.confluent.connect.jdbc.JdbcSinkConnector",
+     "tasks.max" : "1",
+     "connection.url": "jdbc:datadirect:hive://hive-server:10000;DatabaseName=default;User=hive;Password=hive;TransactionMode=ignore",
+     "auto.create": "true",
+     "auto.evolve": "true",
+     "topics": "pokes",
+     "pk.mode": "record_value",
+     "pk.fields": "foo",
+     "table.name.format": "default.\${topic}"
+}
 EOF
 
 sleep 10
